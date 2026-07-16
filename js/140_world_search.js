@@ -1,4 +1,4 @@
-/* 140_world_search.js v8 music-layout-fix
+/* 140_world_search.js v10 safe-no-plus
  * メガネ辞書 → 外の世界へ
  *
  * - SVGアイコン（./icons/*.svg）
@@ -12,7 +12,7 @@
   "use strict";
 
   const BUTTON_ID = "worldSearchButton";
-  const STYLE_ID = "worldSearchStyleV8";
+  const STYLE_ID = "worldSearchStyleV10";
   const ANIMATION_MS = 260;
 
   let lastOpenAt = 0;
@@ -296,59 +296,11 @@
     button.style.top = `${Math.round(rect.bottom - insetY - size)}px`;
   }
 
-  // ＋を実際のカード右下へ追従させる。
-  // right / bottom を他パッチが書き戻しても、left / top を優先する。
-  function clearUserDefinitionPlusPosition(plus) {
-    if (!plus) return;
-
-    // World Searchが辞書モードで付けたインライン位置だけを解除する。
-    // 音楽・会議・カード側のCSS／JSへ配置権を返す。
-    ["position", "left", "top", "right", "bottom", "transform"].forEach(property => {
-      plus.style.removeProperty(property);
-    });
-  }
-
-  function positionUserDefinitionPlus() {
-    const plus = document.getElementById("userDefinitionPlus");
-    if (!plus) return;
-
-    const isDictionary =
-      document.body.classList.contains("mode-dictionary");
-
-    if (!isDictionary) {
-      clearUserDefinitionPlusPosition(plus);
-      return;
-    }
-
-    const rect = getCardRect();
-    if (!rect || plus.hidden) return;
-
-    const compact = window.matchMedia("(max-width: 420px)").matches;
-    const insetX = compact ? 10 : 14;
-    const insetY = compact ? 9 : 12;
-    const plusRect = plus.getBoundingClientRect();
-    const width = plusRect.width || 48;
-    const height = plusRect.height || 48;
-
-    plus.style.setProperty("position", "fixed", "important");
-    plus.style.setProperty(
-      "left",
-      `${Math.round(rect.right - insetX - width)}px`,
-      "important"
-    );
-    plus.style.setProperty(
-      "top",
-      `${Math.round(rect.bottom - insetY - height)}px`,
-      "important"
-    );
-    plus.style.setProperty("right", "auto", "important");
-    plus.style.setProperty("bottom", "auto", "important");
-    plus.style.setProperty("transform", "none", "important");
-  }
-
+  // v10:
+  // ＋ボタンには一切触れない。
+  // 検索ボタンだけをカード座標へ追従させる。
   function positionAll() {
     positionButton();
-    positionUserDefinitionPlus();
   }
 
   function schedulePosition() {
@@ -575,7 +527,7 @@
       }, { passive: true });
     });
 
-    // 既存パッチが＋の位置を書き換えるため、カード座標へ再同期する。
+    // 単語・メガネ・画面サイズの変化に検索ボタンだけを再同期する。
     window.setInterval(() => {
       updateButton();
       schedulePosition();
