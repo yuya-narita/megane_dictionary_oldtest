@@ -11,28 +11,54 @@
   </script>
 
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>メガネ辞書 MVP clean</title>
-  <link rel="stylesheet" href="./style.css?v=146" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
-  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=observer1">
-  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=observer1">
-  <link rel="manifest" href="./manifest.json?v=observer1">
+  <title>メガネ辞書｜言葉を違う視点で見る音声辞書</title>
+  <meta name="description" content="メガネを変えると、言葉の意味も変わる。ズレア、ゼリス、ニクス、クエリナたちの視点で、身近な言葉を読み替える音声付き辞書アプリです。" />
+  <meta name="author" content="Yuya Narita" />
+  <meta name="robots" content="index, follow" />
+  <meta name="theme-color" content="#111111" />
+  <meta name="color-scheme" content="dark" />
+
+  <link rel="canonical" href="https://yuya-narita.github.io/megane_dictionary/" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="ja_JP" />
+  <meta property="og:site_name" content="メガネ辞書" />
+  <meta property="og:title" content="メガネ辞書｜言葉を違う視点で見る音声辞書" />
+  <meta property="og:description" content="メガネを変えると、言葉の意味も変わる。複数の視点で身近な言葉を読み替える、音声付き辞書アプリ。" />
+  <meta property="og:url" content="https://yuya-narita.github.io/megane_dictionary/" />
+  <meta property="og:image" content="https://yuya-narita.github.io/megane_dictionary/icons/icon-192.png" />
+  <meta property="og:image:alt" content="メガネ辞書のアイコン" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="メガネ辞書｜言葉を違う視点で見る音声辞書" />
+  <meta name="twitter:description" content="メガネを変えると、言葉の意味も変わる。複数の視点で身近な言葉を読み替える、音声付き辞書アプリ。" />
+  <meta name="twitter:image" content="https://yuya-narita.github.io/megane_dictionary/icons/icon-192.png" />
+
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="メガネ辞書" />
+
+  <link rel="stylesheet" href="./style.css?v=146" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=observer1" />
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=observer1" />
+  <link rel="manifest" href="./manifest.json?v=observer1" />
 
 </head>
 <body class="mode-dictionary">
   <main id="app" class="app">
     <header class="topbar">
-      <button id="prevWord" class="ghost">←</button>
-      <div class="brand">MEGANE DICTIONARY</div>
-      <button id="nextWord" class="ghost">→</button>
+      <button id="prevWord" class="ghost" type="button" aria-label="前の言葉へ">←</button>
+      <div class="brand" aria-label="メガネ辞書">MEGANE DICTIONARY</div>
+      <button id="nextWord" class="ghost" type="button" aria-label="次の言葉へ">→</button>
     </header>
 
-    <nav class="mode-toggle" id="modeToggle">
-      <button id="dictionaryMode" class="mode active">辞書</button>
-      <button id="cardMode" class="mode">カード</button>
+    <nav class="mode-toggle" id="modeToggle" aria-label="表示モード">
+      <button id="dictionaryMode" class="mode active" type="button" aria-current="page">辞書</button>
+      <button id="cardMode" class="mode" type="button">カード</button>
       <button id="musicMode" class="mode-tab" type="button">音楽</button>
-        <button id="mangaMode" class="mode">会議</button>
+        <button id="mangaMode" class="mode" type="button">会議</button>
     </nav>
 
     <section id="card" class="card" aria-live="polite">
@@ -44,8 +70,8 @@
 <div id="dictionaryView" class="dictionary-view">
           <div id="glassName" class="glass-name"></div>
           <div id="character" class="character"></div>
-          <h1 id="word" class="word"></h1>
-          <p id="translation" class="translation"></p>
+          <h1 id="word" class="word">メロンパン</h1>
+          <p id="translation" class="translation">メロンパン？ コンビニ入ったら目ぇ合うやつや。</p>
         </div>
 
         <div id="bugCardView" class="bug-card-view" hidden>
@@ -78,8 +104,6 @@
             <div id="mangaTitle" class="manga-title"></div>
             <div id="mangaCaption" class="manga-caption"></div>
             <div id="mangaText" class="manga-text"></div>
-            <input id="confSeek" class="conf-seek" type="range" min="0" max="1000" value="0" />
-              <div id="confTime" class="conf-time">0:00 / 0:00</div>
             </div>
           </div>
         </div>
@@ -96,11 +120,11 @@
         <div id="confDesc" class="conf-desc"></div>
         <audio id="confNativeAudio" class="conf-native-audio" controls preload="metadata"></audio>
         <div class="conf-player-buttons">
-          <button id="confBack15" type="button" class="conf-player-button">⏪ 15秒</button>
+          <button id="confBack15" type="button" class="conf-player-button" aria-label="15秒戻る">⏪ 15秒</button>
           <button id="confPlayPause" type="button" class="conf-player-button conf-main-button">▶ 再生</button>
-          <button id="confForward15" type="button" class="conf-player-button">15秒 ⏩</button>
+          <button id="confForward15" type="button" class="conf-player-button" aria-label="15秒進む">15秒 ⏩</button>
         </div>
-        <input id="confSeek" class="conf-seek" type="range" min="0" max="1000" value="0" />
+        <input id="confSeek" class="conf-seek" type="range" min="0" max="1000" value="0" aria-label="会議音声の再生位置" />
         <div id="confTime" class="conf-time">0:00 / 0:00</div>
         <button id="confBackToList" type="button" class="conf-back-button">← 過去ログへ</button>
       </div>
@@ -131,7 +155,7 @@
     <dialog id="favoriteDialog" class="favorite-dialog">
       <div class="favorite-dialog-head">
         <strong>お気に入り</strong>
-        <button id="favoriteDialogClose" class="ghost">×</button>
+        <button id="favoriteDialogClose" class="ghost" type="button" aria-label="お気に入りを閉じる">×</button>
       </div>
       <div id="favoriteList" class="favorite-list"></div>
     </dialog>
@@ -146,7 +170,7 @@
     <dialog id="glassDialog" class="dialog">
       <h2>メガネを選ぶ</h2>
       <div id="glassList" class="glass-list"></div>
-      <button id="closeDialog" class="close">閉じる</button>
+      <button id="closeDialog" class="close" type="button">閉じる</button>
     </dialog>
   </main>
 
@@ -181,7 +205,7 @@
 
 <audio id="mangaAudio" preload="metadata"></audio>
   <div id="mangaFullscreenOverlay" class="manga-fullscreen-overlay" hidden>
-    <button id="mangaFullscreenClose" class="manga-fullscreen-close">← 戻る</button>
+    <button id="mangaFullscreenClose" class="manga-fullscreen-close" type="button">← 戻る</button>
 
     <div id="fullscreenPageReader" class="fullscreen-page-reader" hidden>
       <img id="fullscreenCurrentPage" class="fullscreen-layer fullscreen-current" alt="" />
@@ -193,7 +217,7 @@
   <dialog id="collectionDialog" class="collection-dialog">
     <div class="collection-dialog-head">
       <strong>コレクション</strong>
-      <button id="collectionDialogClose" class="ghost">×</button>
+      <button id="collectionDialogClose" class="ghost" type="button" aria-label="コレクションを閉じる">×</button>
     </div>
     <div class="collection-list">
       <button class="collection-item" data-mode="manga">会議</button>
@@ -219,14 +243,14 @@ padding:20px;">
 
   <div class="binder-head">
     <strong>バインダー</strong>
-    <button id="binderCloseBtn" class="binder-close">×</button>
+    <button id="binderCloseBtn" class="binder-close" type="button" aria-label="バインダーを閉じる">×</button>
   </div>
   <div id="binderGrid"></div>
 </div>
 
 
 <div id="binderViewer" class="binder-viewer" hidden>
-  <button id="binderViewerClose" class="binder-viewer-close">×</button>
+  <button id="binderViewerClose" class="binder-viewer-close" type="button" aria-label="カード詳細を閉じる">×</button>
   <div id="binderViewerCard" class="binder-viewer-card"></div>
   <div id="binderViewerTextPanel" class="binder-viewer-text">
     <div class="text-handle"></div>
@@ -237,7 +261,7 @@ padding:20px;">
 </div>
 
 <div id="binderReplayViewer" class="binder-replay-viewer" hidden>
-  <button id="binderReplayClose" class="binder-replay-close">×</button>
+  <button id="binderReplayClose" class="binder-replay-close" type="button" aria-label="カード再表示を閉じる">×</button>
 
   <div id="binderReplayFlipCard" class="flip-card binder-replay-flip-card">
     <div class="flip-inner">
@@ -335,5 +359,7 @@ padding:20px;">
 <script src="./js/110_something_weird.js?v=selfvoice101"></script>
 <script src="./js/111_paradox_playground.js?v=renderer102"></script>
 <script src="./js/120_card_longpress.js?v=common102"></script>
+<script src="./js/140_world_search.js?v=8-music-layout-fix"></script>
+  <noscript>メガネ辞書を利用するには、ブラウザのJavaScriptを有効にしてください。</noscript>
 </body>
 </html>
