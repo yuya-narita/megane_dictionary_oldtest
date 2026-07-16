@@ -1,4 +1,4 @@
-/* 140_world_search.js v12 dictionary-only click-fix
+/* 140_world_search.js v13 dictionary-only animation-plus
  * 辞書モード専用・完全隔離版
  *
  * - 辞書モード中だけボタンをDOMへ追加
@@ -11,8 +11,8 @@
   "use strict";
 
   const BUTTON_ID = "worldSearchButton";
-  const STYLE_ID = "worldSearchStyleV12";
-  const ANIMATION_MS = 240;
+  const STYLE_ID = "worldSearchStyleV13";
+  const ANIMATION_MS = 440;
 
   const TARGETS = {
     gag: {
@@ -95,6 +95,7 @@
         margin:0;
         display:grid;
         place-items:center;
+        overflow:visible;
         border:1px solid color-mix(in srgb,var(--world-color) 32%,transparent);
         border-radius:50%;
         background:radial-gradient(
@@ -111,6 +112,18 @@
         touch-action:manipulation;
         -webkit-tap-highlight-color:transparent;
         cursor:pointer;
+        transform:translateZ(0);
+      }
+
+      #${BUTTON_ID}::before,
+      #${BUTTON_ID}::after{
+        content:"";
+        position:absolute;
+        inset:-2px;
+        border-radius:50%;
+        border:1px solid var(--world-color);
+        opacity:0;
+        pointer-events:none;
       }
 
       #${BUTTON_ID} img{
@@ -119,26 +132,99 @@
         height:23px;
         object-fit:contain;
         pointer-events:none;
+        filter:drop-shadow(0 0 5px color-mix(in srgb,var(--world-color) 36%,transparent));
+      }
+
+      #${BUTTON_ID} .world-search-launch{
+        position:absolute;
+        left:52px;
+        top:50%;
+        transform:translateY(-50%) translateX(-5px);
+        width:max-content;
+        padding:6px 10px;
+        border:1px solid color-mix(in srgb,var(--world-color) 26%,transparent);
+        border-radius:999px;
+        background:rgba(8,10,16,.82);
+        color:var(--world-color);
+        font-size:10px;
+        font-weight:850;
+        letter-spacing:.08em;
+        white-space:nowrap;
+        opacity:0;
+        pointer-events:none;
+        box-shadow:0 8px 24px rgba(0,0,0,.28);
+        -webkit-backdrop-filter:blur(8px);
+        backdrop-filter:blur(8px);
       }
 
       #${BUTTON_ID}.connecting{
-        animation:worldButtonPulse ${ANIMATION_MS}ms ease-out both;
+        animation:worldButtonPulse ${ANIMATION_MS}ms cubic-bezier(.18,.9,.2,1) both;
+      }
+
+      #${BUTTON_ID}.connecting::before{
+        animation:worldRingBurst ${ANIMATION_MS}ms ease-out both;
+      }
+
+      #${BUTTON_ID}.connecting::after{
+        animation:worldRingBurst2 ${ANIMATION_MS}ms ease-out both;
       }
 
       #${BUTTON_ID}.connecting img{
-        animation:worldIconSpin ${ANIMATION_MS}ms cubic-bezier(.2,.8,.2,1) both;
+        animation:worldIconSpin ${ANIMATION_MS}ms cubic-bezier(.16,.84,.22,1) both;
+      }
+
+      #${BUTTON_ID}.connecting .world-search-launch{
+        animation:worldLaunchText ${ANIMATION_MS}ms ease-out both;
       }
 
       @keyframes worldButtonPulse{
-        0%{transform:scale(1);box-shadow:0 10px 26px rgba(0,0,0,.24)}
-        45%{transform:scale(.90);box-shadow:0 0 25px var(--world-color)}
-        100%{transform:scale(1);box-shadow:0 10px 26px rgba(0,0,0,.24)}
+        0%{
+          transform:scale(1);
+          filter:brightness(1);
+          box-shadow:0 10px 26px rgba(0,0,0,.24);
+        }
+        24%{
+          transform:scale(.82);
+          filter:brightness(1.28);
+          box-shadow:0 0 12px var(--world-color);
+        }
+        58%{
+          transform:scale(1.14);
+          filter:brightness(1.48);
+          box-shadow:
+            0 0 0 6px color-mix(in srgb,var(--world-color) 12%,transparent),
+            0 0 34px var(--world-color);
+        }
+        100%{
+          transform:scale(1);
+          filter:brightness(1);
+          box-shadow:0 10px 26px rgba(0,0,0,.24);
+        }
       }
 
       @keyframes worldIconSpin{
-        0%{transform:rotate(0deg) scale(1)}
-        50%{transform:rotate(190deg) scale(.82)}
-        100%{transform:rotate(360deg) scale(1)}
+        0%{transform:rotate(0deg) scale(1);opacity:1}
+        22%{transform:rotate(-28deg) scale(.66);opacity:.62}
+        64%{transform:rotate(330deg) scale(1.26);opacity:1}
+        100%{transform:rotate(360deg) scale(1);opacity:1}
+      }
+
+      @keyframes worldRingBurst{
+        0%{transform:scale(.7);opacity:0}
+        22%{opacity:.95}
+        100%{transform:scale(1.75);opacity:0}
+      }
+
+      @keyframes worldRingBurst2{
+        0%{transform:scale(.84);opacity:0}
+        38%{opacity:.62}
+        100%{transform:scale(2.25);opacity:0}
+      }
+
+      @keyframes worldLaunchText{
+        0%,12%{opacity:0;transform:translateY(-50%) translateX(-8px)}
+        30%,72%{opacity:1;transform:translateY(-50%) translateX(0)}
+        100%{opacity:0;transform:translateY(-50%) translateX(5px)}
       }
 
       @media(prefers-reduced-motion:reduce){
@@ -273,7 +359,12 @@
       img.alt = "";
       img.draggable = false;
       img.setAttribute("aria-hidden", "true");
-      button.appendChild(img);
+
+      const launch = document.createElement("span");
+      launch.className = "world-search-launch";
+      launch.textContent = "世界へ";
+
+      button.append(img, launch);
 
       // 開始時は伝播だけ止める。preventDefaultはしない。
       // 実際の検索実行はclickだけに統一し、二重発火を防ぐ。
