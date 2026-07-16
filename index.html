@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-9ZCSD3CXH3"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-9ZCSD3CXH3');
+  </script>
+
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>メガネ辞書 MVP clean</title>
+  <link rel="stylesheet" href="./style.css?v=146" />
+
+  <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=observer1">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=observer1">
+  <link rel="manifest" href="./manifest.json?v=observer1">
+
+</head>
+<body class="mode-dictionary">
+  <main id="app" class="app">
+    <header class="topbar">
+      <button id="prevWord" class="ghost">←</button>
+      <div class="brand">MEGANE DICTIONARY</div>
+      <button id="nextWord" class="ghost">→</button>
+    </header>
+
+    <nav class="mode-toggle" id="modeToggle">
+      <button id="dictionaryMode" class="mode active">辞書</button>
+      <button id="cardMode" class="mode">カード</button>
+      <button id="musicMode" class="mode-tab" type="button">音楽</button>
+        <button id="mangaMode" class="mode">会議</button>
+    </nav>
+
+    <section id="card" class="card" aria-live="polite">
+      <div id="content" class="content">
+        <div class="hint" id="hint">左右：単語 / 上下：メガネ / 長押し：一覧</div>
+
+        
+<div id="contentScreenV127" class="content-screen-v127" hidden></div>
+<div id="dictionaryView" class="dictionary-view">
+          <div id="glassName" class="glass-name"></div>
+          <div id="character" class="character"></div>
+          <h1 id="word" class="word"></h1>
+          <p id="translation" class="translation"></p>
+        </div>
+
+        <div id="bugCardView" class="bug-card-view" hidden>
+          <div id="flipCard" class="flip-card">
+            <img id="flowCard" class="flow-card" src="images/cards/card_back.png" alt="" aria-hidden="true" />
+            <img id="deckLayer1" class="deck-layer deck-layer-1" src="images/cards/card_back.png" alt="" aria-hidden="true" />
+            <img id="deckLayer2" class="deck-layer deck-layer-2" src="images/cards/card_back.png" alt="" aria-hidden="true" />
+            <img id="deckLayer3" class="deck-layer deck-layer-3" src="images/cards/card_back.png" alt="" aria-hidden="true" />
+            <div class="flip-inner">
+              <div class="flip-face flip-front">
+                <img id="cardImage" class="bug-card-image" alt="" />
+              </div>
+              <div class="flip-face flip-back">
+                <img id="cardBackImage" class="bug-card-image" alt="" />
+              </div>
+            </div>
+          </div>
+          <div id="cardTitle" class="bug-card-title"></div>
+          <div id="cardSubtitle" class="bug-card-subtitle"></div>
+          <div id="cardCaption" class="bug-card-caption"></div>
+        </div>
+<div id="webtoonView" class="webtoon-view" hidden>
+          <div id="webtoonStrip" class="webtoon-strip"></div>
+        </div>
+<div id="mangaView" class="manga-view" hidden>
+
+          <div id="mangaPage" class="manga-page">
+            <img id="mangaImage" class="manga-image manga-current-image" alt="" hidden />
+            <img id="mangaIncomingImage" class="manga-image manga-incoming-image" alt="" hidden />
+            <div id="mangaTitle" class="manga-title"></div>
+            <div id="mangaCaption" class="manga-caption"></div>
+            <div id="mangaText" class="manga-text"></div>
+            <input id="confSeek" class="conf-seek" type="range" min="0" max="1000" value="0" />
+              <div id="confTime" class="conf-time">0:00 / 0:00</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="counter" class="counter"></div>
+      </div>
+    </section>
+
+
+    <section id="confPlayerLayer" class="conf-player-layer" hidden>
+      <div class="conf-stage">
+        <div class="conf-onair">ON AIR</div>
+        <div id="confTitle" class="conf-title">Syntax Conference</div>
+        <div id="confDesc" class="conf-desc"></div>
+        <audio id="confNativeAudio" class="conf-native-audio" controls preload="metadata"></audio>
+        <div class="conf-player-buttons">
+          <button id="confBack15" type="button" class="conf-player-button">⏪ 15秒</button>
+          <button id="confPlayPause" type="button" class="conf-player-button conf-main-button">▶ 再生</button>
+          <button id="confForward15" type="button" class="conf-player-button">15秒 ⏩</button>
+        </div>
+        <input id="confSeek" class="conf-seek" type="range" min="0" max="1000" value="0" />
+        <div id="confTime" class="conf-time">0:00 / 0:00</div>
+        <button id="confBackToList" type="button" class="conf-back-button">← 過去ログへ</button>
+      </div>
+    </section>
+
+    <section id="mangaListLayer" class="manga-list-layer" hidden>
+      <div id="mangaListView" class="manga-list"></div>
+    </section>
+
+    <section id="mangaChoiceLayer" class="manga-choice-layer" hidden>
+      <button id="mangaBackToList" class="manga-back">← 過去ログへ</button>
+      <div class="manga-choice-card">
+        <div id="mangaChoiceTitle" class="manga-choice-title">作品タイトル</div>
+        <div class="manga-choice-subtitle">Conferenceを聴く</div>
+        <div class="manga-choice-actions">
+          <button id="readPageMode" class="manga-choice-button">再生画面へ</button>
+          <button id="readWebtoonMode" class="manga-choice-button" hidden>Webtoonで読む</button>
+        </div>
+      </div>
+    </section>
+
+    <button id="mangaOpenFullscreenButton" class="manga-open-fullscreen" hidden>全画面</button>
+
+    <div id="favoriteLayer" class="favorite-layer">
+      <button id="favoriteToggle" class="favorite-button" aria-label="お気に入り">☆</button>
+</div>
+
+    <dialog id="favoriteDialog" class="favorite-dialog">
+      <div class="favorite-dialog-head">
+        <strong>お気に入り</strong>
+        <button id="favoriteDialogClose" class="ghost">×</button>
+      </div>
+      <div id="favoriteList" class="favorite-list"></div>
+    </dialog>
+
+    <footer class="controls">
+      <button id="prevGlass">前のメガネ</button>
+      <button id="randomWord">ランダム</button>
+      <button id="nextGlass">次のメガネ</button>
+      <button id="shareCurrent" class="control">シェア</button>
+    </footer>
+
+    <dialog id="glassDialog" class="dialog">
+      <h2>メガネを選ぶ</h2>
+      <div id="glassList" class="glass-list"></div>
+      <button id="closeDialog" class="close">閉じる</button>
+    </dialog>
+  </main>
+
+  <div id="fullscreenOverlay" class="fullscreen-overlay" hidden>
+    <div id="fullscreenCard" class="fullscreen-card">
+      <img id="fullscreenFlowCard" class="fullscreen-flow-card" src="images/cards/card_back.png" alt="" aria-hidden="true" />
+      <div id="fullscreenFlipInner" class="fullscreen-flip-inner">
+        <div class="fullscreen-face fullscreen-front">
+          <img id="fullscreenFrontImage" class="fullscreen-image" alt="" />
+        </div>
+        <div class="fullscreen-face fullscreen-back">
+          <img id="fullscreenBackImage" class="fullscreen-image" alt="" />
+        </div>
+      </div>
+    </div>
+    <div class="fullscreen-hint">上下:カード / 左右:めくる / タップで閉じる</div>
+  </div>
+
+  <section id="musicView" class="music-view" hidden>
+    <div class="music-stage">
+      <div class="music-label">MUSIC</div>
+      <div id="musicTitle" class="music-title">BGM Playlist</div>
+      <audio id="musicAudio" class="music-audio" controls preload="metadata"></audio>
+      <div class="music-controls">
+        <button id="musicPrev" type="button" class="music-btn">← 前</button>
+        <button id="musicPlayPause" type="button" class="music-btn music-main">▶ 再生</button>
+        <button id="musicNext" type="button" class="music-btn">次 →</button>
+      </div>
+      <div id="musicList" class="music-list"></div>
+    </div>
+  </section>
+
+<audio id="mangaAudio" preload="metadata"></audio>
+  <div id="mangaFullscreenOverlay" class="manga-fullscreen-overlay" hidden>
+    <button id="mangaFullscreenClose" class="manga-fullscreen-close">← 戻る</button>
+
+    <div id="fullscreenPageReader" class="fullscreen-page-reader" hidden>
+      <img id="fullscreenCurrentPage" class="fullscreen-layer fullscreen-current" alt="" />
+      <img id="fullscreenIncomingPage" class="fullscreen-layer fullscreen-incoming" alt="" />
+    </div>
+
+    <div id="mangaFullscreenWebtoon" class="manga-fullscreen-webtoon" hidden></div>
+  </div>
+  <dialog id="collectionDialog" class="collection-dialog">
+    <div class="collection-dialog-head">
+      <strong>コレクション</strong>
+      <button id="collectionDialogClose" class="ghost">×</button>
+    </div>
+    <div class="collection-list">
+      <button class="collection-item" data-mode="manga">会議</button>
+      <button class="collection-item" data-mode="cards">カード</button>
+      <button class="collection-item" data-mode="dictionary">辞書</button>
+      <button class="collection-item disabled" disabled>音声作品（準備中）</button>
+    </div>
+  </dialog>
+  <div id="cardTutorialHint" class="card-tutorial-hint" hidden>めくってみて</div>
+
+<button id="openBinderBtn" style="
+position:fixed;bottom:80px;right:20px;
+padding:10px 14px;border-radius:12px;
+background:rgba(255,255,255,.08);
+border:1px solid rgba(255,255,255,.2);
+color:white;
+">📘</button>
+
+<div id="binderModal" style="
+position:fixed;inset:0;background:rgba(0,0,0,.85);
+display:none;overflow:auto;z-index:9999;
+padding:20px;">
+
+  <div class="binder-head">
+    <strong>バインダー</strong>
+    <button id="binderCloseBtn" class="binder-close">×</button>
+  </div>
+  <div id="binderGrid"></div>
+</div>
+
+
+<div id="binderViewer" class="binder-viewer" hidden>
+  <button id="binderViewerClose" class="binder-viewer-close">×</button>
+  <div id="binderViewerCard" class="binder-viewer-card"></div>
+  <div id="binderViewerTextPanel" class="binder-viewer-text">
+    <div class="text-handle"></div>
+    <div id="binderViewerTextInner" class="text-inner"></div>
+  </div>
+  <div id="binderViewerTitle" class="binder-viewer-title"></div>
+  <div id="binderViewerCounter" class="binder-viewer-counter"></div>
+</div>
+
+<div id="binderReplayViewer" class="binder-replay-viewer" hidden>
+  <button id="binderReplayClose" class="binder-replay-close">×</button>
+
+  <div id="binderReplayFlipCard" class="flip-card binder-replay-flip-card">
+    <div class="flip-inner">
+      <div class="flip-face flip-front">
+        <img id="binderReplayFront" class="bug-card-image" alt="" />
+      </div>
+      <div class="flip-face flip-back">
+        <img id="binderReplayBack" class="bug-card-image" alt="" />
+      </div>
+    </div>
+  </div>
+
+  <div id="binderReplayTitle" class="bug-card-title binder-replay-title"></div>
+  <div id="binderReplaySubtitle" class="bug-card-subtitle binder-replay-subtitle"></div>
+  <div id="binderReplayCaption" class="bug-card-caption binder-replay-caption"></div>
+  <div id="binderReplayCounter" class="counter binder-replay-counter"></div>
+
+  <div id="binderReplayTextPanel" class="binder-replay-text-panel">
+    <div class="text-handle"></div>
+    <div id="binderReplayTextInner" class="text-inner"></div>
+  </div>
+</div>
+
+  <script src="./js/words.js?v=words2"></script>
+  <script src="./js/card_data.js?v=split1"></script>
+  <script src="./js/conference_data.js?v=split1"></script>
+  <script src="./js/00_core.js?v=140"></script>
+  <script src="./js/10_manga_reader.js?v=conf1"></script>
+  <script src="./js/voice-map.js?v=audio1"></script>
+  <script src="./js/20_dictionary_audio.js?v=selfglass16audio"></script>
+  <script src="./js/30_features_and_hotfixes.js?v=favsingle19"></script>
+  <script src="./js/25_conference_player_solid.js?v=solid1"></script>
+  <script src="./js/26_conference_resume.js?v=resume1"></script>
+  <script src="./js/28_conference_features.js?v=features1"></script>
+  <script src="./js/29_conference_swipe_fixed.js?v=swipefixed1"></script>
+  <script src="./js/30_conference_ios_swipe.js?v=iosswipe2"></script>
+  <script src="./js/31_conf_minimal.js?v=minimal1"></script>
+  <script src="./js/32_conf_fav_swipe_minimal.js?v=favswipe1"></script>
+  <script src="./js/33_conf_nav_buttons.js?v=nav1"></script>
+  <script src="./js/34_conf_resume_time.js?v=resumeTime1"></script>
+  <script src="./js/35_conf_layout_fix.js?v=layoutfix1"></script>
+  <script src="./js/36_conf_keep_playing_list.js?v=keepplaying1"></script>
+  <script src="./js/37_conf_now_playing_stable.js?v=nowplaying1"></script>
+  <script src="./js/40_music_data.js?v=music2"></script>
+
+  <script src="./js/46_restore_mode_buttons.js?v=restore1"></script>
+  <script src="./js/52_music_simplified_player.js?v=13"></script>
+  <script src="./js/80_music_album_lock_patch.js?v=2"></script>
+
+<script src="./js/64_music_v7_tabfix.js?v=cardmusicfix1"></script>
+<script src="./js/65_music_v7_nav_escape_fix.js?v=navplus1"></script>
+  <script src="./js/53_audio_mutex.js?v=mutex1"></script>
+  <script src="./js/55_emergency_stop.js?v=stop1"></script>
+  <script src="./js/56_polish_fix.js?v=polish1"></script>
+  <script src="./js/57_user_definition_plus.js?v=plus1"></script>
+  <script src="./js/58_stop_button_real_fix.js?v=stopreal1"></script>
+  <script src="./js/59_plus_word_stop_resume.js?v=v79"></script>
+  <script src="./js/60_userdef_single_edit_confirm.js?v=delivery5"></script>
+<script src="./js/61_self_glass_cards.js?v=favsingle19"></script>
+<script src="./js/62_self_card_image_share.js?v=sharebtn1"></script>
+<script src="./js/65_character_definition_share_button.js?v=10"></script>
+<script src="./js/66_userdef_share_hint_text.js?v=1"></script>
+
+<script src="./js/cleanup_ui_only.js"></script>
+<script src="./js/step2_card_only_fix.js"></script>
+<script src="./js/step2_card_pinpoint_fix.js"></script>
+<script src="./js/99_nav_real_fix.js?v=favsingle2"></script>
+<script src="./js/99_binder_panel_no_swipe_close.js?v=noswipeclose1"></script>
+<script src="./js/66_music_v7_bottom_fav_nav_fix.js?v=bottomfav2"></script>
+<script src="./js/69_music_album_grid_touch_fix.js?v=20260611c"></script>
+<script src="./js/70_music_favorites_row_final_fix.js?v=20260611d"></script>
+
+
+<script src="js/101_mode_cleanup_hotfix.js"></script>
+
+
+
+<script src="js/notice-tutorial-config.js"></script>
+<script src="js/notice-config.js"></script>
+<script src="js/notice-modal.js"></script>
+<script src="js/82_observation_log_patch.js?v=2"></script>
+<script src="js/83_developer_patch.js?v=3"></script>
+<script src="js/84_observation_hooks_patch.js"></script>
+<script src="js/85_music_unlock_event_patch.js"></script>
+
+<script src="js/86_nyx_live_log.js?v=1"></script>
+
+<script src="js/105_card_engine.js?v=randomtoggle1"></script>
+<script src="js/106_card_physics_touch.js?v=unified16"></script>
+<script src="./js/80_favorites_singleton.js?v=20"></script>
+<script src="./js/81_favorites_visual_stabilizer.js?v=5"></script>
+<script src="./js/107_reobserve_184.js?v=5min-v04"></script>
+<script src="./js/108_music_prohibited_stage.js?v=2"></script>
+<script src="./js/109_polar_bear_label.js?v=1"></script>
+<script src="./js/110_something_weird.js?v=selfvoice101"></script>
+<script src="./js/111_paradox_playground.js?v=renderer102"></script>
+<script src="./js/120_card_longpress.js?v=common102"></script>
+</body>
+</html>
