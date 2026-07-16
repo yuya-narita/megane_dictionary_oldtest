@@ -1,4 +1,4 @@
-/* 140_world_search.js v11 dictionary-only
+/* 140_world_search.js v12 dictionary-only click-fix
  * 辞書モード専用・完全隔離版
  *
  * - 辞書モード中だけボタンをDOMへ追加
@@ -11,7 +11,7 @@
   "use strict";
 
   const BUTTON_ID = "worldSearchButton";
-  const STYLE_ID = "worldSearchStyleV11";
+  const STYLE_ID = "worldSearchStyleV12";
   const ANIMATION_MS = 240;
 
   const TARGETS = {
@@ -180,14 +180,22 @@
     raf = requestAnimationFrame(positionButton);
   }
 
-  function stop(event) {
+  function stopStartPropagation(event) {
+    // 開始イベントで preventDefault() すると、iPhone Safariでは
+    // 後続のclick自体が生成されないことがある。
+    // ここではカード側への伝播だけを止める。
+    event.stopPropagation();
+    if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+  }
+
+  function stopActivation(event) {
     event.preventDefault();
     event.stopPropagation();
     if (event.stopImmediatePropagation) event.stopImmediatePropagation();
   }
 
   function openWorld(event) {
-    stop(event);
+    stopActivation(event);
 
     const now = Date.now();
     if (now - lastOpen < 700) return;
@@ -267,10 +275,12 @@
       img.setAttribute("aria-hidden", "true");
       button.appendChild(img);
 
+      // 開始時は伝播だけ止める。preventDefaultはしない。
+      // 実際の検索実行はclickだけに統一し、二重発火を防ぐ。
       ["pointerdown", "touchstart", "mousedown"].forEach(type => {
-        button.addEventListener(type, stop, {
+        button.addEventListener(type, stopStartPropagation, {
           capture: true,
-          passive: false
+          passive: true
         });
       });
 
