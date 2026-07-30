@@ -61,18 +61,13 @@
     catch(e){ return src; }
   }
 
-  function mediaArtworkV8(src){
+  function mediaArtworkV8(src, mime){
     src = absoluteUrlV8(src || "");
     if(!src) return [];
-    var type = /\.png(\?|#|$)/i.test(src) ? "image/png" : "image/jpeg";
-    return [
-      { src: src, sizes: "96x96", type: type },
-      { src: src, sizes: "128x128", type: type },
-      { src: src, sizes: "192x192", type: type },
-      { src: src, sizes: "256x256", type: type },
-      { src: src, sizes: "384x384", type: type },
-      { src: src, sizes: "512x512", type: type }
-    ];
+    var type = mime || (/\.png(\?|#|$)/i.test(src) ? "image/png" : "image/jpeg");
+    // v1.03: 実体と異なる複数サイズを宣言せず、保存済み1200角をそのまま渡す。
+    // iOSのNow PlayingがSVG/data URLを小さなアイコンとして扱う問題も回避する。
+    return [{ src: src, sizes: "1200x1200", type: type }];
   }
 
   function updateMediaSessionV8(){
@@ -91,7 +86,7 @@
         title: info.title || t.title || "MEGANE MUSIC",
         artist: (a && (a._originTitle || a.title)) || "未来確定プロジェクト",
         album: "メガネ辞書",
-        artwork: mediaArtworkV8(a && a.cover)
+        artwork: mediaArtworkV8(a && a.cover, (t && t.artworkMime) || (a && a.artworkMime) || "")
       });
       navigator.mediaSession.playbackState = audio() && !audio().paused ? "playing" : "paused";
       updateMediaPositionV8();
@@ -211,6 +206,7 @@
         title: p.title || p.name || ("Album " + (i+1)),
         desc: p.desc || p.description || "",
         cover: p.cover || p.image || p.thumb || p.artwork || "",
+        artworkMime: p.artworkMime || p.coverMime || "",
         type: p.type || "album",
         locked: !!p.locked,
         unlockCode: p.unlockCode || "",
@@ -227,6 +223,7 @@
             audio: t.audio || t.src || t.url || "",
             video: t.video || t.movie || t.mv || "",
             cover: t.cover || t.image || t.thumb || t.artwork || "",
+            artworkMime: t.artworkMime || t.coverMime || p.artworkMime || "",
             tag: t.tag || p.title || "",
             lyrics: t.lyrics || "",
             memo: t.memo || "",

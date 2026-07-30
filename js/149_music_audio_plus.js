@@ -1,4 +1,4 @@
-/* 149_music_audio_plus.js v1.00
+/* 149_music_audio_plus.js v1.03
  * Music mode: ＋から端末内の音声ファイルを「迷子」へ追加。
  * - audio file only
  * - IndexedDB persistence (Blob included)
@@ -16,6 +16,8 @@
   var STYLE_ID = "musicAudioPlusStyle149";
   var USER_MARK = "_meganeUserAudio149";
   var objectUrls = Object.create(null);
+  var artworkUrls = Object.create(null);
+  var ARTWORK_SIZE = 1200;
   var loadedIds = Object.create(null);
   var busy = false;
 
@@ -43,11 +45,66 @@
     return String(name||"音声ファイル").replace(/\.[^.]+$/," ").trim() || "音声ファイル";
   }
   function safeText(s){ return String(s||"").replace(/[<>&\"']/g,""); }
-  function coverData(title){
-    var t=safeText(title).slice(0,18);
-    var svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800"><defs><radialGradient id="g" cx="32%" cy="22%" r="95%"><stop offset="0" stop-color="#70485d"/><stop offset=".48" stop-color="#331426"/><stop offset="1" stop-color="#100811"/></radialGradient></defs><rect width="800" height="800" fill="url(#g)"/><circle cx="400" cy="345" r="164" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="3"/><circle cx="400" cy="345" r="58" fill="none" stroke="rgba(255,238,166,.58)" stroke-width="7"/><text x="400" y="392" text-anchor="middle" font-size="170" fill="#fff2b2" font-family="-apple-system,BlinkMacSystemFont,sans-serif">♪</text><text x="400" y="610" text-anchor="middle" font-size="42" font-weight="800" fill="white" font-family="-apple-system,BlinkMacSystemFont,sans-serif">MY AUDIO</text><text x="400" y="674" text-anchor="middle" font-size="30" fill="rgba(255,255,255,.72)" font-family="-apple-system,BlinkMacSystemFont,sans-serif">'+t+'</text></svg>';
-    return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
+
+  function canvasToPngBlob(canvas){
+    return new Promise(function(resolve,reject){
+      if(!canvas || !canvas.toBlob){ reject(new Error("Canvas PNG unavailable")); return; }
+      canvas.toBlob(function(blob){
+        if(blob) resolve(blob); else reject(new Error("Artwork encode failed"));
+      },"image/png",0.92);
+    });
   }
+
+  function defaultArtworkBlob(title){
+    var canvas=document.createElement("canvas");
+    canvas.width=ARTWORK_SIZE; canvas.height=ARTWORK_SIZE;
+    var ctx=canvas.getContext("2d");
+    var g=ctx.createRadialGradient(384,264,20,600,600,1120);
+    g.addColorStop(0,"#70485d"); g.addColorStop(.48,"#331426"); g.addColorStop(1,"#100811");
+    ctx.fillStyle=g; ctx.fillRect(0,0,ARTWORK_SIZE,ARTWORK_SIZE);
+    ctx.strokeStyle="rgba(255,255,255,.18)"; ctx.lineWidth=5;
+    ctx.beginPath(); ctx.arc(600,518,246,0,Math.PI*2); ctx.stroke();
+    ctx.strokeStyle="rgba(255,238,166,.58)"; ctx.lineWidth=11;
+    ctx.beginPath(); ctx.arc(600,518,87,0,Math.PI*2); ctx.stroke();
+    ctx.fillStyle="#fff2b2"; ctx.font="260px -apple-system,BlinkMacSystemFont,sans-serif";
+    ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("♪",600,570);
+    ctx.fillStyle="#fff"; ctx.font="800 64px -apple-system,BlinkMacSystemFont,sans-serif";
+    ctx.fillText("MY AUDIO",600,914);
+    ctx.fillStyle="rgba(255,255,255,.72)"; ctx.font="44px -apple-system,BlinkMacSystemFont,sans-serif";
+    var t=safeText(title).slice(0,18); ctx.fillText(t,600,1005);
+    return canvasToPngBlob(canvas);
+  }
+
+  function loadImageFromBlob(blob){
+    return new Promise(function(resolve,reject){
+      var url=URL.createObjectURL(blob);
+      var img=new Image();
+      img.onload=function(){ URL.revokeObjectURL(url); resolve(img); };
+      img.onerror=function(){ URL.revokeObjectURL(url); reject(new Error("Artwork image load failed")); };
+      img.src=url;
+    });
+  }
+
+  function normalizeArtworkBlob(blob){
+    if(!blob || !String(blob.type||"").match(/^image\//)) return Promise.reject(new Error("Image file required"));
+    return loadImageFromBlob(blob).then(function(img){
+      var canvas=document.createElement("canvas");
+      canvas.width=ARTWORK_SIZE; canvas.height=ARTWORK_SIZE;
+      var ctx=canvas.getContext("2d");
+      var sw=img.naturalWidth||img.width, sh=img.naturalHeight||img.height;
+      if(!sw || !sh) throw new Error("Invalid artwork size");
+      var side=Math.min(sw,sh);
+      var sx=(sw-side)/2, sy=(sh-side)/2;
+      ctx.drawImage(img,sx,sy,side,side,0,0,ARTWORK_SIZE,ARTWORK_SIZE);
+      return canvasToPngBlob(canvas);
+    });
+  }
+
+  // v1.03 shared artwork pipeline. Future jacket editing should call this.
+  window.MEGANE_MUSIC_NORMALIZE_ARTWORK_V103=function(fileOrBlob,title){
+    if(fileOrBlob && String(fileOrBlob.type||"").match(/^image\//)) return normalizeArtworkBlob(fileOrBlob);
+    return defaultArtworkBlob(title||"MY AUDIO");
+  };
 
   function openDB(){
     return new Promise(function(resolve,reject){
@@ -91,7 +148,10 @@
     var src=URL.createObjectURL(row.blob);
     objectUrls[row.id]=src;
     var title=String(row.title||row.fileName||"音声ファイル");
-    var cover=row.cover || coverData(title);
+    if(artworkUrls[row.id]){ try{ URL.revokeObjectURL(artworkUrls[row.id]); }catch(_){ } }
+    var artworkBlob=row.artworkBlob || null;
+    var cover=artworkBlob ? URL.createObjectURL(artworkBlob) : (row.cover || "");
+    if(artworkBlob) artworkUrls[row.id]=cover;
     return {
       id:"user_audio_album_"+row.id,
       type:"single",
@@ -100,11 +160,13 @@
       cover:cover,
       createdAt:Number(row.createdAt||Date.now()),
       _meganeUserAudio149:true,
+      artworkMime: artworkBlob ? (artworkBlob.type || "image/png") : "",
       tracks:[{
         id:"user_audio_track_"+row.id,
         title:title,
         audio:src,
         cover:cover,
+        artworkMime: artworkBlob ? (artworkBlob.type || "image/png") : "",
         tag:title,
         _meganeUserAudio149:true,
         _userAudioId:row.id
@@ -125,8 +187,16 @@
     return dbAll().then(function(rows){
       rows.sort(function(a,b){ return Number(a.createdAt||0)-Number(b.createdAt||0); });
       var changed=false;
-      rows.forEach(function(row){ var a=albumFromRow(row); if(a && insertAlbum(a)) changed=true; });
-      if(changed) render();
+      var migrations=[];
+      rows.forEach(function(row){
+        if(!row.artworkBlob){
+          migrations.push(defaultArtworkBlob(row.title||row.fileName||"MY AUDIO").then(function(blob){ row.artworkBlob=blob; row.cover=""; return dbPut(row); }));
+        }
+      });
+      return Promise.all(migrations).then(function(){
+        rows.forEach(function(row){ var a=albumFromRow(row); if(a && insertAlbum(a)) changed=true; });
+        if(changed) render();
+      });
     }).catch(function(err){ console.warn("[149] saved audio load failed",err); });
   }
 
@@ -162,17 +232,19 @@
     var title=chooseTitle(file);
     if(title===null) return;
     setBusy(true);
-    var row={
-      id:uid(), title:title, fileName:file.name||title,
-      mime:file.type||"application/octet-stream", size:Number(file.size||0),
-      blob:file, createdAt:Date.now(), cover:coverData(title)
-    };
-    dbPut(row).then(function(){
+    defaultArtworkBlob(title).then(function(artworkBlob){
+      var row={
+        id:uid(), title:title, fileName:file.name||title,
+        mime:file.type||"application/octet-stream", size:Number(file.size||0),
+        blob:file, createdAt:Date.now(), artworkBlob:artworkBlob, artworkVersion:103, cover:""
+      };
+      return dbPut(row).then(function(){
       var album=albumFromRow(row);
       insertAlbum(album);
       render();
       toast("迷子に追加しました♪");
       try{ if(navigator.vibrate) navigator.vibrate([12,28,12]); }catch(_){ }
+      });
     }).catch(function(err){
       console.error("[149] audio save failed",err);
       toast("保存できませんでした");
@@ -226,6 +298,7 @@
   }
   window.addEventListener("pagehide",function(){
     Object.keys(objectUrls).forEach(function(k){ try{URL.revokeObjectURL(objectUrls[k]);}catch(_){ } });
+    Object.keys(artworkUrls).forEach(function(k){ try{URL.revokeObjectURL(artworkUrls[k]);}catch(_){ } });
   });
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot,{once:true}); else boot();
 })();
