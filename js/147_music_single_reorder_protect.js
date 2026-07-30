@@ -1,4 +1,4 @@
-/* 147_music_single_reorder_protect.js v1.03
+/* 147_music_single_reorder_protect.js v1.04
    Single tracks:
    - Long-press and drag to reorder.
    - Drag onto "保護しました♪" to protect the single track.
@@ -102,12 +102,6 @@
       "@keyframes singleProtectPulse{0%{transform:scale(1)}35%{transform:scale(1.045);filter:brightness(1.35)}100%{transform:scale(1);filter:none}}"+
       ".single-protect-toast{position:fixed;left:50%;bottom:104px;z-index:2147483003;transform:translateX(-50%);padding:9px 14px;border-radius:999px;background:rgba(13,16,26,.94);border:1px solid rgba(255,255,255,.18);color:#fff;font-size:12px;font-weight:900;pointer-events:none;box-shadow:0 12px 36px rgba(0,0,0,.38);animation:singleProtectToast 1.25s ease both;}"+
       "@keyframes singleProtectToast{0%{opacity:0;transform:translate(-50%,8px)}15%,72%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-5px)}}"+
-      /* Restricted album layout guard: keep lock artwork/text confined to the original square jacket. */+
-      "body.mode-music.music-v7 #musicView.music-v7-albums .music-v7-restricted-grid{display:grid!important;grid-template-columns:minmax(0,320px)!important;justify-content:center!important;align-items:start!important;gap:18px!important;width:100%!important;margin:0 auto 34px!important;}"+
-      "body.mode-music.music-v7 #musicView.music-v7-albums .music-v7-restricted-grid>.music-v7-restricted-album{display:block!important;position:relative!important;width:100%!important;max-width:320px!important;min-width:0!important;justify-self:center!important;transform:none!important;}"+
-      "body.mode-music.music-v7 #musicView.music-v7-albums .music-v7-restricted-album>.music-v7-jacket{display:block!important;position:relative!important;width:100%!important;height:auto!important;aspect-ratio:1/1!important;overflow:hidden!important;transform:none!important;}"+
-      "body.mode-music.music-v7 #musicView.music-v7-albums .music-v7-restricted-album>.music-v7-jacket>img,body.mode-music.music-v7 #musicView.music-v7-albums .music-v7-restricted-album>.music-v7-jacket>picture,body.mode-music.music-v7 #musicView.music-v7-albums .music-v7-restricted-album>.music-v7-jacket canvas{display:block!important;width:100%!important;height:100%!important;max-width:100%!important;object-fit:cover!important;transform:none!important;}"+
-      "body.mode-music.music-v7 #musicView.music-v7-albums .music-v7-restricted-album .music-v7-unlock-mask{position:absolute!important;inset:0!important;width:auto!important;height:auto!important;max-width:none!important;overflow:hidden!important;box-sizing:border-box!important;transform:none!important;}"+
       "html.single-drag-active,html.single-drag-active body{user-select:none!important;-webkit-user-select:none!important;}"+
       "@media(max-width:375px){.single-drag-ghost{grid-template-columns:48px minmax(0,1fr) auto!important;gap:9px!important;padding:9px 10px!important}.single-drag-ghost .music-v7-single-thumb{width:48px!important;height:48px!important;min-width:48px!important;border-radius:12px!important;}body.mode-music.music-v7 #musicView.music-v7-albums .music-v7-restricted-grid{grid-template-columns:minmax(0,260px)!important;margin-bottom:28px!important;}body.mode-music.music-v7 #musicView.music-v7-albums .music-v7-restricted-grid>.music-v7-restricted-album{max-width:260px!important;}}";
     document.head.appendChild(st);
@@ -208,6 +202,27 @@
     if(!active.dragging){if(Math.hypot(p.x-active.startX,p.y-active.startY)>CANCEL_PX) cancelPending();return;}
     stop(e);moveGhost();updateZone();moveItem();
   }
+  function refreshLockedAlbumEffects(){
+    // Favorite toggling rebuilds the whole music list. Re-apply the custom
+    // locked-album typography only after that rebuild has settled.
+    try{
+      document.dispatchEvent(new CustomEvent("megane:music-lock-effects-refresh"));
+    }catch(_){
+      try{ document.dispatchEvent(new Event("megane:music-lock-effects-refresh")); }catch(__){}
+    }
+    try{
+      if(typeof window.MEGANE_MUSIC_REAPPLY_LOCK_EFFECTS === "function"){
+        window.MEGANE_MUSIC_REAPPLY_LOCK_EFFECTS();
+      }
+    }catch(_){ }
+    setTimeout(function(){
+      try{
+        if(typeof window.MEGANE_MUSIC_REAPPLY_LOCK_EFFECTS === "function"){
+          window.MEGANE_MUSIC_REAPPLY_LOCK_EFFECTS();
+        }
+      }catch(_){ }
+    },180);
+  }
   function protectSingle(a){
     var x=singleInfo(a.card),album=x.album||{};
     var tracks=Array.isArray(album.tracks)?album.tracks.filter(function(t){return t&&t.id;}):[];
@@ -228,6 +243,7 @@
     }
     if(added>0) toast(tracks.length>1 ? tracks.length+"曲まとめて保護しました♪" : "保護しました♪");
     else toast("すべて保護済みです");
+    refreshLockedAlbumEffects();
     return true;
   }
   function finish(e,cancelled){
