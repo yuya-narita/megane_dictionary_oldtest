@@ -1,4 +1,4 @@
-/* 147_music_single_reorder_protect.js v1.04
+/* 147_music_single_reorder_protect.js v1.05
    Single tracks:
    - Long-press and drag to reorder.
    - Drag onto "保護しました♪" to protect the single track.
@@ -73,8 +73,10 @@
       var rb=rank[kb]===undefined?100000+original.indexOf(b):rank[kb];
       return ra-rb;
     });
+    var changed=cards.some(function(c,i){ return c!==original[i]; });
+    if(!changed) return;
     list.dataset.singleOrderApplying="1";
-    cards.forEach(function(c){ list.appendChild(c); });
+    cards.forEach(function(c,i){ if(list.children[i]!==c) list.appendChild(c); });
     delete list.dataset.singleOrderApplying;
   }
   function injectStyle(){
@@ -103,7 +105,7 @@
       ".single-protect-toast{position:fixed;left:50%;bottom:104px;z-index:2147483003;transform:translateX(-50%);padding:9px 14px;border-radius:999px;background:rgba(13,16,26,.94);border:1px solid rgba(255,255,255,.18);color:#fff;font-size:12px;font-weight:900;pointer-events:none;box-shadow:0 12px 36px rgba(0,0,0,.38);animation:singleProtectToast 1.25s ease both;}"+
       "@keyframes singleProtectToast{0%{opacity:0;transform:translate(-50%,8px)}15%,72%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-5px)}}"+
       "html.single-drag-active,html.single-drag-active body{user-select:none!important;-webkit-user-select:none!important;}"+
-      "@media(max-width:375px){.single-drag-ghost{grid-template-columns:48px minmax(0,1fr) auto!important;gap:9px!important;padding:9px 10px!important}.single-drag-ghost .music-v7-single-thumb{width:48px!important;height:48px!important;min-width:48px!important;border-radius:12px!important;}body.mode-music.music-v7 #musicView.music-v7-albums .music-v7-restricted-grid{grid-template-columns:minmax(0,260px)!important;margin-bottom:28px!important;}body.mode-music.music-v7 #musicView.music-v7-albums .music-v7-restricted-grid>.music-v7-restricted-album{max-width:260px!important;}}";
+      "@media(max-width:375px){.single-drag-ghost{grid-template-columns:48px minmax(0,1fr) auto!important;gap:9px!important;padding:9px 10px!important}.single-drag-ghost .music-v7-single-thumb{width:48px!important;height:48px!important;min-width:48px!important;border-radius:12px!important;}}";
     document.head.appendChild(st);
   }
   function toast(text){
@@ -223,17 +225,28 @@
       }catch(_){ }
     },180);
   }
+  function trackId(t,albumIndex,trackIndex){
+    if(!t) return "";
+    return clean(t.id || t.audio || ("track_"+albumIndex+"_"+trackIndex));
+  }
   function protectSingle(a){
     var x=singleInfo(a.card),album=x.album||{};
-    var tracks=Array.isArray(album.tracks)?album.tracks.filter(function(t){return t&&t.id;}):[];
-    if(!tracks.length||typeof window.MEGANE_MUSIC_V7_TOGGLE_FAVORITE!=="function") return false;
-    var added=0,already=0;
-    tracks.forEach(function(t){
-      var isAlready=false;
-      try{ isAlready=!!(window.MEGANE_MUSIC_V7_IS_FAVORITE&&window.MEGANE_MUSIC_V7_IS_FAVORITE(t.id)); }catch(_){ }
-      if(isAlready){ already++; return; }
-      try{ window.MEGANE_MUSIC_V7_TOGGLE_FAVORITE(t.id); added++; }catch(_){ }
-    });
+    var rawTracks=Array.isArray(album.tracks)?album.tracks.filter(Boolean):[];
+    var ids=rawTracks.map(function(t,i){ return trackId(t,x.index,i); }).filter(Boolean);
+    if(!ids.length) return false;
+    var added=0;
+    try{
+      if(typeof window.MEGANE_MUSIC_V7_ADD_FAVORITES==="function"){
+        added=Number(window.MEGANE_MUSIC_V7_ADD_FAVORITES(ids))||0;
+      }else if(typeof window.MEGANE_MUSIC_V7_TOGGLE_FAVORITE==="function"){
+        ids.forEach(function(id){
+          var exists=false;
+          try{ exists=!!(window.MEGANE_MUSIC_V7_IS_FAVORITE&&window.MEGANE_MUSIC_V7_IS_FAVORITE(id)); }catch(_){ }
+          if(!exists){ try{ window.MEGANE_MUSIC_V7_TOGGLE_FAVORITE(id); added++; }catch(_){ } }
+        });
+      }else return false;
+    }catch(_){ return false; }
+    suppressClickUntil=now()+1400;
     haptic([15,30,15]);
     var z=favZone();
     if(z){
@@ -241,7 +254,7 @@
       z.classList.add("single-protect-success");
       setTimeout(function(){var current=favZone();if(current)current.classList.remove("single-protect-success");},560);
     }
-    if(added>0) toast(tracks.length>1 ? tracks.length+"曲まとめて保護しました♪" : "保護しました♪");
+    if(added>0) toast(ids.length>1 ? ids.length+"曲まとめて保護しました♪" : "保護しました♪");
     else toast("すべて保護済みです");
     refreshLockedAlbumEffects();
     return true;
@@ -250,7 +263,7 @@
     if(!active){ removeStaleGhosts(); return; }
     var a=active;
     var shouldProtect=!!(a.dragging&&!cancelled&&a.overProtect);
-    if(a.dragging){ stop(e); suppressClickUntil=now()+500; }
+    if(a.dragging){ stop(e); suppressClickUntil=now()+1400; }
     // DOMの再描画より先にドラッグ表示を必ず片付ける。
     cleanup(a);
     if(!a.dragging) return;
@@ -326,9 +339,17 @@
   function polish(){
     injectStyle();var list=singleList();if(list){bind(list);applyOrder(list);}
   }
+  function guardFavoriteOpen(e){
+    var target=e.target&&e.target.closest?e.target.closest("#musicV7FavAlbum,.music-v7-favline"):null;
+    if(!target) return;
+    if((active&&active.dragging)||now()<suppressClickUntil) stop(e);
+  }
   document.addEventListener("click",function(e){
     if(now()<suppressClickUntil && e.target.closest && e.target.closest(".music-v7-single-card")) stop(e);
+    guardFavoriteOpen(e);
   },true);
+  document.addEventListener("touchend",guardFavoriteOpen,{passive:false,capture:true});
+  document.addEventListener("pointerup",guardFavoriteOpen,{passive:false,capture:true});
   function start(){
     bindGlobal();
     removeStaleGhosts();

@@ -147,21 +147,13 @@ function apply(){
   ).forEach(decorate);
 }
 
-function schedule(delay){
+function schedule(){
   clearTimeout(timer);
-  timer=setTimeout(apply, typeof delay === "number" ? delay : 45);
+  timer=setTimeout(apply,45);
 }
 
-// Other music features can request a safe re-application after the album list
-// has been rebuilt. The function is intentionally idempotent.
-window.MEGANE_MUSIC_REAPPLY_LOCK_EFFECTS = function(){
-  schedule(0);
-  setTimeout(function(){ schedule(0); }, 90);
-};
-
-document.addEventListener("megane:music-lock-effects-refresh", function(){
-  window.MEGANE_MUSIC_REAPPLY_LOCK_EFFECTS();
-});
+window.MEGANE_MUSIC_REAPPLY_LOCK_EFFECTS = schedule;
+document.addEventListener("megane:music-lock-effects-refresh",schedule);
 
 function boot(){
   removeOld();

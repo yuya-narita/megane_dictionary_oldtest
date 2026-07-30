@@ -1663,6 +1663,28 @@
     return isFav(id);
   };
 
+  window.MEGANE_MUSIC_V7_ADD_FAVORITES = function(trackIds){
+    var ids = Array.isArray(trackIds) ? trackIds.filter(Boolean) : [];
+    if(!ids.length) return 0;
+    var activeFavs = favs();
+    var order = favOrder();
+    var added = 0;
+    ids.forEach(function(id){
+      id = String(id || "");
+      if(!id || activeFavs.indexOf(id) >= 0) return;
+      activeFavs.push(id);
+      order = order.filter(function(x){ return x !== id; });
+      order.unshift(id);
+      added++;
+    });
+    if(added){
+      saveFavs(activeFavs);
+      saveFavOrder(order);
+      try{ render(); }catch(_){}
+    }
+    return added;
+  };
+
   window.MEGANE_MUSIC_V7_OPEN_CURRENT = function(){
     state.browsingAlbum = state.album;
     state.browsingTrack = state.track;
