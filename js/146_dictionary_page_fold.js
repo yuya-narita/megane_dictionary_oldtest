@@ -1,5 +1,5 @@
 /* 146_dictionary_page_fold.js
-   v1.01: 辞書カードそのものの右上角が折れるドッグイヤー演出。
+   v1.02: 折り目の見た目は維持し、タップ領域をカード内側へ大幅拡張。
    お気に入りの保存ロジックは既存の 80_favorites_singleton.js をそのまま利用する。
 */
 (() => {
@@ -19,8 +19,8 @@
       body.mode-dictionary #favoriteLayer {
         position: fixed !important;
         inset: auto !important;
-        width: 58px !important;
-        height: 58px !important;
+        width: 112px !important;
+        height: 104px !important;
         padding: 0 !important;
         margin: 0 !important;
         display: block !important;
@@ -35,10 +35,10 @@
       body.mode-dictionary #favoriteToggle.favorite-button {
         position: absolute !important;
         inset: 0 !important;
-        width: 58px !important;
-        height: 58px !important;
-        min-width: 58px !important;
-        min-height: 58px !important;
+        width: 112px !important;
+        height: 104px !important;
+        min-width: 112px !important;
+        min-height: 104px !important;
         padding: 0 !important;
         margin: 0 !important;
         color: transparent !important;
@@ -220,17 +220,23 @@
     if (!card || !layer || !overlay || !isDictionaryMode()) return;
 
     const rect = card.getBoundingClientRect();
-    const size = 58;
-    const left = Math.round(rect.right - size);
-    const top = Math.round(rect.top);
+    const visualSize = 58;
+    const hitWidth = 112;
+    const hitHeight = 104;
 
-    layer.style.left = `${left}px`;
-    layer.style.top = `${top}px`;
+    /* 見た目は角に置き、透明タップ領域はカード内側へ広げる */
+    const overlayLeft = Math.round(rect.right - visualSize);
+    const overlayTop = Math.round(rect.top);
+    const layerLeft = Math.round(rect.right - hitWidth);
+    const layerTop = Math.round(rect.top);
+
+    layer.style.left = `${layerLeft}px`;
+    layer.style.top = `${layerTop}px`;
     layer.style.right = "auto";
     layer.style.bottom = "auto";
 
-    overlay.style.left = `${left}px`;
-    overlay.style.top = `${top}px`;
+    overlay.style.left = `${overlayLeft}px`;
+    overlay.style.top = `${overlayTop}px`;
 
     bodyBackgroundForCutout();
   }
@@ -265,6 +271,7 @@
     button.addEventListener("pointerup", up, { passive: true });
     button.addEventListener("pointercancel", up, { passive: true });
     button.addEventListener("pointerleave", up, { passive: true });
+    button.addEventListener("touchend", up, { passive: true });
   }
 
   function install() {
