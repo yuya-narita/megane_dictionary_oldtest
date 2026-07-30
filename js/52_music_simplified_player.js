@@ -1,3 +1,4 @@
+/* v1.12.4: preserve auto-artwork metadata for custom album inheritance */
 /* v1.08: user video artwork + source-file safety notice */
 /* v1.07: user artwork image editing */
 /* v1.05: user audio title editing */
@@ -212,6 +213,7 @@
         desc: p.desc || p.description || "",
         cover: p.cover || p.image || p.thumb || p.artwork || "",
         artworkMime: p.artworkMime || p.coverMime || "",
+        artworkAuto: p.artworkAuto!==false,
         type: p.type || "album",
         locked: !!p.locked,
         unlockCode: p.unlockCode || "",
@@ -236,6 +238,7 @@
             video: t.video || t.movie || t.mv || "",
             videoLoop: !!t.videoLoop,
             artworkType: t.artworkType || (t.video ? "video" : "image"),
+            artworkAuto: t.artworkAuto!==false,
             cover: t.cover || t.image || t.thumb || t.artwork || "",
             artworkMime: t.artworkMime || t.coverMime || p.artworkMime || "",
             tag: t.tag || p.title || "",

@@ -1,4 +1,5 @@
 /* v1.12.2: long-title guard + pencil edit icon + album title counter */
+/* v1.12.4: fixed album editor footer + inherit album artwork for auto-art tracks */
 /* v1.10: custom album detail + add tracks from 持ち物 */
 /* v1.09: custom album creation + 持ち物 label */
 /* v1.08: user video artwork + source-file safety notice */
@@ -517,7 +518,20 @@
     var singles=availableSinglesV110();
     var byId=Object.create(null);
     singles.forEach(function(a){ var id=userAudioIdFromAlbumV110(a); if(id && a.tracks && a.tracks[0]) byId[id]=a.tracks[0]; });
-    album.tracks=ids.map(function(id){ return byId[String(id)]||null; }).filter(Boolean);
+    album.tracks=ids.map(function(id){
+      var source=byId[String(id)]||null;
+      if(!source) return null;
+      // Do not mutate the original single in 持ち物. A custom album receives
+      // its own lightweight runtime copy so album-context artwork can differ.
+      var t=Object.assign({},source);
+      var hasOwnArtwork=(source.artworkAuto===false) || source.artworkType==="video" || !!source.video;
+      if(!hasOwnArtwork && album.cover){
+        t.cover=album.cover;
+        t.artworkMime=album.artworkMime||t.artworkMime||"image/png";
+        t._albumArtworkInheritedV1124=true;
+      }
+      return t;
+    }).filter(Boolean);
     album.desc=album.tracks.length+"曲";
     return album;
   }
@@ -618,6 +632,7 @@
       _meganeUserAudio149:true,
       artworkMime: artworkBlob ? (artworkBlob.type || "image/png") : "",
       artworkType: row.artworkType || (row.videoBlob?"video":"image"),
+      artworkAuto: row.artworkAuto!==false,
       tracks:[{
         id:"user_audio_track_"+row.id,
         title:title,
@@ -626,6 +641,7 @@
         video:video,
         videoLoop:!!video && row.videoLoop!==false,
         artworkType: row.artworkType || (video?"video":"image"),
+        artworkAuto: row.artworkAuto!==false,
         artworkMime: artworkBlob ? (artworkBlob.type || "image/png") : "",
         memo:String(row.memo||row.lyrics||row.text||""),
         tag:title,
@@ -769,7 +785,7 @@
       ".music-album-detail110 .head110{display:flex;align-items:center;gap:13px}.music-album-detail110 .cover110{width:74px;height:74px;border-radius:15px;object-fit:cover;background:#100b12}.music-album-detail110 .copy110{min-width:0;flex:1}.music-album-detail110 h3{margin:0;font-size:21px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.music-album-detail110 .count110{margin-top:5px;color:rgba(255,255,255,.58);font-size:12px;font-weight:850}.music-album-detail110 .close110{width:42px;height:42px;border:0;background:transparent;color:#fff;font-size:29px}"+
       ".music-album-detail110 .empty110{margin:25px 0;padding:28px 14px;border:1px dashed rgba(255,255,255,.16);border-radius:18px;color:rgba(255,255,255,.55);text-align:center;font-weight:850;line-height:1.6}.music-album-detail110 .tracks110{display:grid;gap:9px;margin:18px 0}.music-album-detail110 .track110{display:grid;grid-template-columns:46px minmax(0,1fr);align-items:center;gap:11px;padding:9px;border-radius:15px;background:rgba(255,255,255,.055)}.music-album-detail110 .track110 img{width:46px;height:46px;border-radius:11px;object-fit:cover}.music-album-detail110 .track110 strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"+
       ".music-album-detail110 .add110{width:100%;min-height:54px;border:1px solid rgba(255,232,138,.28);border-radius:16px;background:rgba(255,232,138,.11);color:#ffe88a;font-size:16px;font-weight:900}.music-album-picker110{position:fixed;left:12px;right:12px;bottom:calc(86px + env(safe-area-inset-bottom));z-index:2147483010;max-height:70dvh;overflow:auto;padding:17px;border-radius:25px;background:rgba(24,15,26,.995);border:1px solid rgba(255,255,255,.16);box-shadow:0 24px 70px rgba(0,0,0,.66);color:#fff}.music-album-picker110 h3{margin:0 0 12px}.music-album-picker110 label{display:grid;grid-template-columns:24px 48px minmax(0,1fr);align-items:center;gap:10px;padding:9px 3px;border-bottom:1px solid rgba(255,255,255,.07)}.music-album-picker110 label img{width:48px;height:48px;border-radius:11px;object-fit:cover}.music-album-picker110 label strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.music-album-picker110 .actions110{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}.music-album-picker110 button{min-height:48px;border:0;border-radius:14px;background:rgba(255,255,255,.08);color:#fff;font-weight:900}.music-album-picker110 button.primary{background:#fff;color:#251522}"+
-      ".music-album-edit112{position:fixed;inset:calc(82px + env(safe-area-inset-top)) 12px calc(76px + env(safe-area-inset-bottom));z-index:2147483020;overflow:auto;-webkit-overflow-scrolling:touch;padding:18px;border-radius:27px;background:rgba(24,15,26,.992);border:1px solid rgba(255,255,255,.16);box-shadow:0 24px 70px rgba(0,0,0,.66);color:#fff}.music-album-edit112 .head112{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}.music-album-edit112 .head112 strong{font-size:21px}.music-album-edit112 .head112 button{width:42px;height:42px;border:0;background:transparent;color:#fff;font-size:29px}.music-album-edit112 .art112{display:grid;grid-template-columns:108px minmax(0,1fr);gap:14px;align-items:center}.music-album-edit112 .art112 img{width:108px;height:108px;border-radius:18px;object-fit:cover;background:#100b12}.music-album-edit112 .art112 div{display:grid;gap:9px}.music-album-edit112 button{border:0;border-radius:14px;min-height:46px;padding:10px 13px;background:rgba(255,255,255,.08);color:#fff;font-weight:900}.music-album-edit112 .title112{display:grid;gap:7px;margin:17px 0;color:rgba(255,255,255,.68);font-size:12px;font-weight:900}.music-album-edit112 .title112 input{width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.18);border-radius:14px;background:rgba(255,255,255,.07);color:#fff;font-size:16px;padding:13px 14px;outline:none}.music-album-edit112 .title-meta1122{display:flex;justify-content:space-between;gap:12px;margin-top:1px;font-size:11px}.music-album-edit112 .title-count1122{color:rgba(255,255,255,.46);white-space:nowrap}.music-album-edit112 .title-warn1122{color:rgba(255,232,138,.78);opacity:0;transition:opacity .15s}.music-album-edit112 .title-warn1122.show{opacity:1}.music-album-edit112 .section112>strong{display:block;margin:18px 0 8px}.music-album-edit112 .trackpick112 label{display:grid;grid-template-columns:24px 48px minmax(0,1fr);align-items:center;gap:10px;padding:9px 3px;border-bottom:1px solid rgba(255,255,255,.07)}.music-album-edit112 .trackpick112 img{width:48px;height:48px;border-radius:11px;object-fit:cover}.music-album-edit112 .trackpick112 strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.music-album-edit112 .save112{width:100%;margin-top:18px;background:#fff;color:#251522}.music-album-edit112 .delete112{width:100%;margin-top:24px;background:rgba(255,75,91,.12);color:#ff8e99;border:1px solid rgba(255,75,91,.28)}.music-album-edit112 .notice112{display:block;margin-top:9px;color:rgba(255,255,255,.48);line-height:1.5;text-align:center}"+
+      ".music-album-edit112{position:fixed;inset:calc(82px + env(safe-area-inset-top)) 12px calc(76px + env(safe-area-inset-bottom));z-index:2147483020;overflow:hidden;padding:18px;border-radius:27px;background:rgba(24,15,26,.992);border:1px solid rgba(255,255,255,.16);box-shadow:0 24px 70px rgba(0,0,0,.66);color:#fff;display:flex;flex-direction:column;box-sizing:border-box}.music-album-edit112 .head112{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}.music-album-edit112 .head112 strong{font-size:21px}.music-album-edit112 .head112 button{width:42px;height:42px;border:0;background:transparent;color:#fff;font-size:29px}.music-album-edit112 .art112{display:grid;grid-template-columns:108px minmax(0,1fr);gap:14px;align-items:center}.music-album-edit112 .art112 img{width:108px;height:108px;border-radius:18px;object-fit:cover;background:#100b12}.music-album-edit112 .art112 div{display:grid;gap:9px}.music-album-edit112 button{border:0;border-radius:14px;min-height:46px;padding:10px 13px;background:rgba(255,255,255,.08);color:#fff;font-weight:900}.music-album-edit112 .title112{display:grid;gap:7px;margin:17px 0;color:rgba(255,255,255,.68);font-size:12px;font-weight:900}.music-album-edit112 .title112 input{width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.18);border-radius:14px;background:rgba(255,255,255,.07);color:#fff;font-size:16px;padding:13px 14px;outline:none}.music-album-edit112 .title-meta1122{display:flex;justify-content:space-between;gap:12px;margin-top:1px;font-size:11px}.music-album-edit112 .title-count1122{color:rgba(255,255,255,.46);white-space:nowrap}.music-album-edit112 .title-warn1122{color:rgba(255,232,138,.78);opacity:0;transition:opacity .15s}.music-album-edit112 .title-warn1122.show{opacity:1}.music-album-edit112 .section112{display:flex;flex-direction:column;min-height:0;flex:1}.music-album-edit112 .section112>strong{display:block;margin:8px 0 8px;flex:0 0 auto}.music-album-edit112 .trackpick112{min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding-right:2px;overscroll-behavior:contain}.music-album-edit112 .trackpick112 label{display:grid;grid-template-columns:24px 48px minmax(0,1fr);align-items:center;gap:10px;padding:9px 3px;border-bottom:1px solid rgba(255,255,255,.07)}.music-album-edit112 .trackpick112 img{width:48px;height:48px;border-radius:11px;object-fit:cover}.music-album-edit112 .trackpick112 strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.music-album-edit112 .footer1124{flex:0 0 auto;padding-top:12px;background:linear-gradient(to bottom,rgba(24,15,26,0),rgba(24,15,26,.992) 12px)}.music-album-edit112 .save112{width:100%;margin-top:0;background:#fff;color:#251522}.music-album-edit112 .delete112{width:100%;margin-top:9px;min-height:42px;background:rgba(255,75,91,.12);color:#ff8e99;border:1px solid rgba(255,75,91,.28)}.music-album-edit112 .notice112{display:block;margin-top:6px;color:rgba(255,255,255,.48);font-size:10px;line-height:1.35;text-align:center}"+
       ".music-audio-toast149{position:fixed;left:50%;bottom:calc(158px + env(safe-area-inset-bottom));z-index:2147483003;transform:translateX(-50%);padding:10px 15px;border-radius:999px;background:rgba(14,10,17,.94);border:1px solid rgba(255,255,255,.18);color:#fff;font-size:12px;font-weight:900;white-space:nowrap;pointer-events:none;box-shadow:0 14px 38px rgba(0,0,0,.42);animation:musicAudioToast149 1.5s ease both}"+
       "@keyframes musicAudioToast149{0%{opacity:0;transform:translate(-50%,9px)}14%,76%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-6px)}}@keyframes musicAudioPlusPulse149{to{transform:scale(.94);opacity:.55}}";
     document.head.appendChild(st);
@@ -865,9 +881,9 @@
       '<div class="art112"><img id="musicAlbumEditPreview112" src="'+escAttrV110(album.cover||'')+'" alt=""><div><button type="button" data-act="image">画像を選ぶ</button><button type="button" data-act="reset">デフォルトに戻す</button></div></div>'+
       '<label class="title112">アルバム名<input id="musicAlbumEditTitle112" type="text" maxlength="80" value="'+escAttrV110(album.title||'')+'"><span class="title-meta1122"><span id="musicAlbumEditWarn1122" class="title-warn1122">一覧では2行で省略表示されます。</span><span id="musicAlbumEditCount1122" class="title-count1122">0 / 80</span></span></label>'+
       '<div class="section112"><strong>曲を追加・解除</strong><div class="trackpick112">'+(rows||'<div class="empty110">持ち物がまだありません。</div>')+'</div></div>'+
-      '<button type="button" class="save112" data-act="save">変更を保存</button>'+
+      '<div class="footer1124"><button type="button" class="save112" data-act="save">変更を保存</button>'+
       '<button type="button" class="delete112" data-act="delete">このアルバムを削除</button>'+
-      '<small class="notice112">アルバムを削除しても、中の曲は「🎒 持ち物」に残ります。</small>';
+      '<small class="notice112">アルバムを削除しても、中の曲は「🎒 持ち物」に残ります。</small></div>';
     var titleInput1122=sh.querySelector('#musicAlbumEditTitle112'), titleCount1122=sh.querySelector('#musicAlbumEditCount1122'), titleWarn1122=sh.querySelector('#musicAlbumEditWarn1122');
     function updateTitleMeta1122(){ var n=String((titleInput1122||{}).value||'').length; if(titleCount1122) titleCount1122.textContent=n+' / 80'; if(titleWarn1122) titleWarn1122.classList.toggle('show',n>32); }
     if(titleInput1122) titleInput1122.addEventListener('input',updateTitleMeta1122); updateTitleMeta1122();
