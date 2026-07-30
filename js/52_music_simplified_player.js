@@ -12,6 +12,7 @@
     album: "megane_music_v7_album",
     track: "megane_music_v7_track",
     favs: "megane_music_v7_favs",
+    favOrder: "megane_music_v7_fav_order",
     repeat: "megane_music_v7_repeat",
     shuffle: "megane_music_v7_shuffle",
     pos: "megane_music_v7_pos"
@@ -38,6 +39,11 @@
     favTouchStartY: 0,
     favTouchMoveRow: null,
     favTouchMoved: false,
+    favReorderTimer: 0,
+    favReorderActive: false,
+    favReorderRow: null,
+    favReorderStartX: 0,
+    favReorderStartY: 0,
     seeking: false
   };
 
@@ -140,11 +146,18 @@
     bindMusicMediaActionsV8();
 
     document.addEventListener("visibilitychange", function(){
-      updateMediaSessionV8();
+      var a = audio();
+
+      // Musicが実際に再生対象の時だけMediaSessionを更新する。
+      // Conference再生中に外部検索へ移動した際、停止中のMusicが
+      // iOSプレイヤーのメタデータと操作権を奪うのを防ぐ。
+      if(a && !a.paused && !a.ended){
+        updateMediaSessionV8();
+      }
+
       // 他アプリで一時停止されたあと、戻ってきた時に一度だけ復帰を試す。
       // iOSが拒否した場合は通常の再生ボタン/ロック画面ボタンで再開する。
       if(!document.hidden && state.playing){
-        var a = audio();
         if(a && a.paused){
           var p = a.play(); if(p && p.catch) p.catch(function(){});
         }
@@ -152,7 +165,10 @@
     });
 
     window.addEventListener("focus", function(){
-      updateMediaSessionV8();
+      var a = audio();
+      if(a && !a.paused && !a.ended){
+        updateMediaSessionV8();
+      }
     });
   }
 
@@ -241,7 +257,7 @@
         unlocked:false,
         locked:true,
         hidden:a.unlock.mode === "hidden",
-        label:a.unlock.label || "🔒 未観測",
+        label:(a.unlock.label==null?"":a.unlock.label),
         hint:a.unlock.hint || "観測条件を満たすと出現",
         progressText:(a.unlock.progressLabel || "観測") + " 0/" + (a.unlock.need || "?")
       };
@@ -257,7 +273,7 @@
   function musicUnlockOverlay(a){
     var st = musicUnlockState(a);
     if(!st || (!st.locked && st.unlocked !== false)) return "";
-    var label = st.label || a.lockLabel || "🔒";
+    var label = (st.label==null?"":st.label) || a.lockLabel || "";
     var hint = st.hint || a.lockHint || "";
     var prog = st.progressText || "";
     return '<div class="music-v7-unlock-mask"><b>'+esc(label)+'</b><span>'+esc(hint)+'</span><em>'+esc(prog)+'</em></div>';
@@ -358,14 +374,69 @@
     try{ return JSON.parse(localStorage.getItem(LS.favs) || "[]") || []; }
     catch(e){ return []; }
   }
-  function saveFavs(a){ localStorage.setItem(LS.favs, JSON.stringify(a)); }
-  function isFav(id){ return !!id && favs().indexOf(id) >= 0; }
+
+  function saveFavs(a){
+    localStorage.setItem(LS.favs, JSON.stringify(a));
+  }
+
+  function rawFavOrder(){
+    try{ return JSON.parse(localStorage.getItem(LS.favOrder) || "[]") || []; }
+    catch(e){ return []; }
+  }
+
+  function saveFavOrder(order){
+    localStorage.setItem(LS.favOrder, JSON.stringify(order || []));
+  }
+
+  function favOrder(){
+    var active = favs().filter(Boolean);
+    var order = rawFavOrder().filter(function(id){
+      return active.indexOf(id) >= 0;
+    });
+
+    // 既存データの初回移行：
+    // favsは古い→新しいで保存されていたため、表示順は反転して新しいものを上へ。
+    var missing = active.filter(function(id){
+      return order.indexOf(id) < 0;
+    }).reverse();
+
+    order = missing.concat(order);
+
+    // 重複除去
+    order = order.filter(function(id,index,self){
+      return !!id && self.indexOf(id) === index;
+    });
+
+    saveFavOrder(order);
+    return order;
+  }
+
+  function isFav(id){
+    return !!id && favs().indexOf(id) >= 0;
+  }
+
   function toggleFav(id){
     if(!id) return;
-    var a = favs(), i = a.indexOf(id);
-    if(i >= 0) a.splice(i, 1); else a.push(id);
-    saveFavs(a);
+
+    var active = favs();
+    var order = favOrder();
+    var index = active.indexOf(id);
+
+    if(index >= 0){
+      active.splice(index,1);
+      order = order.filter(function(x){ return x !== id; });
+    }else{
+      active.push(id);
+
+      // 新しく追加した曲は一番上。
+      order = order.filter(function(x){ return x !== id; });
+      order.unshift(id);
+    }
+
+    saveFavs(active);
+    saveFavOrder(order);
   }
+
   function allTracks(){
     var out = [];
     albums().forEach(function(p, pi){
@@ -375,14 +446,42 @@
     });
     return out;
   }
+
+  function absoluteMusicUrl(src){
+    if(!src) return "";
+    try{ return new URL(src, location.href).href; }
+    catch(e){ return String(src); }
+  }
+
+  function findTrackByAudioSrc(src){
+    var target = absoluteMusicUrl(src);
+    if(!target) return null;
+
+    var list = allTracks();
+    for(var i=0;i<list.length;i++){
+      var t = list[i];
+      if(t && t.audio && absoluteMusicUrl(t.audio) === target) return t;
+    }
+    return null;
+  }
+
+  function actualPlayingTrack(){
+    var au = audio();
+    var src = au && (au.currentSrc || au.src || au.getAttribute("src"));
+    return findTrackByAudioSrc(src) || currentTrack();
+  }
   function favTracks(){
-    var f = favs();
+    var order = favOrder();
     var all = allTracks();
     var byId = {};
-    all.forEach(function(t){ if(t && t.id) byId[t.id] = t; });
-    // お気に入り曲は登録順の新しいものを上に表示する。
-    // 旧仕様は「アルバム順→曲番号順」だったため、後で登録した曲が下に埋もれていた。
-    return f.slice().reverse().map(function(id){ return byId[id]; }).filter(Boolean);
+
+    all.forEach(function(t){
+      if(t && t.id) byId[t.id] = t;
+    });
+
+    return order.map(function(id){
+      return byId[id];
+    }).filter(Boolean);
   }
 
   function saveState(){
@@ -515,12 +614,17 @@
   function switchToAlbum(i){
     var lockAlbum = albums()[i];
     if(musicAlbumLocked(lockAlbum)){ showMusicUnlockHint(lockAlbum); return; }
-    // アルバムを開くだけでは再生中の曲を止めない。
-    // お気に入り曲から通常アルバムへ移動した時は、
-    // favorites の表示判定が残らないよう album閲覧へ明示的に戻す。
+
+    // production144:
+    // 再生中のアルバムを開き直した時は、表示も現在再生中の曲へ同期する。
+    // 別アルバムを閲覧する時だけ1曲目を表示する。
+    var reopenPlayingAlbum =
+      state.queueMode === "album" &&
+      state.album === i;
+
     state.queueMode = "album";
     state.browsingAlbum = i;
-    state.browsingTrack = 0;
+    state.browsingTrack = reopenPlayingAlbum ? state.track : 0;
     state.screen = "player";
     state.sheet = false;
     state.lyrics = false;
@@ -722,34 +826,91 @@
     if(!document.getElementById("musicV7SingleStyle")){
       var st=document.createElement("style");
       st.id="musicV7SingleStyle";
-      st.textContent = ".music-v7-singles-head{padding:18px 8px 10px;font-size:15px;font-weight:800;color:rgba(255,255,255,.72);letter-spacing:.08em}.music-v7-single-list{display:grid;gap:10px;margin:0 0 24px}.music-v7-single-card{width:100%;display:grid;grid-template-columns:58px 1fr auto;align-items:center;gap:12px;padding:10px 12px;border:1px solid rgba(255,255,255,.10);border-radius:18px;background:rgba(255,255,255,.045);color:#fff;text-align:left}.music-v7-single-thumb{width:58px;height:58px;border-radius:14px;overflow:hidden;background:#000}.music-v7-single-thumb img{width:100%;height:100%;object-fit:cover;display:block}.music-v7-single-copy strong{display:block;font-size:16px;font-weight:900;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.music-v7-single-copy span{display:block;margin-top:4px;font-size:12px;font-weight:800;color:rgba(255,255,255,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.music-v7-single-card em{font-style:normal;color:#ffe88a;font-weight:900;font-size:12px;white-space:nowrap;min-width:54px;text-align:right}.music-v7-track.locked{opacity:.45}.music-v7-track.locked strong{color:rgba(255,255,255,.62)}.music-v7-track.locked em{color:#ffe88a;font-size:12px;font-weight:900}.music-v7-playing-badge{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.72);color:#ffe88a;font-size:11px;font-weight:900;padding:4px 8px;border-radius:999px;z-index:2}.music-v7-album-art{position:relative}.music-v7-album-art.locked{opacity:.58}.music-v7-unlock-mask{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;justify-content:flex-end;padding:12px;border-radius:inherit;background:linear-gradient(180deg,rgba(0,0,0,.10),rgba(0,0,0,.78));text-align:left;pointer-events:none}.music-v7-unlock-mask b{display:inline-block;width:max-content;padding:4px 8px;border-radius:999px;background:rgba(0,0,0,.60);color:#ffe88a;font-size:12px;font-weight:900}.music-v7-unlock-mask span{margin-top:6px;color:rgba(255,255,255,.88);font-size:12px;font-weight:900}.music-v7-unlock-mask em{margin-top:3px;color:rgba(255,230,170,.92);font-size:11px;font-weight:900;font-style:normal}.music-v7-album-art{position:relative}";
+      st.textContent =
+        ".music-v7-singles-head{padding:18px 8px 10px;font-size:15px;font-weight:800;color:rgba(255,255,255,.72);letter-spacing:.08em}"
+        +".music-v7-single-list{display:grid;gap:10px;margin:0 0 24px}"
+        +".music-v7-single-card{width:100%;display:grid;grid-template-columns:58px minmax(0,1fr) auto;align-items:center;gap:12px;padding:10px 12px;border:1px solid rgba(255,255,255,.10);border-radius:18px;background:rgba(255,255,255,.045);color:#fff;text-align:left}"
+        +".music-v7-single-thumb{width:58px;height:58px;border-radius:14px;overflow:hidden;background:#000}"
+        +".music-v7-single-thumb img{width:100%;height:100%;object-fit:cover;display:block}"
+        +".music-v7-single-copy{min-width:0}"
+        +".music-v7-single-copy strong{display:block;font-size:16px;font-weight:900;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
+        +".music-v7-single-copy span{display:block;margin-top:4px;font-size:12px;font-weight:800;color:rgba(255,255,255,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"
+        +".music-v7-single-card em{font-style:normal;color:#ffe88a;font-weight:900;font-size:12px;white-space:nowrap;min-width:54px;text-align:right}"
+        +".music-v7-track.fav-reorder-active{position:relative;z-index:40;opacity:.94;transform:scale(1.025)!important;box-shadow:0 16px 38px rgba(0,0,0,.48);background:rgba(45,49,65,.98)!important}"
+        +".music-v7-track-list.fav-reordering{overflow:hidden;touch-action:none}"
+        +".music-v7-track.fav-reorder-shift{transition:transform .14s ease}"
+        +".music-v7-track.locked{opacity:.45}"
+        +".music-v7-track.locked strong{color:rgba(255,255,255,.62)}"
+        +".music-v7-track.locked em{color:#ffe88a;font-size:12px;font-weight:900}"
+        +".music-v7-playing-badge{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.72);color:#ffe88a;font-size:11px;font-weight:900;padding:4px 8px;border-radius:999px;z-index:4}"
+        +".music-v7-album-art{position:relative;min-width:0}"
+        +".music-v7-album-art.locked{opacity:.72}"
+        +".music-v7-jacket{position:relative;overflow:hidden}"
+        +".music-v7-unlock-mask{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;justify-content:flex-end;padding:12px;border-radius:inherit;background:linear-gradient(180deg,rgba(0,0,0,.10),rgba(0,0,0,.78));text-align:left;pointer-events:none}"
+        +".music-v7-unlock-mask b{display:inline-block;width:max-content;max-width:100%;padding:4px 8px;border-radius:999px;background:rgba(0,0,0,.60);color:#ffe88a;font-size:12px;font-weight:900}"
+        +".music-v7-unlock-mask span{margin-top:6px;color:rgba(255,255,255,.88);font-size:12px;font-weight:900}"
+        +".music-v7-unlock-mask em{margin-top:3px;color:rgba(255,230,170,.92);font-size:11px;font-weight:900;font-style:normal}"
+        +".music-v7-restricted-head{margin:26px 0 14px;text-align:center;color:rgba(255,224,145,.74);font-size:11px;font-weight:900;letter-spacing:.20em}"
+        +".music-v7-restricted-grid{display:grid;grid-template-columns:minmax(0,320px);justify-content:center;gap:18px;margin:0 auto 34px;width:100%}"
+        +".music-v7-restricted-grid .music-v7-album-art{width:100%;max-width:320px;justify-self:center}"
+        +".music-v7-restricted-grid .music-v7-jacket{width:100%;aspect-ratio:1/1}"
+        /* v10: restricted/locked album text sizing */
+        +".music-v7-restricted-album .music-v7-unlock-mask{justify-content:center!important;align-items:flex-start!important;padding:clamp(14px,4vw,24px)!important}"
+        +".music-v7-restricted-album .music-v7-unlock-mask b{display:block!important;width:auto!important;max-width:100%!important;padding:0!important;border-radius:0!important;background:transparent!important;font-size:clamp(28px,8.2vw,42px)!important;line-height:1.08!important;letter-spacing:-.045em!important;white-space:normal!important;word-break:keep-all!important;overflow-wrap:normal!important;text-align:left!important;text-wrap:balance}"
+        +".music-v7-restricted-album .music-v7-unlock-mask span{margin-top:10px!important;font-size:clamp(11px,3.2vw,14px)!important;line-height:1.35!important}"
+        +".music-v7-restricted-album .music-v7-unlock-mask em{margin-top:6px!important;font-size:clamp(10px,2.8vw,12px)!important;line-height:1.3!important}"
+        +".music-v7-restricted-album .music-v7-unlock-mask::after{content:none!important;display:none!important}"
+        +"@media(max-width:375px){"
+          +".music-v7-single-card{grid-template-columns:48px minmax(0,1fr) auto;gap:9px;padding:9px 10px}"
+          +".music-v7-single-thumb{width:48px;height:48px;border-radius:12px}"
+          +".music-v7-single-copy strong{font-size:14px}"
+          +".music-v7-single-copy span,.music-v7-single-card em{font-size:10px}"
+          +".music-v7-single-card em{min-width:42px}"
+          +".music-v7-restricted-grid{grid-template-columns:minmax(0,260px);margin-bottom:28px}"
+          +".music-v7-restricted-grid .music-v7-album-art{max-width:260px}"
+        +"}";
       document.head.appendChild(st);
     }
 
-    // 重要：最終レイアウトを最初から描画する。
-    // 以前は一度「旧MUSIC棚」を出してから 69/70 の補正JSがDOMを組み替えていたため、
-    // 音楽タブを押すたびに旧レイアウトが一瞬見えていた。
-    var html = '<div class="music-v7-shelf music-v7-shelf-row-final">';
-    html += '<button type="button" class="music-v7-favline music-v7-fav-row-final" id="musicV7FavAlbum"><span>★</span><strong>保護しました♪</strong><em>'+favTracks().length+'曲</em></button>';
-    html += '<div class="music-v7-singles-head">🏠すみか</div>';
-    html += '<div class="music-v7-album-grid-final">';
-    var musicAlbums = albums();
-    var singles = [];
-    musicAlbums.forEach(function(a, i){
-      if(a.type === "single"){
-        singles.push({ album:a, index:i });
-        return;
-      }
-      var ust = musicUnlockState(a);
-      if(ust && ust.hidden && !ust.unlocked) return;
-      var lockedCls = musicAlbumLocked(a) ? " locked" : "";
+    function albumButtonHTML(a, i, ust, extraClass){
+      var locked = musicAlbumLocked(a);
       var descText = musicAlbumDisplayDesc(a, ust);
-      html += '<button type="button" class="music-v7-album-art'+lockedCls+'" data-album="'+i+'" data-locked="'+(musicAlbumLocked(a)?"1":"0")+'">'
+      var lockMarkup = locked ? musicUnlockOverlay(a) : "";
+      return '<button type="button" class="music-v7-album-art'+(locked?' locked':'')+(extraClass||'')+'" data-album="'+i+'" data-locked="'+(locked?'1':'0')+'">'
         + ((state.queueMode === "album" && state.album === i) ? '<div class="music-v7-playing-badge">▶ 再生中</div>' : '')
-        + '<div class="music-v7-jacket">'+albumCoverHTML(a)+'</div>'
-        + musicUnlockOverlay(a)
+        + '<div class="music-v7-jacket">'+albumCoverHTML(a)+lockMarkup+'</div>'
         + '<div class="music-v7-album-copy"><strong>'+esc(a.title)+'</strong><span>'+esc(descText)+'</span></div>'
         + '</button>';
+    }
+
+    var musicAlbums = albums();
+    var regularAlbums = [];
+    var restrictedAlbums = [];
+    var singles = [];
+
+    musicAlbums.forEach(function(a, i){
+      var ust = musicUnlockState(a);
+      if(ust && ust.hidden && !ust.unlocked) return;
+
+      if(a.type === "single"){
+        singles.push({ album:a, index:i, unlockState:ust });
+        return;
+      }
+
+      if(musicAlbumLocked(a)){
+        restrictedAlbums.push({ album:a, index:i, unlockState:ust });
+      }else{
+        regularAlbums.push({ album:a, index:i, unlockState:ust });
+      }
+    });
+
+    var html = '<div class="music-v7-shelf music-v7-shelf-row-final">';
+    html += '<button type="button" class="music-v7-favline music-v7-fav-row-final" id="musicV7FavAlbum"><span>★</span><strong>保護しました♪</strong><em>'+favTracks().length+'曲</em></button>';
+
+    html += '<div class="music-v7-singles-head">🏠すみか</div>';
+    html += '<div class="music-v7-album-grid-final">';
+    regularAlbums.forEach(function(x){
+      html += albumButtonHTML(x.album, x.index, x.unlockState, "");
     });
     html += '</div>';
 
@@ -758,14 +919,23 @@
       html += '<div class="music-v7-single-list">';
       singles.forEach(function(x){
         var a = x.album;
-        var ust = musicUnlockState(a);
-        if(ust && ust.hidden && !ust.unlocked) return;
+        var ust = x.unlockState || musicUnlockState(a);
+        var locked = musicAlbumLocked(a);
         var descText = musicAlbumDisplayDesc(a, ust) || ((ust && ust.progressText) ? ust.progressText : (a.desc || "Single"));
-        html += '<button type="button" class="music-v7-single-card '+(musicAlbumLocked(a)?"locked":"")+'" data-album="'+x.index+'" data-locked="'+(musicAlbumLocked(a)?"1":"0")+'">'
+        html += '<button type="button" class="music-v7-single-card '+(locked?"locked":"")+'" data-album="'+x.index+'" data-locked="'+(locked?"1":"0")+'">'
           + '<div class="music-v7-single-thumb">'+albumCoverHTML(a)+'</div>'
           + '<div class="music-v7-single-copy"><strong>'+esc(a.title)+'</strong><span>'+esc(descText)+'</span></div>'
-          + '<em>'+((state.queueMode === "album" && state.album === x.index) ? "▶ 再生中" : (musicAlbumLocked(a) ? (ust.label || "🔒") : ""))+'</em>'
+          + '<em>'+((state.queueMode === "album" && state.album === x.index) ? "▶ 再生中" : (locked ? ((ust && ust.label) || "🔒") : ""))+'</em>'
           + '</button>';
+      });
+      html += '</div>';
+    }
+
+    if(restrictedAlbums.length){
+      html += '<div class="music-v7-restricted-head">RESTRICTED OBSERVATION</div>';
+      html += '<div class="music-v7-restricted-grid">';
+      restrictedAlbums.forEach(function(x){
+        html += albumButtonHTML(x.album, x.index, x.unlockState, " music-v7-restricted-album");
       });
       html += '</div>';
     }
@@ -781,6 +951,7 @@
         switchToAlbum(idx);
       };
     });
+
     var fav = $("musicV7FavAlbum");
     if(fav){
       var openFavAlbum = function(ev){
@@ -797,7 +968,7 @@
     }
 
     var title = $("musicTitle"); if(title) title.innerHTML = "";
-    var a = audio(); if(a) a.style.display = "none";
+    var au = audio(); if(au) au.style.display = "none";
   }
 
   function renderPlayer(){
@@ -1145,6 +1316,7 @@
 
       sheet.addEventListener("touchmove", function(e){
         if(!isFavoritesListOpen()) return;
+        if(state.favReorderActive) return;
         var row = state.favTouchMoveRow;
         if(!row) return;
         var t = e.touches && e.touches[0];
@@ -1166,6 +1338,7 @@
 
       sheet.addEventListener("touchend", function(e){
         if(!isFavoritesListOpen()) return;
+        if(state.favReorderActive) return;
         var row = state.favTouchMoveRow || (e.target && e.target.closest ? e.target.closest(".music-v7-track.fav-mode") : null);
         if(!row) return;
         var t1 = e.changedTouches && e.changedTouches[0];
@@ -1188,6 +1361,126 @@
         state.favTouchMoveRow = null;
         setTimeout(function(){ state.favTouchMoved = false; }, 0);
       }, {passive:false});
+
+      // お気に入り曲：長押しして上下ドラッグで並び替え。
+      // 左スワイプ削除とは方向と開始タイミングを分離する。
+      function cancelFavReorderTimer(){
+        clearTimeout(state.favReorderTimer);
+        state.favReorderTimer = 0;
+      }
+
+      function beginFavReorder(row){
+        if(!row || !row.isConnected || !isFavoritesListOpen()) return;
+
+        state.favReorderActive = true;
+        state.favReorderRow = row;
+        state.favTouchMoved = true;
+        state.favTouchMoveRow = null;
+
+        row.style.transform = "";
+        row.classList.remove("delete-ready","delete-open","dragging");
+        row.classList.add("fav-reorder-active");
+
+        var list = row.closest(".music-v7-track-list");
+        if(list) list.classList.add("fav-reordering");
+
+        try{ if(navigator.vibrate) navigator.vibrate(12); }catch(_){}
+      }
+
+      function finishFavReorder(){
+        cancelFavReorderTimer();
+
+        var row = state.favReorderRow;
+        var list = row && row.closest(".music-v7-track-list");
+
+        if(row) row.classList.remove("fav-reorder-active");
+        if(list) list.classList.remove("fav-reordering");
+
+        if(list){
+          var order = Array.from(list.querySelectorAll(".music-v7-track.fav-mode"))
+            .map(function(el){ return el.dataset.trackId || ""; })
+            .filter(Boolean);
+
+          saveFavOrder(order);
+          rememberSheetScroll();
+        }
+
+        state.favReorderActive = false;
+        state.favReorderRow = null;
+        state.favTouchMoveRow = null;
+
+        setTimeout(function(){
+          state.favTouchMoved = false;
+        },180);
+      }
+
+      sheet.addEventListener("touchstart", function(e){
+        if(!isFavoritesListOpen()) return;
+
+        var row = e.target && e.target.closest
+          ? e.target.closest(".music-v7-track.fav-mode")
+          : null;
+        if(!row) return;
+
+        var touch = e.touches && e.touches[0];
+        state.favReorderStartX = touch ? touch.clientX : 0;
+        state.favReorderStartY = touch ? touch.clientY : 0;
+
+        cancelFavReorderTimer();
+        state.favReorderTimer = setTimeout(function(){
+          beginFavReorder(row);
+        },430);
+      },{passive:true});
+
+      sheet.addEventListener("touchmove", function(e){
+        if(!isFavoritesListOpen()) return;
+
+        var touch = e.touches && e.touches[0];
+        if(!touch) return;
+
+        var dx = touch.clientX - (state.favReorderStartX || 0);
+        var dy = touch.clientY - (state.favReorderStartY || 0);
+
+        if(!state.favReorderActive){
+          // 長押し前に動いたら通常スクロール／左スワイプとして扱う。
+          if(Math.abs(dx)>9 || Math.abs(dy)>9) cancelFavReorderTimer();
+          return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        var row = state.favReorderRow;
+        var list = row && row.closest(".music-v7-track-list");
+        if(!row || !list) return;
+
+        var target = document.elementFromPoint(touch.clientX,touch.clientY);
+        var over = target && target.closest
+          ? target.closest(".music-v7-track.fav-mode")
+          : null;
+
+        if(!over || over===row || over.parentNode!==list) return;
+
+        var rect = over.getBoundingClientRect();
+        if(touch.clientY < rect.top + rect.height/2){
+          list.insertBefore(row,over);
+        }else{
+          list.insertBefore(row,over.nextSibling);
+        }
+      },{passive:false});
+
+      sheet.addEventListener("touchend", function(){
+        if(state.favReorderActive){
+          finishFavReorder();
+        }else{
+          cancelFavReorderTimer();
+        }
+      },{passive:true});
+
+      sheet.addEventListener("touchcancel", function(){
+        if(state.favReorderActive) finishFavReorder();
+        else cancelFavReorderTimer();
+      },{passive:true});
     }
 
     var lyrics = $("musicV7Lyrics");
@@ -1275,6 +1568,110 @@
 
   window.MEGANE_MUSIC_V7_RENDER = render;
   window.MEGANE_MUSIC_V7_OPEN_FAVORITES = switchToFavorites;
+
+  // production143:
+  // 実際の megane_music_v7_favs を使う保護曲一覧を直接開く。
+  // 再生中の album / track / queueMode は変更しない。
+  window.MEGANE_MUSIC_V7_OPEN_FAVORITES_LIST = function(){
+    var keepAlbum = state.album;
+    var keepTrack = state.track;
+    var keepQueue = state.queueMode;
+
+    state.browsingAlbum = -1;
+    state.browsingTrack = 0;
+    state.screen = "player";
+    state.sheet = true;
+    state.lyrics = false;
+    state.sheetScrollTop = 0;
+    state.sheetAlbumKey = "favorites";
+    state.favDeleteOpenId = "";
+
+    state.album = keepAlbum;
+    state.track = keepTrack;
+    state.queueMode = keepQueue || "album";
+
+    render();
+    restoreSheetScroll();
+  };
+
+  // production144 bridge: 軽量ミニプレイヤー用の読み取り・操作API
+  window.MEGANE_MUSIC_V7_NOW = function(){
+    var au = audio();
+    var t = actualPlayingTrack();
+    var album = t && typeof t._album === "number" ? albums()[t._album] : currentAlbum();
+    var index = t && typeof t._track === "number" ? t._track : (state.track || 0);
+    var info = parseTitle(t, index);
+
+    return {
+      type: "music",
+      id: (t && t.id) || "",
+      title: info.title || (t && t.title) || "MEGANE MUSIC",
+      subtitle: (album && (album._originTitle || album.title)) || "Music",
+      artwork: (t && t.cover) || (album && album.cover) || "",
+      src: au ? (au.currentSrc || au.src || "") : "",
+      time: au ? Number(au.currentTime || 0) : 0,
+      paused: au ? !!au.paused : true,
+      albumIndex: t && typeof t._album === "number" ? t._album : state.album,
+      trackIndex: t && typeof t._track === "number" ? t._track : state.track
+    };
+  };
+
+  // 保存済みsrcと内部stateを同期する。
+  window.MEGANE_MUSIC_V7_SYNC_TO_SRC = function(src){
+    var t = findTrackByAudioSrc(src);
+    if(!t) return false;
+
+    state.queueMode = "album";
+    state.album = t._album;
+    state.track = t._track;
+    state.browsingAlbum = t._album;
+    state.browsingTrack = t._track;
+    saveState();
+    return true;
+  };
+
+  window.MEGANE_MUSIC_V7_TOGGLE_CURRENT = function(){
+    var au = audio();
+    if(!au) return false;
+    setAudioForCurrent(false);
+    try{
+      if(!au.paused){
+        au.pause();
+      }else{
+        var p = au.play();
+        if(p && p.catch) p.catch(function(){});
+      }
+      return true;
+    }catch(_){
+      return false;
+    }
+  };
+
+  // production6: ミニプレイヤーのお気に入りボタン用
+  window.MEGANE_MUSIC_V7_IS_FAVORITE = function(trackId){
+    var t = actualPlayingTrack();
+    var id = trackId || (t && t.id) || "";
+    return isFav(id);
+  };
+
+  window.MEGANE_MUSIC_V7_TOGGLE_FAVORITE = function(trackId){
+    var t = actualPlayingTrack();
+    var id = trackId || (t && t.id) || "";
+    if(!id) return false;
+    toggleFav(id);
+    try{ render(); }catch(_){}
+    return isFav(id);
+  };
+
+  window.MEGANE_MUSIC_V7_OPEN_CURRENT = function(){
+    state.browsingAlbum = state.album;
+    state.browsingTrack = state.track;
+    state.screen = "player";
+    state.sheet = false;
+    state.lyrics = false;
+    render();
+  };
+
   window.MEGANE_MUSIC_V7_OPEN_ALBUMS = function(){ state.screen = "albums"; state.sheet = false; state.lyrics = false; render(); };
 })();
 

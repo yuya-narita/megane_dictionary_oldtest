@@ -39,6 +39,16 @@
     return "";
   }
 
+  function currentGlassNameSafe() {
+    try {
+      if (typeof currentGlass === "function") {
+        const g = currentGlass();
+        return g && g.name ? String(g.name) : currentGlassIdSafe();
+      }
+    } catch (e) {}
+    return currentGlassIdSafe();
+  }
+
   function getCurrentLine() {
     const entry = getVoiceMap()[currentWordText()];
     if (!entry) return null;
@@ -123,6 +133,17 @@
     audio.pause();
     audio.currentTime = 0;
     audio.src = path;
+
+    // スワイプ通過ではなく、カードを押して定義音声を再生した時だけ計測。
+    // 定義本文やユーザー入力内容は送らない。
+    try {
+      if (typeof window.meganeTrack === "function") {
+        window.meganeTrack("definition_audio_play", {
+          word: currentWordText(),
+          glass: currentGlassNameSafe()
+        });
+      }
+    } catch (e) {}
 
     audio.play().catch(function () {
       // MP3が存在しない/読めない時だけTTSに戻す
