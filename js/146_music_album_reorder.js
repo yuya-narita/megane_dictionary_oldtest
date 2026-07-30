@@ -1,5 +1,5 @@
 /* 146_music_album_reorder.js
-   MUSIC album user reorder v1.1 (mobile-first)
+   MUSIC album user reorder v1.11 (mobile-first)
    - Long-press an album, then move it freely in two dimensions.
    - Uses the real album element + an in-grid placeholder (no Safari drag preview).
    - Auto-scrolls near the top/bottom edge while dragging.
@@ -96,10 +96,10 @@
       ".music-v7-album-art.album-reorder-floating{"+
         "position:fixed!important;z-index:2147483000!important;"+
         "margin:0!important;pointer-events:none!important;"+
-        "transform:scale(1.035)!important;transform-origin:center center!important;"+
-        "filter:drop-shadow(0 20px 28px rgba(0,0,0,.48))!important;"+
+        "transform:scale(1)!important;transform-origin:center center!important;"+
+        "filter:drop-shadow(0 14px 22px rgba(0,0,0,.42))!important;"+
         "opacity:.98!important;transition:none!important;animation:none!important;"+
-        "overflow:hidden!important;contain:paint!important;will-change:left,top,transform!important;"+
+        "overflow:visible!important;contain:none!important;will-change:left,top!important;"+
       "}"+
       ".music-v7-album-art.album-reorder-floating *{pointer-events:none!important}"+
       ".music-v7-album-grid-final.album-reordering>.music-v7-album-art:not(.album-reorder-placeholder){transition:transform .14s ease!important}"+
