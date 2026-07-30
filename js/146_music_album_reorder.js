@@ -1,5 +1,5 @@
 /* 146_music_album_reorder.js
-   MUSIC album user reorder v1.15 (iPhone touch-stable)
+   MUSIC album user reorder v1.16 (edge-scroll + desktop stable)
    - Long-press and freely reorder albums in two dimensions.
    - Uses a small cover-only floating preview, never the real album button.
    - Auto-scrolls near viewport edges.
@@ -13,7 +13,7 @@
   var HOLD_MS = 360;
   var MOVE_CANCEL_PX = 11;
   var EDGE_PX = 92;
-  var MAX_SCROLL_STEP = 18;
+  var MAX_SCROLL_STEP = 22;
 
   var active = null;
   var suppressClickUntil = 0;
@@ -113,6 +113,7 @@
         "-webkit-touch-callout:none!important;touch-action:pan-y!important;"+
       "}"+
       ".music-v7-album-grid-final.album-reordering>.music-v7-album-art{transition:transform .14s ease!important}"+
+      "html.album-reorder-active,html.album-reorder-active body{cursor:grabbing!important;user-select:none!important}"+
       ".music-v7-album-art.album-reorder-source{opacity:.20!important;filter:saturate(.6)!important}"+
       ".album-reorder-ghost{"+
         "position:fixed!important;z-index:2147483000!important;pointer-events:none!important;"+
@@ -165,7 +166,8 @@
       item:item,grid:g,pointerId:e.pointerId,
       startX:p.x,startY:p.y,x:p.x,y:p.y,
       timer:0,dragging:false,ghost:null,
-      offsetX:0,offsetY:0,width:0,height:0
+      offsetX:0,offsetY:0,width:0,height:0,
+      scrollEl:null,captured:false
     };
     active.timer=setTimeout(startDrag,HOLD_MS);
   }
@@ -210,6 +212,7 @@
     if(!r.width || !r.height){ cancelPending(); return; }
 
     a.dragging=true;
+    a.scrollEl = a.grid.closest(".music-list") || document.scrollingElement || document.documentElement;
     a.width=r.width; a.height=r.height;
     a.offsetX=Math.max(0,Math.min(r.width,a.x-r.left));
     a.offsetY=Math.max(0,Math.min(r.height,a.y-r.top));
@@ -217,6 +220,10 @@
     a.item.classList.add("album-reorder-source");
     a.grid.classList.add("album-reordering");
     document.documentElement.classList.add("album-reorder-active");
+
+    if(usePointer && a.pointerId != null && a.item.setPointerCapture){
+      try{ a.item.setPointerCapture(a.pointerId); a.captured=true; }catch(_){ }
+    }
 
     moveGhost(a);
     vibrate(18);
@@ -278,14 +285,27 @@
     cancelAnimationFrame(autoScrollRaf);
     function tick(){
       if(!active || !active.dragging){ autoScrollRaf=0; return; }
-      var y=active.y, vh=window.innerHeight, delta=0;
-      if(y<EDGE_PX) delta=-MAX_SCROLL_STEP*(1-y/EDGE_PX);
-      else if(y>vh-EDGE_PX) delta=MAX_SCROLL_STEP*((y-(vh-EDGE_PX))/EDGE_PX);
+      var scroller=active.scrollEl || document.scrollingElement || document.documentElement;
+      var rect;
+      if(scroller===document.documentElement || scroller===document.body || scroller===document.scrollingElement){
+        rect={top:0,bottom:window.innerHeight,height:window.innerHeight};
+      }else{
+        rect=scroller.getBoundingClientRect();
+      }
+      var topEdge=rect.top+Math.min(EDGE_PX,rect.height/3);
+      var bottomEdge=rect.bottom-Math.min(EDGE_PX,rect.height/3);
+      var y=active.y, delta=0;
+      if(y<topEdge) delta=-MAX_SCROLL_STEP*Math.min(1,(topEdge-y)/EDGE_PX);
+      else if(y>bottomEdge) delta=MAX_SCROLL_STEP*Math.min(1,(y-bottomEdge)/EDGE_PX);
+
       if(Math.abs(delta)>.2){
-        var before=window.scrollY || document.documentElement.scrollTop || 0;
-        window.scrollBy(0,delta);
-        var after=window.scrollY || document.documentElement.scrollTop || 0;
-        if(after!==before){ moveGhost(active); moveItem(active,{x:active.x,y:active.y}); }
+        var before=scroller.scrollTop || 0;
+        scroller.scrollTop=before+delta;
+        var after=scroller.scrollTop || 0;
+        if(after!==before){
+          moveGhost(active);
+          moveItem(active,{x:active.x,y:active.y});
+        }
       }
       autoScrollRaf=requestAnimationFrame(tick);
     }
@@ -304,6 +324,9 @@
       a.item.classList.remove("album-reorder-source");
       a.grid.classList.remove("album-reordering");
       document.documentElement.classList.remove("album-reorder-active");
+      if(a.captured && a.pointerId != null && a.item.releasePointerCapture){
+        try{ a.item.releasePointerCapture(a.pointerId); }catch(_){ }
+      }
       saveOrder(a.grid);
       vibrate(10);
       if(!cancelled) toast("並び順を保存しました");
@@ -321,8 +344,9 @@
     g.addEventListener(downEvent,function(e){
       var item=e.target && e.target.closest ? e.target.closest(".music-v7-album-art") : null;
       if(!item || item.parentNode!==g) return;
+      if(usePointer) stopEvent(e);
       beginHold(e,item,g);
-    },{passive:usePointer});
+    },{passive:false});
   }
 
   function polish(){
@@ -344,7 +368,11 @@
     if(usePointer){
       document.addEventListener("pointermove",moveDrag,{passive:false,capture:true});
       document.addEventListener("pointerup",function(e){ finishDrag(e,false); },{passive:false,capture:true});
-      document.addEventListener("pointercancel",function(e){ finishDrag(e,true); },{passive:false,capture:true});
+      document.addEventListener("pointercancel",function(e){
+        if(active && active.dragging){ stopEvent(e); return; }
+        finishDrag(e,true);
+      },{passive:false,capture:true});
+      window.addEventListener("blur",function(){ finishDrag(null,true); });
     }else{
       document.addEventListener("touchmove",moveDrag,{passive:false,capture:true});
       document.addEventListener("touchend",function(e){ finishDrag(e,false); },{passive:false,capture:true});
