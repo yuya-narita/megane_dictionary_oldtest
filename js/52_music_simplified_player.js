@@ -1086,7 +1086,7 @@
     var st=document.createElement("style");
     st.id="musicUserEditStyleV104";
     st.textContent=
-      ".music-user-edit-v104{position:fixed;left:0;right:0;bottom:0;z-index:2147482500;padding:10px 18px calc(22px + env(safe-area-inset-bottom));border-radius:28px 28px 0 0;background:rgba(18,16,22,.98);border:1px solid rgba(255,255,255,.13);box-shadow:0 -18px 60px rgba(0,0,0,.55);transform:translateY(110%);transition:transform .24s ease;pointer-events:none}"+
+      ".music-user-edit-v104{position:fixed;left:0;right:0;bottom:calc(84px + env(safe-area-inset-bottom));z-index:2147482500;max-height:calc(100dvh - 170px - env(safe-area-inset-top));overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 18px 22px;border-radius:28px;background:rgba(18,16,22,.985);border:1px solid rgba(255,255,255,.13);box-shadow:0 -18px 60px rgba(0,0,0,.55);transform:translateY(calc(100% + 110px));transition:transform .24s ease;pointer-events:none}"+
       ".music-user-edit-v104.open{transform:translateY(0);pointer-events:auto}"+
       ".music-user-edit-v104 .handle{width:48px;height:5px;border-radius:999px;background:rgba(255,255,255,.38);margin:0 auto 20px}"+
       ".music-user-edit-v104 .head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}"+
