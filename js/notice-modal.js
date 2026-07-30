@@ -47,6 +47,7 @@
   function removeOld(){
     const old=document.getElementById('noticeModalBg');
     if(old)old.remove();
+    document.body.classList.remove('notice-open','modal-open');
   }
 
   function render(cfg,opts){
@@ -56,11 +57,13 @@
     d.id='noticeModalBg';
     const v=opts.versionText?'<div class="noticeVersion">'+opts.versionText+'</div>':'';
     d.innerHTML='<div id="noticeModalCard"><div class="ttl">'+(cfg.title||'お知らせ')+'</div><div class="txt">'+(cfg.text||'').replace(/\n/g,'<br>')+'</div>'+v+'<div class="btns"><button id="noticePlay">▶ 音声</button><button id="noticeClose">閉じる</button></div></div>';
+    document.body.classList.add('notice-open','modal-open');
     document.body.appendChild(d);
     document.getElementById('noticeClose').onclick=function(){
       stopAudio();
       if(opts.onClose)opts.onClose();
       d.remove();
+      document.body.classList.remove('notice-open','modal-open');
     };
     document.getElementById('noticePlay').onclick=function(){play(cfg.audio,this);};
   }

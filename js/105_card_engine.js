@@ -52,7 +52,7 @@
       + '.ce-fly-down{animation:ceFlyDown .58s cubic-bezier(.15,.78,.22,1) forwards;will-change:transform,opacity}'
       + '.ce-return-deck{animation:ceReturnDeck .28s cubic-bezier(.2,.8,.2,1);will-change:transform,opacity}'
       + '.ce-draw-lift{animation:ceDrawLift .44s cubic-bezier(.16,.84,.24,1) forwards;will-change:transform}'
-      + '.ce-reveal-pop{animation:ceRevealPop .38s cubic-bezier(.18,.9,.24,1);will-change:transform,filter}';
+      + '.ce-reveal-pop{animation:ceRevealPop .38s cubic-bezier(.18,.9,.24,1);will-change:transform,filter}.ce-drawing .flip-front,.ce-drawing .flip-face,.ce-drawing .card-front{visibility:hidden!important;opacity:0!important}'
     document.head.appendChild(st);
   }
 
@@ -85,10 +85,15 @@
   function drawLift(done){
     ensureCardEngineStyle();
     var el=cardEl(); if(!el){ done(); return; }
+    el.classList.add("ce-drawing");
     el.classList.remove("ce-draw-lift","ce-reveal-pop");
     void el.offsetWidth;
     el.classList.add("ce-draw-lift");
-    setTimeout(function(){ try{ el.classList.remove("ce-draw-lift"); }catch(e){} done(); setTimeout(function(){ try{ el.classList.add("ce-reveal-pop"); setTimeout(function(){ el.classList.remove("ce-reveal-pop"); },460); }catch(e){} },30); },440);
+    setTimeout(function(){ 
+      try{ el.classList.remove("ce-draw-lift"); }catch(e){}
+      try{ el.classList.remove("ce-drawing"); }catch(e){}
+      done();
+      setTimeout(function(){ try{ el.classList.add("ce-reveal-pop"); setTimeout(function(){ el.classList.remove("ce-reveal-pop"); },460); }catch(e){} },30); },440);
   }
 
   function devCompleteOn(){ return localStorage.getItem("megane_dev_card_complete")==="1" || localStorage.getItem("megane_dev_unlock_all")==="1"; }
