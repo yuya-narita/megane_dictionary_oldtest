@@ -1,5 +1,5 @@
 /* 146_music_album_reorder.js
-   MUSIC album user reorder v1.13 (iPhone-first)
+   MUSIC album user reorder v1.14 (iPhone-first)
    - Long-press and freely reorder albums in two dimensions.
    - Uses a small cover-only floating preview, never the real album button.
    - FLIP animation makes surrounding albums slide out of the way in both axes.
@@ -112,7 +112,7 @@
     st.textContent =
       ".music-v7-album-grid-final.album-reorder-ready>.music-v7-album-art{"+
         "-webkit-user-select:none!important;user-select:none!important;"+
-        "-webkit-touch-callout:none!important;touch-action:pan-y!important;"+
+        "-webkit-touch-callout:none!important;touch-action:none!important;"+
       "}"+
       ".music-v7-album-grid-final.album-reordering>.music-v7-album-art{will-change:transform!important}"+
       ".music-v7-album-art.album-reorder-source{opacity:.20!important;filter:saturate(.6)!important}"+
@@ -166,9 +166,10 @@
     active={
       item:item,grid:g,pointerId:e.pointerId,
       startX:p.x,startY:p.y,x:p.x,y:p.y,
-      timer:0,dragging:false,ghost:null,
-      offsetX:0,offsetY:0,width:0,height:0
+      timer:0,dragging:false,scrolling:false,ghost:null,
+      offsetX:0,offsetY:0,width:0,height:0,lastY:p.y
     };
+    try{ if(item.setPointerCapture && e.pointerId != null) item.setPointerCapture(e.pointerId); }catch(_){ }
     active.timer=setTimeout(startDrag,HOLD_MS);
   }
   function cancelPending(){
@@ -336,10 +337,27 @@
     if(!active) return;
     var p=point(e);
     active.x=p.x; active.y=p.y;
+
+    // The album tiles use touch-action:none so iOS cannot cancel a long-press
+    // when the finger moves vertically. Before the hold completes, emulate
+    // ordinary page scrolling ourselves so normal browsing still feels native.
     if(!active.dragging){
-      if(Math.hypot(p.x-active.startX,p.y-active.startY)>MOVE_CANCEL_PX) cancelPending();
+      var distance=Math.hypot(p.x-active.startX,p.y-active.startY);
+      if(!active.scrolling && distance>MOVE_CANCEL_PX){
+        clearTimeout(active.timer);
+        active.scrolling=true;
+        active.lastY=active.startY;
+        suppressClickUntil=now()+500;
+      }
+      if(active.scrolling){
+        stopEvent(e);
+        var delta=active.lastY-p.y;
+        if(Math.abs(delta)>.1) window.scrollBy(0,delta);
+        active.lastY=p.y;
+      }
       return;
     }
+
     stopEvent(e);
     moveGhost(active);
     moveItem(active,p);
@@ -378,7 +396,11 @@
       saveOrder(a.grid);
       vibrate(10);
       if(!cancelled) toast("並び順を保存しました");
+    }else if(a.scrolling){
+      if(e) stopEvent(e);
+      suppressClickUntil=now()+500;
     }
+    try{ if(a.item.releasePointerCapture && a.pointerId != null && a.item.hasPointerCapture(a.pointerId)) a.item.releasePointerCapture(a.pointerId); }catch(_){ }
     lastInsertIndex=-1;
     active=null;
   }
@@ -394,7 +416,7 @@
       var item=e.target && e.target.closest ? e.target.closest(".music-v7-album-art") : null;
       if(!item || item.parentNode!==g) return;
       beginHold(e,item,g);
-    },{passive:true});
+    },{passive:false});
   }
 
   function polish(){
