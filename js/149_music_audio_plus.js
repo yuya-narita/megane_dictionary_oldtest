@@ -1,3 +1,4 @@
+/* v1.11: custom album playback matches built-in albums; long-press opens editor */
 /* v1.10: custom album detail + add tracks from 持ち物 */
 /* v1.09: custom album creation + 持ち物 label */
 /* v1.08: user video artwork + source-file safety notice */
@@ -764,13 +765,74 @@
     document.body.appendChild(sh);
   }
 
-  document.addEventListener("click",function(e){
-    var btn=e.target&&e.target.closest&&e.target.closest("[data-album]");
-    if(!btn || !isAlbumShelf()) return;
+  // v1.11:
+  // 通常タップは既存アルバムと同じプレイヤーへ任せる。
+  // 空アルバムだけ編集画面を開き、曲入りアルバムは長押しで編集できる。
+  var customAlbumLongPress111=null;
+  var customAlbumSuppressClick111=false;
+
+  function customAlbumFromTarget111(target){
+    var btn=target&&target.closest&&target.closest("[data-album]");
+    if(!btn || !isAlbumShelf()) return null;
     var idx=Number(btn.dataset.album||0), album=(playlists()||[])[idx];
-    if(!album || !album._meganeCustomAlbum109) return;
-    e.preventDefault(); e.stopPropagation(); if(e.stopImmediatePropagation)e.stopImmediatePropagation();
-    openCustomAlbumDetailV110(album);
+    if(!album || !album._meganeCustomAlbum109) return null;
+    return {btn:btn,index:idx,album:album};
+  }
+
+  function cancelCustomAlbumLongPress111(){
+    if(customAlbumLongPress111 && customAlbumLongPress111.timer){ clearTimeout(customAlbumLongPress111.timer); }
+    customAlbumLongPress111=null;
+  }
+
+  document.addEventListener("pointerdown",function(e){
+    var hit=customAlbumFromTarget111(e.target);
+    if(!hit || !(hit.album.tracks||[]).length) return;
+    cancelCustomAlbumLongPress111();
+    customAlbumLongPress111={
+      x:Number(e.clientX||0), y:Number(e.clientY||0), album:hit.album,
+      timer:setTimeout(function(){
+        var album=customAlbumLongPress111&&customAlbumLongPress111.album;
+        customAlbumLongPress111=null;
+        if(!album) return;
+        customAlbumSuppressClick111=true;
+        try{ if(navigator.vibrate) navigator.vibrate(18); }catch(_){ }
+        openCustomAlbumDetailV110(album);
+        setTimeout(function(){ customAlbumSuppressClick111=false; },700);
+      },560)
+    };
+  },true);
+
+  document.addEventListener("pointermove",function(e){
+    if(!customAlbumLongPress111) return;
+    var dx=Math.abs(Number(e.clientX||0)-customAlbumLongPress111.x);
+    var dy=Math.abs(Number(e.clientY||0)-customAlbumLongPress111.y);
+    if(dx>12 || dy>12) cancelCustomAlbumLongPress111();
+  },true);
+  document.addEventListener("pointerup",cancelCustomAlbumLongPress111,true);
+  document.addEventListener("pointercancel",cancelCustomAlbumLongPress111,true);
+
+  document.addEventListener("contextmenu",function(e){
+    var hit=customAlbumFromTarget111(e.target);
+    if(!hit) return;
+    e.preventDefault(); e.stopPropagation();
+    openCustomAlbumDetailV110(hit.album);
+  },true);
+
+  document.addEventListener("click",function(e){
+    var hit=customAlbumFromTarget111(e.target);
+    if(!hit) return;
+    if(customAlbumSuppressClick111){
+      e.preventDefault(); e.stopPropagation(); if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+      return;
+    }
+    syncOneCustomAlbumTracksV110(hit.album);
+    // 空アルバムには再生対象がないため、従来どおり追加画面を開く。
+    if(!(hit.album.tracks||[]).length){
+      e.preventDefault(); e.stopPropagation(); if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+      openCustomAlbumDetailV110(hit.album);
+    }
+    // 曲が入っている場合は何も止めず、52_music_simplified_player.js の
+    // 既存アルバム用クリック処理へそのまま渡す。
   },true);
 
   function ensureUI(){
