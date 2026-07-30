@@ -1,5 +1,5 @@
 /* 146_music_album_reorder.js
-   MUSIC album user reorder v1.16 (edge-scroll + desktop stable)
+   MUSIC album user reorder v1.17 (mutation-loop guard)
    - Long-press and freely reorder albums in two dimensions.
    - Uses a small cover-only floating preview, never the real album button.
    - Auto-scrolls near viewport edges.
@@ -98,8 +98,16 @@
       var rb = Object.prototype.hasOwnProperty.call(rank,kb) ? rank[kb] : 100000 + original.indexOf(b);
       return ra-rb;
     });
+    // DOM順がすでに保存順と一致している場合は触らない。
+    // appendChildを毎回実行するとMutationObserverが再発火し続け、
+    // 他の音楽画面演出の再初期化と競合する可能性がある。
+    var changed = children.some(function(el, i){ return el !== original[i]; });
+    if(!changed) return;
+
     g.dataset.reorderApplying = "1";
-    children.forEach(function(el){ g.appendChild(el); });
+    children.forEach(function(el, i){
+      if(g.children[i] !== el) g.appendChild(el);
+    });
     delete g.dataset.reorderApplying;
   }
 
