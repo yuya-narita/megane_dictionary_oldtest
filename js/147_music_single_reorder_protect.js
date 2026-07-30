@@ -1,4 +1,4 @@
-/* 147_music_single_reorder_protect.js v1
+/* 147_music_single_reorder_protect.js v1.01
    Single tracks:
    - Long-press and drag to reorder.
    - Drag onto "保護しました♪" to protect the single track.
@@ -131,12 +131,24 @@
     ghost.style.width=r.width+"px"; ghost.style.height=r.height+"px";
     document.body.appendChild(ghost); return ghost;
   }
+  function findScrollContainer(el){
+    var node=el;
+    while(node && node!==document.body && node!==document.documentElement){
+      try{
+        var cs=getComputedStyle(node);
+        var oy=cs.overflowY;
+        if((oy==="auto"||oy==="scroll") && node.scrollHeight>node.clientHeight+2) return node;
+      }catch(_){ }
+      node=node.parentElement;
+    }
+    return document.scrollingElement||document.documentElement;
+  }
   function startDrag(){
     if(!active || active.dragging || !document.body.contains(active.card)) return;
     var a=active,r=a.card.getBoundingClientRect();
     a.dragging=true;a.width=r.width;a.height=r.height;
     a.offX=Math.max(0,Math.min(r.width,a.x-r.left));a.offY=Math.max(0,Math.min(r.height,a.y-r.top));
-    a.ghost=makeGhost(a.card,r);a.scrollEl=document.scrollingElement||document.documentElement;
+    a.ghost=makeGhost(a.card,r);a.scrollEl=findScrollContainer(a.list);
     a.card.classList.add("single-reorder-source");a.list.classList.add("single-reordering");
     document.documentElement.classList.add("single-drag-active");
     var zone=favZone(); if(zone) zone.classList.add("single-protect-available");
@@ -203,10 +215,26 @@
   }
   function autoStep(){
     if(!active||!active.dragging){autoRaf=0;return;}
-    var y=active.y,h=window.innerHeight||document.documentElement.clientHeight,dy=0;
-    if(y<EDGE_PX)dy=-MAX_SCROLL_STEP*(1-(Math.max(0,y)/EDGE_PX));
-    else if(y>h-EDGE_PX)dy=MAX_SCROLL_STEP*(1-(Math.max(0,h-y)/EDGE_PX));
-    if(Math.abs(dy)>.2){window.scrollBy(0,dy);moveItem();updateZone();}
+    var sc=active.scrollEl || findScrollContainer(active.list);
+    var top=0,bottom=(window.innerHeight||document.documentElement.clientHeight);
+    var isPage=(sc===document.body||sc===document.documentElement||sc===document.scrollingElement);
+    if(!isPage){
+      var sr=sc.getBoundingClientRect();
+      top=sr.top;
+      bottom=sr.bottom;
+    }
+    var y=active.y,dy=0;
+    if(y<top+EDGE_PX){
+      dy=-MAX_SCROLL_STEP*(1-(Math.max(0,y-top)/EDGE_PX));
+    }else if(y>bottom-EDGE_PX){
+      dy=MAX_SCROLL_STEP*(1-(Math.max(0,bottom-y)/EDGE_PX));
+    }
+    if(Math.abs(dy)>.2){
+      if(isPage) window.scrollBy(0,dy);
+      else sc.scrollTop+=dy;
+      moveItem();
+      updateZone();
+    }
     autoRaf=requestAnimationFrame(autoStep);
   }
   function startAutoScroll(){if(!autoRaf)autoRaf=requestAnimationFrame(autoStep);}
