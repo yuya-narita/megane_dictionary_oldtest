@@ -1,170 +1,330 @@
 /* 146_dictionary_page_fold.js
-   v1: 辞書カード右上の「お気に入り」をページの折り目で表示する。
-   保存ロジックは既存の 80_favorites_singleton.js をそのまま利用。
+   v1.01: 辞書カードそのものの右上角が折れるドッグイヤー演出。
+   お気に入りの保存ロジックは既存の 80_favorites_singleton.js をそのまま利用する。
 */
 (() => {
   "use strict";
 
-  const STYLE_ID = "megane-dictionary-page-fold-style";
+  const STYLE_ID = "megane-dictionary-page-fold-v101-style";
+  const OVERLAY_ID = "dictionaryPageFoldOverlay";
+  let rafId = 0;
 
-  function installStyle(){
-    if(document.getElementById(STYLE_ID)) return;
+  function installStyle() {
+    if (document.getElementById(STYLE_ID)) return;
+
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = `
-      /* 辞書モードだけ星を折り目へ置き換える */
-      body.mode-dictionary #favoriteLayer{
-        right:0 !important;
-        top:0 !important;
-        width:48px !important;
-        height:48px !important;
-        padding:0 !important;
-        margin:0 !important;
-        overflow:visible !important;
-        pointer-events:auto !important;
-        z-index:80 !important;
+      /* 元の星は文字だけ消し、既存クリック処理は透明ボタンとして残す */
+      body.mode-dictionary #favoriteLayer {
+        position: fixed !important;
+        inset: auto !important;
+        width: 58px !important;
+        height: 58px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        display: block !important;
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        pointer-events: auto !important;
+        z-index: 8602 !important;
       }
 
-      body.mode-dictionary #favoriteToggle{
-        position:relative !important;
-        display:block !important;
-        width:48px !important;
-        height:48px !important;
-        min-width:48px !important;
-        min-height:48px !important;
-        padding:0 !important;
-        margin:0 !important;
-        border:0 !important;
-        border-radius:0 !important;
-        background:transparent !important;
-        box-shadow:none !important;
-        color:transparent !important;
-        font-size:0 !important;
-        line-height:0 !important;
-        overflow:visible !important;
-        -webkit-tap-highlight-color:transparent !important;
-        touch-action:manipulation !important;
+      body.mode-dictionary #favoriteToggle,
+      body.mode-dictionary #favoriteToggle.favorite-button {
+        position: absolute !important;
+        inset: 0 !important;
+        width: 58px !important;
+        height: 58px !important;
+        min-width: 58px !important;
+        min-height: 58px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        color: transparent !important;
+        font-size: 0 !important;
+        line-height: 0 !important;
+        background: transparent !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+        filter: none !important;
+        overflow: visible !important;
+        -webkit-tap-highlight-color: transparent !important;
+        touch-action: manipulation !important;
+        cursor: pointer !important;
       }
 
-      /* 未保存：折れる場所だけを薄い斜線で示す */
-      body.mode-dictionary #favoriteToggle::before{
-        content:"" !important;
-        display:block !important;
-        position:absolute !important;
-        top:7px !important;
-        right:7px !important;
-        width:20px !important;
-        height:20px !important;
-        border-top:1px solid rgba(255,255,255,.34) !important;
-        border-right:1px solid rgba(255,255,255,.34) !important;
-        background:linear-gradient(45deg,
-          transparent 47%,
-          rgba(255,255,255,.30) 48%,
-          rgba(255,255,255,.30) 52%,
-          transparent 53%) !important;
-        box-shadow:none !important;
-        opacity:.72 !important;
-        transform:none !important;
-        transition:opacity .16s ease, transform .16s ease !important;
-        pointer-events:none !important;
+      body.mode-dictionary #favoriteToggle::before,
+      body.mode-dictionary #favoriteToggle::after {
+        content: none !important;
+        display: none !important;
       }
 
-      body.mode-dictionary #favoriteToggle::after{
-        content:"" !important;
-        display:none !important;
-        pointer-events:none !important;
+      /* カードの角に重ねる専用レイヤー。位置はJSでカードへ追従 */
+      #${OVERLAY_ID} {
+        position: fixed;
+        width: 58px;
+        height: 58px;
+        pointer-events: none;
+        z-index: 8601;
+        opacity: 0;
+        transition: opacity .14s ease;
+        contain: layout style paint;
       }
 
-      /* 保存済み：ページ右上が実際に折れた状態 */
-      body.mode-dictionary #favoriteToggle.active::before{
-        top:0 !important;
-        right:0 !important;
-        width:0 !important;
-        height:0 !important;
-        border-top:0 !important;
-        border-right:0 !important;
-        border-left:25px solid transparent !important;
-        border-bottom:25px solid rgba(238,231,208,.96) !important;
-        background:none !important;
-        opacity:1 !important;
-        filter:drop-shadow(-2px 3px 3px rgba(0,0,0,.28)) !important;
-        transform:none !important;
+      body.mode-dictionary #${OVERLAY_ID} {
+        opacity: 1;
       }
 
-      body.mode-dictionary #favoriteToggle.active::after{
-        content:"" !important;
-        display:block !important;
-        position:absolute !important;
-        top:0 !important;
-        right:0 !important;
-        width:25px !important;
-        height:25px !important;
-        background:linear-gradient(225deg,
-          rgba(255,255,255,.52) 0%,
-          rgba(222,211,180,.88) 54%,
-          rgba(150,134,96,.72) 100%) !important;
-        clip-path:polygon(100% 0, 0 0, 100% 100%) !important;
-        box-shadow:inset -1px 1px 0 rgba(255,255,255,.32) !important;
-        pointer-events:none !important;
+      #${OVERLAY_ID} .fold-idle-crease,
+      #${OVERLAY_ID} .fold-cutout,
+      #${OVERLAY_ID} .fold-paper,
+      #${OVERLAY_ID} .fold-shadow {
+        position: absolute;
+        top: 0;
+        right: 0;
+        pointer-events: none;
       }
 
-      body.mode-dictionary #favoriteToggle:active::before{
-        opacity:1 !important;
-        transform:scale(.94) !important;
+      /* 未保護：角の一部にごく薄い折り位置だけを示す */
+      #${OVERLAY_ID} .fold-idle-crease {
+        width: 21px;
+        height: 21px;
+        opacity: .32;
+        background:
+          linear-gradient(225deg,
+            transparent 47%,
+            rgba(255,255,255,.62) 49%,
+            rgba(255,255,255,.62) 51%,
+            transparent 53%);
+        transition: opacity .15s ease;
       }
 
-      body.mode-dictionary #favoriteToggle.active:active::before{
-        transform:scale(.94) !important;
-        transform-origin:top right !important;
+      /* 保護時：実際にカード右上を欠き取る背景三角 */
+      #${OVERLAY_ID} .fold-cutout {
+        width: 42px;
+        height: 42px;
+        clip-path: polygon(100% 0, 0 0, 100% 100%);
+        -webkit-clip-path: polygon(100% 0, 0 0, 100% 100%);
+        opacity: 0;
+        transition: opacity .16s ease;
       }
 
-      @media (prefers-reduced-motion: reduce){
-        body.mode-dictionary #favoriteToggle::before{
-          transition:none !important;
+      /* 折り返した紙の裏面。カード内側へ残る三角形 */
+      #${OVERLAY_ID} .fold-paper {
+        width: 42px;
+        height: 42px;
+        clip-path: polygon(0 0, 100% 100%, 0 100%);
+        -webkit-clip-path: polygon(0 0, 100% 100%, 0 100%);
+        background:
+          linear-gradient(135deg,
+            rgba(255,255,255,.92) 0%,
+            rgba(235,229,210,.94) 38%,
+            rgba(184,170,137,.92) 100%);
+        border-left: 1px solid rgba(255,255,255,.42);
+        border-bottom: 1px solid rgba(90,70,45,.30);
+        opacity: 0;
+        transform-origin: 100% 0;
+        transform: scale(.72);
+        transition: opacity .16s ease, transform .18s cubic-bezier(.2,.8,.2,1);
+      }
+
+      /* 折り線の影 */
+      #${OVERLAY_ID} .fold-shadow {
+        width: 46px;
+        height: 46px;
+        opacity: 0;
+        background:
+          linear-gradient(225deg,
+            transparent 47%,
+            rgba(0,0,0,.42) 49%,
+            rgba(255,255,255,.20) 51%,
+            transparent 54%);
+        filter: blur(.15px);
+        transition: opacity .16s ease;
+      }
+
+      #${OVERLAY_ID}.is-folded .fold-idle-crease {
+        opacity: 0;
+      }
+
+      #${OVERLAY_ID}.is-folded .fold-cutout,
+      #${OVERLAY_ID}.is-folded .fold-paper,
+      #${OVERLAY_ID}.is-folded .fold-shadow {
+        opacity: 1;
+      }
+
+      #${OVERLAY_ID}.is-folded .fold-paper {
+        transform: scale(1);
+      }
+
+      /* タップ時は角が少し沈む */
+      body.mode-dictionary #favoriteLayer:active + #${OVERLAY_ID} .fold-paper,
+      #${OVERLAY_ID}.is-pressed .fold-paper {
+        transform: scale(.94);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #${OVERLAY_ID},
+        #${OVERLAY_ID} * {
+          transition: none !important;
         }
       }
     `;
     document.head.appendChild(style);
   }
 
-  function syncAccessibility(){
-    const button = document.getElementById("favoriteToggle");
-    if(!button) return;
-    const isDictionary = document.body.classList.contains("mode-dictionary");
-    if(!isDictionary) return;
-    const active = button.classList.contains("active");
-    const label = active ? "折り目を戻す" : "このページを折る";
-    button.setAttribute("aria-label", label);
-    button.setAttribute("title", label);
-    button.setAttribute("aria-pressed", active ? "true" : "false");
+  function createOverlay() {
+    let overlay = document.getElementById(OVERLAY_ID);
+    if (overlay) return overlay;
+
+    overlay = document.createElement("div");
+    overlay.id = OVERLAY_ID;
+    overlay.setAttribute("aria-hidden", "true");
+    overlay.innerHTML = `
+      <span class="fold-idle-crease"></span>
+      <span class="fold-cutout"></span>
+      <span class="fold-paper"></span>
+      <span class="fold-shadow"></span>
+    `;
+    document.body.appendChild(overlay);
+    return overlay;
   }
 
-  function install(){
-    installStyle();
-    syncAccessibility();
+  function bodyBackgroundForCutout() {
+    const overlay = document.getElementById(OVERLAY_ID);
+    if (!overlay) return;
+    const cutout = overlay.querySelector(".fold-cutout");
+    if (!cutout) return;
 
+    const bodyStyle = getComputedStyle(document.body);
+    cutout.style.backgroundImage = bodyStyle.backgroundImage;
+    cutout.style.backgroundColor = bodyStyle.backgroundColor;
+    cutout.style.backgroundSize = bodyStyle.backgroundSize;
+    cutout.style.backgroundRepeat = bodyStyle.backgroundRepeat;
+    cutout.style.backgroundPosition = "0 0";
+    cutout.style.backgroundAttachment = "fixed";
+  }
+
+  function isDictionaryMode() {
+    return document.body.classList.contains("mode-dictionary");
+  }
+
+  function positionFold() {
+    rafId = 0;
+    const card = document.getElementById("card");
+    const layer = document.getElementById("favoriteLayer");
+    const overlay = document.getElementById(OVERLAY_ID);
+    if (!card || !layer || !overlay || !isDictionaryMode()) return;
+
+    const rect = card.getBoundingClientRect();
+    const size = 58;
+    const left = Math.round(rect.right - size);
+    const top = Math.round(rect.top);
+
+    layer.style.left = `${left}px`;
+    layer.style.top = `${top}px`;
+    layer.style.right = "auto";
+    layer.style.bottom = "auto";
+
+    overlay.style.left = `${left}px`;
+    overlay.style.top = `${top}px`;
+
+    bodyBackgroundForCutout();
+  }
+
+  function schedulePosition() {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(positionFold);
+  }
+
+  function syncState() {
     const button = document.getElementById("favoriteToggle");
-    if(button){
-      const observer = new MutationObserver(syncAccessibility);
-      observer.observe(button, {
-        attributes:true,
-        attributeFilter:["class", "hidden"]
-      });
+    const overlay = createOverlay();
+    if (!button || !overlay) return;
+
+    const active = button.classList.contains("active");
+    overlay.classList.toggle("is-folded", active);
+
+    if (isDictionaryMode()) {
+      const label = active ? "折り目を戻す" : "このページの角を折る";
+      button.setAttribute("aria-label", label);
+      button.setAttribute("title", label);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
     }
 
-    const bodyObserver = new MutationObserver(syncAccessibility);
-    bodyObserver.observe(document.body, {
-      attributes:true,
-      attributeFilter:["class", "data-mode"]
-    });
-
-    window.addEventListener("pageshow", syncAccessibility);
-    setInterval(syncAccessibility, 1200);
+    schedulePosition();
   }
 
-  if(document.readyState === "loading"){
-    document.addEventListener("DOMContentLoaded", install, {once:true});
-  }else{
+  function installPressFeedback(button, overlay) {
+    const down = () => overlay.classList.add("is-pressed");
+    const up = () => overlay.classList.remove("is-pressed");
+    button.addEventListener("pointerdown", down, { passive: true });
+    button.addEventListener("pointerup", up, { passive: true });
+    button.addEventListener("pointercancel", up, { passive: true });
+    button.addEventListener("pointerleave", up, { passive: true });
+  }
+
+  function install() {
+    installStyle();
+    const overlay = createOverlay();
+    const button = document.getElementById("favoriteToggle");
+    const card = document.getElementById("card");
+
+    syncState();
+
+    if (button) {
+      const buttonObserver = new MutationObserver(syncState);
+      buttonObserver.observe(button, {
+        attributes: true,
+        attributeFilter: ["class", "hidden", "style"]
+      });
+      installPressFeedback(button, overlay);
+    }
+
+    const bodyObserver = new MutationObserver(() => {
+      syncState();
+      bodyBackgroundForCutout();
+    });
+    bodyObserver.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["class", "data-mode", "style"]
+    });
+
+    if (card && "ResizeObserver" in window) {
+      const resizeObserver = new ResizeObserver(schedulePosition);
+      resizeObserver.observe(card);
+    }
+
+    window.addEventListener("resize", schedulePosition, { passive: true });
+    window.addEventListener("orientationchange", schedulePosition, { passive: true });
+    window.addEventListener("pageshow", syncState);
+    document.addEventListener("visibilitychange", schedulePosition);
+
+    /* スワイプ中もカード角へ追従させる */
+    let framesLeft = 0;
+    const followAnimation = () => {
+      if (framesLeft <= 0) return;
+      positionFold();
+      framesLeft -= 1;
+      requestAnimationFrame(followAnimation);
+    };
+    ["pointerdown", "touchstart", "transitionstart", "animationstart"].forEach(type => {
+      card?.addEventListener(type, () => {
+        framesLeft = 28;
+        requestAnimationFrame(followAnimation);
+      }, { passive: true });
+    });
+
+    setTimeout(syncState, 150);
+    setTimeout(syncState, 650);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", install, { once: true });
+  } else {
     install();
   }
 })();
