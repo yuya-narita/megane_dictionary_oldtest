@@ -195,7 +195,7 @@
     var input=q(INPUT_ID);
     if(!input){
       input=document.createElement("input"); input.id=INPUT_ID; input.type="file";
-      input.accept="audio/*,.mp3,.m4a,.aac,.wav,.ogg,.oga,.flac,.opus";
+      input.accept=".mp3,.m4a,.aac,.wav,.ogg,.oga,.flac,.opus";
       input.addEventListener("change",function(){ var f=input.files&&input.files[0]; input.value=""; if(f) addFile(f); });
       document.body.appendChild(input);
     }
