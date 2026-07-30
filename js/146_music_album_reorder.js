@@ -1,7 +1,8 @@
 /* 146_music_album_reorder.js
-   MUSIC album user reorder v1.12 (iPhone-first)
+   MUSIC album user reorder v1.13 (iPhone-first)
    - Long-press and freely reorder albums in two dimensions.
    - Uses a small cover-only floating preview, never the real album button.
+   - FLIP animation makes surrounding albums slide out of the way in both axes.
    - Auto-scrolls near viewport edges.
    - Saves a unique, stable order key for every album (including Theory disc.1/2/3).
 */
@@ -14,6 +15,8 @@
   var MOVE_CANCEL_PX = 11;
   var EDGE_PX = 92;
   var MAX_SCROLL_STEP = 18;
+  var SHIFT_MS = 170;
+  var lastInsertIndex = -1;
 
   var active = null;
   var suppressClickUntil = 0;
@@ -111,7 +114,7 @@
         "-webkit-user-select:none!important;user-select:none!important;"+
         "-webkit-touch-callout:none!important;touch-action:pan-y!important;"+
       "}"+
-      ".music-v7-album-grid-final.album-reordering>.music-v7-album-art{transition:transform .14s ease!important}"+
+      ".music-v7-album-grid-final.album-reordering>.music-v7-album-art{will-change:transform!important}"+
       ".music-v7-album-art.album-reorder-source{opacity:.20!important;filter:saturate(.6)!important}"+
       ".album-reorder-ghost{"+
         "position:fixed!important;z-index:2147483000!important;pointer-events:none!important;"+
@@ -209,6 +212,7 @@
     if(!r.width || !r.height){ cancelPending(); return; }
 
     a.dragging=true;
+    lastInsertIndex=albumItems(a.grid).indexOf(a.item);
     a.width=r.width; a.height=r.height;
     a.offsetX=Math.max(0,Math.min(r.width,a.x-r.left));
     a.offsetY=Math.max(0,Math.min(r.height,a.y-r.top));
@@ -223,33 +227,101 @@
     startAutoScroll();
   }
 
-  function candidates(a){
-    return Array.prototype.slice.call(a.grid.children).filter(function(el){
-      return el.classList && el.classList.contains("music-v7-album-art") && el!==a.item;
+  function albumItems(g){
+    return Array.prototype.slice.call(g.children).filter(function(el){
+      return el.classList && el.classList.contains("music-v7-album-art");
     });
   }
-  function moveItem(a,p){
-    var list=candidates(a);
-    if(!list.length) return;
-    var target=null,best=Infinity,targetRect=null;
-    list.forEach(function(el){
-      var r=el.getBoundingClientRect();
-      var cx=r.left+r.width/2, cy=r.top+r.height/2;
-      var dx=cx-p.x, dy=cy-p.y, d=dx*dx+dy*dy;
-      if(d<best){ best=d; target=el; targetRect=r; }
+
+  function rectMap(items){
+    var map=new Map();
+    items.forEach(function(el){ map.set(el,el.getBoundingClientRect()); });
+    return map;
+  }
+
+  function animateFlip(before,items){
+    items.forEach(function(el){
+      var oldRect=before.get(el);
+      if(!oldRect) return;
+      var newRect=el.getBoundingClientRect();
+      var dx=oldRect.left-newRect.left;
+      var dy=oldRect.top-newRect.top;
+      if(Math.abs(dx)<.5 && Math.abs(dy)<.5) return;
+      el.style.transition="none";
+      el.style.transform="translate3d("+dx+"px,"+dy+"px,0)";
+      el.getBoundingClientRect();
+      el.style.transition="transform "+SHIFT_MS+"ms cubic-bezier(.2,.8,.2,1)";
+      el.style.transform="translate3d(0,0,0)";
+      setTimeout(function(){
+        if(!active || !active.dragging){
+          el.style.transition="";
+          el.style.transform="";
+        }
+      },SHIFT_MS+30);
     });
-    if(!target || !targetRect) return;
+  }
 
-    var before;
-    if(p.y < targetRect.top) before=true;
-    else if(p.y > targetRect.bottom) before=false;
-    else before = p.x < targetRect.left + targetRect.width/2;
+  function insertionIndexForPoint(a,p){
+    var others=albumItems(a.grid).filter(function(el){ return el!==a.item; });
+    if(!others.length) return 0;
 
-    if(before){
-      if(a.item.nextSibling!==target) a.grid.insertBefore(a.item,target);
-    }else{
-      if(target.nextSibling!==a.item) a.grid.insertBefore(a.item,target.nextSibling);
+    var rows=[];
+    others.forEach(function(el){
+      var r=el.getBoundingClientRect();
+      var cy=r.top+r.height/2;
+      var row=null;
+      for(var i=0;i<rows.length;i++){
+        if(Math.abs(rows[i].cy-cy)<Math.max(28,r.height*.35)){ row=rows[i]; break; }
+      }
+      if(!row){ row={cy:cy,items:[]}; rows.push(row); }
+      row.items.push({el:el,r:r,cx:r.left+r.width/2});
+      row.cy=(row.cy*(row.items.length-1)+cy)/row.items.length;
+    });
+    rows.sort(function(x,y){ return x.cy-y.cy; });
+    rows.forEach(function(row){ row.items.sort(function(x,y){ return x.cx-y.cx; }); });
+
+    var chosen=rows[0];
+    var best=Math.abs(p.y-chosen.cy);
+    rows.forEach(function(row){
+      var d=Math.abs(p.y-row.cy);
+      if(d<best){ best=d; chosen=row; }
+    });
+
+    var flat=[];
+    rows.forEach(function(row){ row.items.forEach(function(v){ flat.push(v); }); });
+    var rowStart=0;
+    for(var ri=0;ri<rows.length;ri++){
+      if(rows[ri]===chosen) break;
+      rowStart+=rows[ri].items.length;
     }
+    var col=chosen.items.length;
+    for(var ci=0;ci<chosen.items.length;ci++){
+      if(p.x<chosen.items[ci].cx){ col=ci; break; }
+    }
+
+    // Crossing clearly above/below a row makes vertical movement feel immediate.
+    var rowTop=Math.min.apply(null,chosen.items.map(function(v){return v.r.top;}));
+    var rowBottom=Math.max.apply(null,chosen.items.map(function(v){return v.r.bottom;}));
+    if(p.y<rowTop-18){ col=0; }
+    else if(p.y>rowBottom+18){ col=chosen.items.length; }
+
+    return Math.max(0,Math.min(flat.length,rowStart+col));
+  }
+
+  function moveItem(a,p){
+    var items=albumItems(a.grid);
+    if(items.length<2) return;
+    var newIndex=insertionIndexForPoint(a,p);
+    var without=items.filter(function(el){ return el!==a.item; });
+    newIndex=Math.max(0,Math.min(without.length,newIndex));
+    if(newIndex===lastInsertIndex) return;
+
+    var before=rectMap(items);
+    var ref=without[newIndex] || null;
+    if(ref) a.grid.insertBefore(a.item,ref);
+    else a.grid.appendChild(a.item);
+    lastInsertIndex=newIndex;
+    animateFlip(before,albumItems(a.grid));
   }
   function moveGhost(a){
     if(!a || !a.ghost) return;
@@ -307,6 +379,7 @@
       vibrate(10);
       if(!cancelled) toast("並び順を保存しました");
     }
+    lastInsertIndex=-1;
     active=null;
   }
 
