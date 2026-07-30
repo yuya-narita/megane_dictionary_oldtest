@@ -221,6 +221,13 @@
         unlockMessage: p.unlockMessage || "",
         failMessage: p.failMessage || "",
         unlock: p.unlock || null,
+        // v1.12: preserve custom-album identity through normalize().
+        // The player renders normalized copies, so without these fields the
+        // album-sheet edit button cannot recognize a custom album.
+        _meganeCustomAlbum109: !!p._meganeCustomAlbum109,
+        _meganeCustomAlbum110: !!p._meganeCustomAlbum110,
+        _userCustomAlbumId: p._userCustomAlbumId || "",
+        _trackIds: Array.isArray(p._trackIds) ? p._trackIds.slice() : [],
         tracks: tracks.map(function(t, ti){
           return {
             id: t.id || ("track_" + i + "_" + ti),
