@@ -1,4 +1,4 @@
-/* 147_music_single_reorder_protect.js v1.01
+/* 147_music_single_reorder_protect.js v1.02
    Single tracks:
    - Long-press and drag to reorder.
    - Drag onto "保護しました♪" to protect the single track.
@@ -17,6 +17,7 @@
   var suppressClickUntil = 0;
   var observer = null;
   var autoRaf = 0;
+  var globalBound = false;
 
   function now(){ return Date.now ? Date.now() : new Date().getTime(); }
   function haptic(pattern){
@@ -93,8 +94,10 @@
       ".single-drag-ghost .music-v7-single-thumb img{width:100%!important;height:100%!important;object-fit:cover!important;display:block!important;}"+
       ".single-drag-ghost .music-v7-single-copy{min-width:0!important;}"+
       ".single-drag-ghost .music-v7-single-copy strong,.single-drag-ghost .music-v7-single-copy span{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;}"+
-      ".music-v7-favline.single-protect-available{transition:transform .16s ease,box-shadow .16s ease,background .16s ease,border-color .16s ease!important;box-shadow:0 0 0 1px rgba(255,232,138,.20),0 0 28px rgba(255,220,90,.12)!important;}"+
-      ".music-v7-favline.single-protect-hover{transform:scale(1.025)!important;background:rgba(255,225,110,.16)!important;border-color:rgba(255,235,150,.68)!important;box-shadow:0 0 34px rgba(255,220,90,.35)!important;}"+
+      ".music-v7-favline.single-protect-available{position:relative!important;min-height:82px!important;transform:scale(1.01)!important;transition:transform .16s ease,box-shadow .16s ease,background .16s ease,border-color .16s ease,min-height .16s ease!important;background:rgba(255,225,110,.10)!important;border:2px dashed rgba(255,235,150,.62)!important;box-shadow:0 0 0 4px rgba(255,222,100,.08),0 0 38px rgba(255,220,90,.25)!important;}"+
+      ".music-v7-favline.single-protect-available::after{content:\"シングルをここへ\";position:absolute;left:50%;bottom:7px;transform:translateX(-50%);white-space:nowrap;font-size:10px;font-weight:900;letter-spacing:.08em;color:rgba(255,244,195,.86);pointer-events:none;}"+
+      ".music-v7-favline.single-protect-hover{transform:scale(1.045)!important;background:rgba(255,225,110,.30)!important;border-style:solid!important;border-color:rgba(255,246,180,.98)!important;box-shadow:0 0 0 7px rgba(255,224,100,.15),0 0 56px rgba(255,220,90,.72)!important;filter:brightness(1.18)!important;}"+
+      ".music-v7-favline.single-protect-hover::after{content:\"指を離すと全曲保護♪\";color:#fff8cf;font-size:11px;}"+
       ".music-v7-favline.single-protect-success{animation:singleProtectPulse .52s ease both!important;}"+
       "@keyframes singleProtectPulse{0%{transform:scale(1)}35%{transform:scale(1.045);filter:brightness(1.35)}100%{transform:scale(1);filter:none}}"+
       ".single-protect-toast{position:fixed;left:50%;bottom:104px;z-index:2147483003;transform:translateX(-50%);padding:9px 14px;border-radius:999px;background:rgba(13,16,26,.94);border:1px solid rgba(255,255,255,.18);color:#fff;font-size:12px;font-weight:900;pointer-events:none;box-shadow:0 12px 36px rgba(0,0,0,.38);animation:singleProtectToast 1.25s ease both;}"+
@@ -120,7 +123,7 @@
   function begin(e,card,list){
     if(active || !card || !list || card.classList.contains("locked")) return;
     var p=point(e);
-    active={card:card,list:list,startX:p.x,startY:p.y,x:p.x,y:p.y,timer:0,dragging:false,ghost:null,offX:0,offY:0,width:0,height:0,overProtect:false,scrollEl:null};
+    active={card:card,list:list,startX:p.x,startY:p.y,x:p.x,y:p.y,timer:0,dragging:false,ghost:null,offX:0,offY:0,width:0,height:0,overProtect:false,scrollEl:null,zoneLabel:null};
     active.timer=setTimeout(startDrag,HOLD_MS);
   }
   function cancelPending(){ if(active&&!active.dragging){ clearTimeout(active.timer); active=null; } }
@@ -151,7 +154,13 @@
     a.ghost=makeGhost(a.card,r);a.scrollEl=findScrollContainer(a.list);
     a.card.classList.add("single-reorder-source");a.list.classList.add("single-reordering");
     document.documentElement.classList.add("single-drag-active");
-    var zone=favZone(); if(zone) zone.classList.add("single-protect-available");
+    var zone=favZone();
+    if(zone){
+      var label=zone.querySelector("strong");
+      a.zoneLabel=label ? label.textContent : null;
+      zone.classList.add("single-protect-available");
+      if(label) label.textContent="ここへ運ぶと保護♪";
+    }
     moveGhost();haptic(12);toast("並べ替え・上へ運ぶと保護");startAutoScroll();
   }
   function moveGhost(){
@@ -169,7 +178,11 @@
     var over=isOverZone(active.x,active.y),z=favZone();
     if(over!==active.overProtect){
       active.overProtect=over;
-      if(z) z.classList.toggle("single-protect-hover",over);
+      if(z){
+        z.classList.toggle("single-protect-hover",over);
+        var label=z.querySelector("strong");
+        if(label) label.textContent=over ? "ここで離すと全曲保護♪" : "ここへ運ぶと保護♪";
+      }
       if(over) haptic(8);
     }
   }
@@ -190,28 +203,60 @@
     stop(e);moveGhost();updateZone();moveItem();
   }
   function protectSingle(a){
-    var x=singleInfo(a.card),t=x.track;
-    if(!t||!t.id||typeof window.MEGANE_MUSIC_V7_TOGGLE_FAVORITE!=="function") return false;
-    var already=false;
-    try{ already=!!(window.MEGANE_MUSIC_V7_IS_FAVORITE&&window.MEGANE_MUSIC_V7_IS_FAVORITE(t.id)); }catch(_){ }
-    if(!already) window.MEGANE_MUSIC_V7_TOGGLE_FAVORITE(t.id);
+    var x=singleInfo(a.card),album=x.album||{};
+    var tracks=Array.isArray(album.tracks)?album.tracks.filter(function(t){return t&&t.id;}):[];
+    if(!tracks.length||typeof window.MEGANE_MUSIC_V7_TOGGLE_FAVORITE!=="function") return false;
+    var added=0,already=0;
+    tracks.forEach(function(t){
+      var isAlready=false;
+      try{ isAlready=!!(window.MEGANE_MUSIC_V7_IS_FAVORITE&&window.MEGANE_MUSIC_V7_IS_FAVORITE(t.id)); }catch(_){ }
+      if(isAlready){ already++; return; }
+      try{ window.MEGANE_MUSIC_V7_TOGGLE_FAVORITE(t.id); added++; }catch(_){ }
+    });
     haptic([15,30,15]);
-    var z=favZone();if(z){z.classList.remove("single-protect-hover");z.classList.add("single-protect-success");setTimeout(function(){if(z)z.classList.remove("single-protect-success");},560);}
-    toast(already?"すでに保護されています":"保護しました♪");
+    var z=favZone();
+    if(z){
+      z.classList.remove("single-protect-hover");
+      z.classList.add("single-protect-success");
+      setTimeout(function(){var current=favZone();if(current)current.classList.remove("single-protect-success");},560);
+    }
+    if(added>0) toast(tracks.length>1 ? tracks.length+"曲まとめて保護しました♪" : "保護しました♪");
+    else toast("すべて保護済みです");
     return true;
   }
   function finish(e,cancelled){
-    if(!active) return;var a=active;
-    if(a.dragging){stop(e);if(!cancelled&&a.overProtect) protectSingle(a);else saveOrder(a.list);suppressClickUntil=now()+500;}
-    cleanup();
+    if(!active){ removeStaleGhosts(); return; }
+    var a=active;
+    var shouldProtect=!!(a.dragging&&!cancelled&&a.overProtect);
+    if(a.dragging){ stop(e); suppressClickUntil=now()+500; }
+    // DOMの再描画より先にドラッグ表示を必ず片付ける。
+    cleanup(a);
+    if(!a.dragging) return;
+    if(shouldProtect) protectSingle(a);
+    else if(!cancelled) saveOrder(a.list);
   }
-  function cleanup(){
-    if(!active) return;var a=active;clearTimeout(a.timer);stopAutoScroll();
+  function removeStaleGhosts(){
+    Array.prototype.slice.call(document.querySelectorAll(".single-drag-ghost")).forEach(function(el){try{el.remove();}catch(_){}});
+    document.documentElement.classList.remove("single-drag-active");
+    var z=favZone();
+    if(z) z.classList.remove("single-protect-available","single-protect-hover");
+  }
+  function cleanup(a){
+    a=a||active;
+    if(!a){ removeStaleGhosts(); return; }
+    clearTimeout(a.timer);stopAutoScroll();
     if(a.ghost&&a.ghost.parentNode)a.ghost.remove();
     if(a.card)a.card.classList.remove("single-reorder-source");
     if(a.list)a.list.classList.remove("single-reordering");
-    var z=favZone();if(z)z.classList.remove("single-protect-available","single-protect-hover");
-    document.documentElement.classList.remove("single-drag-active");active=null;
+    var z=favZone();
+    if(z){
+      z.classList.remove("single-protect-available","single-protect-hover");
+      var label=z.querySelector("strong");
+      if(label&&a.zoneLabel!=null) label.textContent=a.zoneLabel;
+    }
+    document.documentElement.classList.remove("single-drag-active");
+    if(active===a) active=null;
+    removeStaleGhosts();
   }
   function autoStep(){
     if(!active||!active.dragging){autoRaf=0;return;}
@@ -243,13 +288,18 @@
     if(!list||list.dataset.singleReorderBound==="1") return;
     list.dataset.singleReorderBound="1";list.classList.add("single-reorder-ready");applyOrder(list);
     list.addEventListener("touchstart",function(e){var c=e.target.closest&&e.target.closest(".music-v7-single-card");if(c&&list.contains(c))begin(e,c,list);},{passive:true});
-    document.addEventListener("touchmove",onMove,{passive:false,capture:true});
-    document.addEventListener("touchend",function(e){finish(e,false);},{passive:false,capture:true});
-    document.addEventListener("touchcancel",function(e){if(active&&active.dragging)finish(e,false);else cancelPending();},{passive:false,capture:true});
     // PC fallback: supported but mobile remains the primary target.
     list.addEventListener("mousedown",function(e){if(e.button!==0)return;var c=e.target.closest&&e.target.closest(".music-v7-single-card");if(c&&list.contains(c))begin(e,c,list);});
+  }
+  function bindGlobal(){
+    if(globalBound) return; globalBound=true;
+    document.addEventListener("touchmove",onMove,{passive:false,capture:true});
+    document.addEventListener("touchend",function(e){finish(e,false);},{passive:false,capture:true});
+    document.addEventListener("touchcancel",function(e){if(active&&active.dragging)finish(e,true);else cancelPending();removeStaleGhosts();},{passive:false,capture:true});
     document.addEventListener("mousemove",onMove,true);
     document.addEventListener("mouseup",function(e){finish(e,false);},true);
+    window.addEventListener("blur",function(){if(active)finish({cancelable:false,stopPropagation:function(){}},true);else removeStaleGhosts();});
+    document.addEventListener("visibilitychange",function(){if(document.hidden){if(active)finish({cancelable:false,stopPropagation:function(){}},true);else removeStaleGhosts();}});
   }
   function polish(){
     injectStyle();var list=singleList();if(list){bind(list);applyOrder(list);}
@@ -258,6 +308,8 @@
     if(now()<suppressClickUntil && e.target.closest && e.target.closest(".music-v7-single-card")) stop(e);
   },true);
   function start(){
+    bindGlobal();
+    removeStaleGhosts();
     polish();
     if(observer)observer.disconnect();
     observer=new MutationObserver(function(){clearTimeout(observer._t);observer._t=setTimeout(polish,30);});
