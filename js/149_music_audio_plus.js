@@ -1,3 +1,4 @@
+/* v1.13.2: preserve live album artwork URL when saving metadata/tracks */
 /* v1.13.1: custom album artwork redraw fix */
 /* v1.13: custom album drag-and-drop integration uses the existing track API */
 /* v1.12.2: long-title guard + pencil edit icon + album title counter */
@@ -587,9 +588,11 @@
       if(!row || row.recordType!=="customAlbum") throw new Error("Custom album not found");
       var nextTitle=String(changes.title==null?row.title:changes.title).trim().slice(0,80);
       if(!nextTitle) throw new Error("Album title required");
+      var regenerateAutoArtwork=!!(row.artworkAuto && nextTitle!==row.title);
+      var artworkChanged=!!changes.artworkBlob || !!changes.resetArtwork || regenerateAutoArtwork;
       var artPromise=Promise.resolve(row.artworkBlob);
       if(changes.artworkBlob) artPromise=normalizeArtworkBlob(changes.artworkBlob);
-      else if(changes.resetArtwork || (row.artworkAuto && nextTitle!==row.title)) artPromise=defaultAlbumArtworkBlobV109(nextTitle);
+      else if(changes.resetArtwork || regenerateAutoArtwork) artPromise=defaultAlbumArtworkBlobV109(nextTitle);
       return artPromise.then(function(blob){
         row.title=nextTitle;
         if(blob) row.artworkBlob=blob;
@@ -597,7 +600,25 @@
         if(changes.resetArtwork) row.artworkAuto=true;
         if(Array.isArray(changes.trackIds)) row.trackIds=changes.trackIds.map(String).filter(Boolean);
         row.updatedAt=Date.now();
-        return dbPut(row).then(function(){ refreshCustomAlbumRuntimeV112(row); render(); return row; });
+        return dbPut(row).then(function(){
+          // Metadata or track-only saves must not replace the live Blob URL.
+          // iOS Safari may keep the old DOM image node during render; replacing and
+          // revoking that URL made the jacket appear broken until the next reload.
+          if(!artworkChanged){
+            var live=customAlbumRuntimeByIdV110(row.id);
+            if(live){
+              live.title=String(row.title||live.title||'新しいアルバム');
+              live._trackIds=Array.isArray(row.trackIds)?row.trackIds.slice():[];
+              syncOneCustomAlbumTracksV110(live);
+            }else{
+              refreshCustomAlbumRuntimeV112(row);
+            }
+          }else{
+            refreshCustomAlbumRuntimeV112(row);
+          }
+          render();
+          return row;
+        });
       });
     });
   };
