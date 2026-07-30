@@ -883,6 +883,15 @@
         +".music-v7-restricted-album .music-v7-unlock-mask span{margin-top:10px!important;font-size:clamp(11px,3.2vw,14px)!important;line-height:1.35!important}"
         +".music-v7-restricted-album .music-v7-unlock-mask em{margin-top:6px!important;font-size:clamp(10px,2.8vw,12px)!important;line-height:1.3!important}"
         +".music-v7-restricted-album .music-v7-unlock-mask::after{content:none!important;display:none!important}"
+        +".music-v7-album-copy{min-width:0}"
+        +".music-v7-album-copy strong{display:-webkit-box!important;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;text-overflow:ellipsis;white-space:normal!important;word-break:break-word;line-height:1.12;max-height:2.24em}"
+        +".music-v7-sheet-head.custom-album-head1122{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:'title edit close' 'count edit close';column-gap:8px;row-gap:2px;align-items:center}"
+        +".music-v7-sheet-head.custom-album-head1122 .album-title1122{grid-area:title;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;text-overflow:ellipsis;white-space:normal;word-break:break-word;line-height:1.15;max-height:2.3em;min-width:0}"
+        +".music-v7-sheet-head.custom-album-head1122 .album-count1122{grid-area:count;margin:0!important;font-size:12px;color:rgba(255,230,170,.72);font-weight:900}"
+        +".music-v7-sheet-head.custom-album-head1122 .album-edit1122{grid-area:edit;width:42px;height:42px;padding:0;border:0;border-radius:999px;background:rgba(255,255,255,.06);color:#fff;display:grid;place-items:center;transition:transform .12s ease,opacity .12s ease}"
+        +".music-v7-sheet-head.custom-album-head1122 .album-edit1122:active{transform:scale(.94);opacity:.72}"
+        +".music-v7-sheet-head.custom-album-head1122 .album-edit1122 svg{width:21px;height:21px;display:block}"
+        +".music-v7-sheet-head.custom-album-head1122 #musicV7SheetClose{grid-area:close;margin-left:0}"
         +"@media(max-width:375px){"
           +".music-v7-single-card{grid-template-columns:48px minmax(0,1fr) auto;gap:9px;padding:9px 10px}"
           +".music-v7-single-thumb{width:48px;height:48px;border-radius:12px}"
@@ -1076,10 +1085,12 @@
         + '<span>'+esc(info.no)+'</span><strong>'+esc(info.title)+'</strong><em>'+esc(mark)+'</em><b data-fav="'+esc(t.id)+'" class="'+(isFav(t.id)?"on":"")+'">★</b>'
         + '</button>';
     }).join("");
+    var isCustomAlbum1122 = !!(a && a._meganeCustomAlbum109);
+    var editIcon1122 = '<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>';
     return '<div id="musicV7Sheet" class="music-v7-sheet">'
       + '<div class="music-v7-handle"></div>'
-      + '<div class="music-v7-sheet-head"><strong>'+esc(a.title)+'</strong><small style="margin-left:10px;color:rgba(255,230,170,.72);font-weight:900;">'+esc(prog && prog.total ? prog.text : "")+'</small>'
-      + (a && a._meganeCustomAlbum109 ? '<button id="musicV7CustomAlbumEdit112" data-custom-album-id="'+esc(a._userCustomAlbumId||"")+'" style="margin-left:auto;margin-right:4px;width:auto;padding:0 10px;font-size:13px;font-weight:900;color:#ffe7a0;background:rgba(255,231,160,.10);border:1px solid rgba(255,231,160,.18);border-radius:999px;">編集</button>' : '')
+      + '<div class="music-v7-sheet-head '+(isCustomAlbum1122?'custom-album-head1122':'')+'"><strong class="'+(isCustomAlbum1122?'album-title1122':'')+'">'+esc(a.title)+'</strong><small class="'+(isCustomAlbum1122?'album-count1122':'')+'" style="'+(isCustomAlbum1122?'':'margin-left:10px;')+'color:rgba(255,230,170,.72);font-weight:900;">'+esc(prog && prog.total ? prog.text : "")+'</small>'
+      + (isCustomAlbum1122 ? '<button type="button" id="musicV7CustomAlbumEdit112" class="album-edit1122" data-custom-album-id="'+esc(a._userCustomAlbumId||"")+'" aria-label="アルバムを編集" title="アルバムを編集">'+editIcon1122+'</button>' : '')
       + '<button id="musicV7SheetClose">×</button></div>'
       + '<div class="music-v7-track-list">'+rows+'</div>'
       + '</div>';
