@@ -1,4 +1,4 @@
-/* 149_music_audio_plus.js v1.03
+/* 149_music_audio_plus.js v1.03.1 HOTFIX
  * Music mode: ＋から端末内の音声ファイルを「迷子」へ追加。
  * - audio file only
  * - IndexedDB persistence (Blob included)
@@ -45,6 +45,13 @@
     return String(name||"音声ファイル").replace(/\.[^.]+$/," ").trim() || "音声ファイル";
   }
   function safeText(s){ return String(s||"").replace(/[<>&\"']/g,""); }
+
+
+  function legacyCoverData(title){
+    var t=safeText(title).slice(0,18);
+    var svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1200"><defs><radialGradient id="g" cx="32%" cy="22%" r="95%"><stop offset="0" stop-color="#70485d"/><stop offset=".48" stop-color="#331426"/><stop offset="1" stop-color="#100811"/></radialGradient></defs><rect width="1200" height="1200" fill="url(#g)"/><circle cx="600" cy="518" r="246" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="5"/><circle cx="600" cy="518" r="87" fill="none" stroke="rgba(255,238,166,.58)" stroke-width="11"/><text x="600" y="570" text-anchor="middle" font-size="260" fill="#fff2b2" font-family="-apple-system,BlinkMacSystemFont,sans-serif">♪</text><text x="600" y="914" text-anchor="middle" font-size="64" font-weight="800" fill="white" font-family="-apple-system,BlinkMacSystemFont,sans-serif">MY AUDIO</text><text x="600" y="1005" text-anchor="middle" font-size="44" fill="rgba(255,255,255,.72)" font-family="-apple-system,BlinkMacSystemFont,sans-serif">'+t+'</text></svg>';
+    return "data:image/svg+xml;charset=utf-8,"+encodeURIComponent(svg);
+  }
 
   function canvasToPngBlob(canvas){
     return new Promise(function(resolve,reject){
@@ -150,7 +157,7 @@
     var title=String(row.title||row.fileName||"音声ファイル");
     if(artworkUrls[row.id]){ try{ URL.revokeObjectURL(artworkUrls[row.id]); }catch(_){ } }
     var artworkBlob=row.artworkBlob || null;
-    var cover=artworkBlob ? URL.createObjectURL(artworkBlob) : (row.cover || "");
+    var cover=artworkBlob ? URL.createObjectURL(artworkBlob) : (row.cover || legacyCoverData(title));
     if(artworkBlob) artworkUrls[row.id]=cover;
     return {
       id:"user_audio_album_"+row.id,
@@ -186,16 +193,27 @@
   function loadSaved(){
     return dbAll().then(function(rows){
       rows.sort(function(a,b){ return Number(a.createdAt||0)-Number(b.createdAt||0); });
+
+      // 最優先で既存曲を復元する。PNG移行に失敗しても曲と＋ボタンは消さない。
       var changed=false;
-      var migrations=[];
       rows.forEach(function(row){
-        if(!row.artworkBlob){
-          migrations.push(defaultArtworkBlob(row.title||row.fileName||"MY AUDIO").then(function(blob){ row.artworkBlob=blob; row.cover=""; return dbPut(row); }));
-        }
+        var a=albumFromRow(row);
+        if(a && insertAlbum(a)) changed=true;
       });
-      return Promise.all(migrations).then(function(){
-        rows.forEach(function(row){ var a=albumFromRow(row); if(a && insertAlbum(a)) changed=true; });
-        if(changed) render();
+      if(changed) render();
+
+      // 旧SVGジャケットの1200px PNG化はバックグラウンドで1件ずつ実行。
+      rows.forEach(function(row){
+        if(row.artworkBlob) return;
+        defaultArtworkBlob(row.title||row.fileName||"MY AUDIO").then(function(blob){
+          row.artworkBlob=blob; row.artworkVersion=103; row.cover="";
+          return dbPut(row);
+        }).then(function(){
+          var a=albumFromRow(row);
+          if(a && insertAlbum(a)) render();
+        }).catch(function(err){
+          console.warn("[149] artwork migration skipped",row && row.id,err);
+        });
       });
     }).catch(function(err){ console.warn("[149] saved audio load failed",err); });
   }
