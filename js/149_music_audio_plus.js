@@ -1,3 +1,4 @@
+/* v1.13: custom album drag-and-drop integration uses the existing track API */
 /* v1.12.2: long-title guard + pencil edit icon + album title counter */
 /* v1.12.5: expanded album track picker while keeping editor actions fixed */
 /* v1.10: custom album detail + add tracks from 持ち物 */
