@@ -1,3 +1,4 @@
+/* v1.13.1: custom album artwork redraw fix */
 /* v1.13: custom album drag-and-drop integration uses the existing track API */
 /* v1.12.2: long-title guard + pencil edit icon + album title counter */
 /* v1.12.5: expanded album track picker while keeping editor actions fixed */
@@ -469,9 +470,15 @@
 
   function customAlbumFromRowV109(row){
     if(!row || row.recordType!=="customAlbum" || !row.id) return null;
-    if(customAlbumArtworkUrls[row.id]){ try{ URL.revokeObjectURL(customAlbumArtworkUrls[row.id]); }catch(_){ } }
+    // v1.13.1: 保存直後の再描画中に、現在DOMが参照しているBlob URLを
+    // 先に破棄するとSafariで一時的に壊れた画像になる。新URLへ差し替えた後、
+    // 旧URLは少し待ってから破棄する。
+    var previousArtworkUrl=customAlbumArtworkUrls[row.id]||"";
     var cover="";
     if(row.artworkBlob){ cover=URL.createObjectURL(row.artworkBlob); customAlbumArtworkUrls[row.id]=cover; }
+    if(previousArtworkUrl && previousArtworkUrl!==cover){
+      setTimeout(function(){ try{ URL.revokeObjectURL(previousArtworkUrl); }catch(_){ } },1800);
+    }
     return {
       id:"user_custom_album_"+row.id,
       type:"album",

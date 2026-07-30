@@ -45,6 +45,7 @@
     favTouchStartY: 0,
     favTouchMoveRow: null,
     favTouchMoved: false,
+    customAlbumTouchMoved: false,
     favReorderTimer: 0,
     favReorderActive: false,
     favReorderRow: null,
@@ -385,6 +386,10 @@
   }
   function isFavoritesListOpen(){
     return state.browsingAlbum === -1 || state.sheetAlbumKey === "favorites" || state.screen === "favorites";
+  }
+  function customAlbumListOpen(){
+    var a=browseAlbum();
+    return !!(a && a._meganeCustomAlbum109 && a._userCustomAlbumId);
   }
   function browseTrack(){
     return browseTracks()[state.browsingTrack] || null;
@@ -1079,12 +1084,13 @@
       var info = parseTitle(t, i);
       var active = (sheetUsesFavorites ? i === state.track : (state.queueMode === "album" && state.album === state.browsingAlbum && i === state.track));
       var favMode = isFavoritesListOpen();
+      var customAlbumMode = !!(a && a._meganeCustomAlbum109);
       var deleteOpen = favMode && state.favDeleteOpenId === t.id;
       var tst = musicTrackUnlockState(a, t, i);
       if(tst && tst.hidden && !tst.unlocked) return "";
       var locked = musicTrackLocked(a, t, i);
       var mark = locked ? (tst.label || "🔒") : (active ? "♪" : "");
-      return '<button type="button" class="music-v7-track '+(active?"active":"")+' '+(favMode?"fav-mode":"")+' '+(locked?"locked":"")+'" data-track="'+i+'" data-track-id="'+esc(t.id)+'" data-locked="'+(locked?"1":"0")+'">'
+      return '<button type="button" class="music-v7-track '+(active?"active":"")+' '+(favMode?"fav-mode":"")+' '+(customAlbumMode?"custom-album-mode":"")+' '+(locked?"locked":"")+'" data-track="'+i+'" data-track-id="'+esc(t.id)+'" data-user-audio-id="'+esc(userAudioIdFromTrack(t))+'" data-locked="'+(locked?"1":"0")+'">'
         + '<span>'+esc(info.no)+'</span><strong>'+esc(info.title)+'</strong><em>'+esc(mark)+'</em><b data-fav="'+esc(t.id)+'" class="'+(isFav(t.id)?"on":"")+'">★</b>'
         + '</button>';
     }).join("");
@@ -1539,6 +1545,10 @@
           state.favTouchMoved = false;
           return;
         }
+        if(customAlbumListOpen() && state.customAlbumTouchMoved){
+          state.customAlbumTouchMoved = false;
+          return;
+        }
         var chosen = Number(row.dataset.track || 0);
         if(isFavoritesListOpen()){
           state.browsingAlbum = -1;
@@ -1682,6 +1692,74 @@
         state.favTouchMoveRow = null;
         setTimeout(function(){ state.favTouchMoved = false; }, 0);
       }, {passive:false});
+
+      // v1.13.1: カスタムアルバム内も同じ左スワイプUIで所属解除。
+      // 音声本体は削除せず「🎒 持ち物」に残す。
+      var customSwipeRow=null, customSwipeStartX=0, customSwipeStartY=0;
+      function removeTrackFromCustomAlbumWithRow(row){
+        var album=browseAlbum();
+        if(!row || !album || !album._meganeCustomAlbum109 || !album._userCustomAlbumId) return;
+        var audioId=String(row.dataset.userAudioId||"");
+        if(!audioId || typeof window.MEGANE_CUSTOM_ALBUM_SET_TRACKS_V110!=="function") return;
+        var ids=(Array.isArray(album._trackIds)?album._trackIds:[]).map(String).filter(function(id){return id!==audioId;});
+        rememberSheetScroll();
+        row.classList.add("removing");
+        row.style.transform="";
+        setTimeout(function(){
+          window.MEGANE_CUSTOM_ALBUM_SET_TRACKS_V110(String(album._userCustomAlbumId),ids).then(function(){
+            var next=browseTracks();
+            if(state.browsingTrack>=next.length) state.browsingTrack=Math.max(0,next.length-1);
+            if(state.queueMode==="album" && state.album===state.browsingAlbum && state.track>=next.length){
+              state.track=Math.max(0,next.length-1);
+            }
+            state.sheet=true; state.lyrics=false;
+            saveState(); render(); restoreSheetScroll();
+            try{ toast("アルバムから外しました"); }catch(_){ }
+          }).catch(function(err){
+            try{console.error("[52] custom album swipe remove failed",err);}catch(_){ }
+            render(); restoreSheetScroll();
+          });
+        },190);
+      }
+      sheet.addEventListener("touchstart",function(e){
+        if(!customAlbumListOpen()) return;
+        var row=e.target&&e.target.closest?e.target.closest(".music-v7-track.custom-album-mode"):null;
+        if(!row) return;
+        var t=e.touches&&e.touches[0];
+        customSwipeStartX=t?t.clientX:0; customSwipeStartY=t?t.clientY:0;
+        customSwipeRow=row; state.customAlbumTouchMoved=false;
+        row.classList.add("dragging");
+      },{passive:true});
+      sheet.addEventListener("touchmove",function(e){
+        if(!customAlbumListOpen() || !customSwipeRow) return;
+        var t=e.touches&&e.touches[0]; if(!t) return;
+        var dx=t.clientX-customSwipeStartX, dy=t.clientY-customSwipeStartY;
+        if(Math.abs(dx)>12 && Math.abs(dx)>Math.abs(dy)*1.15){
+          e.preventDefault(); state.customAlbumTouchMoved=true;
+          var maxPull=Math.min(220,Math.max(120,customSwipeRow.offsetWidth*.52));
+          var pull=Math.max(-maxPull,Math.min(0,dx));
+          customSwipeRow.style.transform="translateX("+pull+"px)";
+          if(pull < -Math.min(160,customSwipeRow.offsetWidth*.38)) customSwipeRow.classList.add("delete-ready");
+          else customSwipeRow.classList.remove("delete-ready");
+        }
+      },{passive:false});
+      sheet.addEventListener("touchend",function(e){
+        if(!customAlbumListOpen() || !customSwipeRow) return;
+        var row=customSwipeRow, t=e.changedTouches&&e.changedTouches[0];
+        var dx=(t?t.clientX:0)-customSwipeStartX, dy=(t?t.clientY:0)-customSwipeStartY;
+        row.classList.remove("dragging"); customSwipeRow=null;
+        var threshold=Math.min(160,Math.max(115,row.offsetWidth*.38));
+        if(dx < -threshold && Math.abs(dx)>Math.abs(dy)*1.1){
+          e.preventDefault(); e.stopPropagation();
+          removeTrackFromCustomAlbumWithRow(row); return;
+        }
+        row.style.transform=""; row.classList.remove("delete-ready");
+        setTimeout(function(){state.customAlbumTouchMoved=false;},0);
+      },{passive:false});
+      sheet.addEventListener("touchcancel",function(){
+        if(customSwipeRow){customSwipeRow.style.transform="";customSwipeRow.classList.remove("dragging","delete-ready");}
+        customSwipeRow=null; state.customAlbumTouchMoved=false;
+      },{passive:true});
 
       // お気に入り曲：長押しして上下ドラッグで並び替え。
       // 左スワイプ削除とは方向と開始タイミングを分離する。
