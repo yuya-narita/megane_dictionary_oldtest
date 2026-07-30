@@ -1,6 +1,7 @@
+/* v1.06: user audio lyrics / memo editing */
 /* v1.05: user audio title editing */
 /* v1.04.2 UI spacing hotfix: independent bottom buttons preserved */
-/* 149_music_audio_plus.js v1.05
+/* 149_music_audio_plus.js v1.06
  * Music mode: ＋から端末内の音声ファイルを「迷子」へ追加。
  * - audio file only
  * - IndexedDB persistence (Blob included)
@@ -193,6 +194,7 @@
     if(album.tracks && album.tracks[0]){
       album.tracks[0].title=title;
       album.tracks[0].tag=title;
+      album.tracks[0].memo=String(row.memo||row.lyrics||row.text||"");
     }
     if(row.artworkBlob){
       if(artworkUrls[id]){ try{ URL.revokeObjectURL(artworkUrls[id]); }catch(_){ } }
@@ -228,6 +230,30 @@
       }).catch(function(){ return dbPut(row); });
     }).then(function(row){
       updateLoadedAlbumTitleV105(id,row);
+      render();
+      return row;
+    });
+  };
+
+  function updateLoadedAlbumMemoV106(id,row){
+    var arr=playlists();
+    if(!arr) return;
+    var albumId="user_audio_album_"+id;
+    var album=arr.find(function(a){ return a && a.id===albumId; });
+    if(!album || !album.tracks || !album.tracks[0]) return;
+    album.tracks[0].memo=String(row.memo||"");
+  }
+
+  window.MEGANE_USER_AUDIO_MEMO_SAVE_V106=function(id,memo){
+    id=String(id||"");
+    memo=String(memo==null?"":memo).replace(/\r\n?/g,"\n").slice(0,30000);
+    if(!id) return Promise.reject(new Error("User audio id required"));
+    return dbGet(id).then(function(row){
+      if(!row) throw new Error("Audio data not found");
+      row.memo=memo;
+      return dbPut(row);
+    }).then(function(row){
+      updateLoadedAlbumMemoV106(id,row);
       render();
       return row;
     });
@@ -274,6 +300,7 @@
         audio:src,
         cover:cover,
         artworkMime: artworkBlob ? (artworkBlob.type || "image/png") : "",
+        memo:String(row.memo||row.lyrics||row.text||""),
         tag:title,
         _meganeUserAudio149:true,
         _userAudioId:row.id
@@ -354,7 +381,7 @@
       var row={
         id:uid(), title:title, fileName:file.name||title,
         mime:file.type||"application/octet-stream", size:Number(file.size||0),
-        blob:file, createdAt:Date.now(), artworkBlob:artworkBlob, artworkVersion:103, cover:""
+        blob:file, createdAt:Date.now(), artworkBlob:artworkBlob, artworkVersion:103, cover:"", memo:""
       };
       return dbPut(row).then(function(){
       var album=albumFromRow(row);

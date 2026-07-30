@@ -1079,7 +1079,7 @@
     return '<div id="musicV7Lyrics" class="music-v7-lyrics '+(state.lyrics?'open':'')+'">'
       + '<div class="music-v7-handle"></div>'
       + '<div class="music-v7-sheet-head"><strong>'+esc(info.title)+'</strong><button id="musicV7LyricsClose">×</button></div>'
-      + '<div class="music-v7-lyrics-body">'+esc(lyric).replace(/\n/g, "<br>")+'</div>'
+      + '<div class="music-v7-lyrics-body">'+esc(String(lyric||"").replace(/\\n/g,"\n")).replace(/\n/g, "<br>")+'</div>'
       + '</div>';
   }
 
@@ -1101,6 +1101,13 @@
       ".music-user-edit-v104 .title-input:focus{border-color:rgba(255,232,138,.62);box-shadow:0 0 0 3px rgba(255,232,138,.09)}"+
       ".music-user-edit-v104 .title-save{height:52px;padding:0 15px;border-radius:15px;border:1px solid rgba(255,232,138,.30);background:rgba(255,232,138,.12);color:#ffe88a;font-size:14px;font-weight:900;white-space:nowrap}"+
       ".music-user-edit-v104 .title-save:disabled{opacity:.48}"+
+      ".music-user-edit-v104 .memo-label{display:block;margin:10px 2px 7px;color:rgba(255,255,255,.72);font-size:12px;font-weight:900}"+
+      ".music-user-edit-v104 .memo-input{display:block;width:100%;min-height:150px;resize:vertical;padding:14px;border-radius:16px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.055);color:#fff;font:700 15px/1.6 -apple-system,BlinkMacSystemFont,sans-serif;outline:none;box-sizing:border-box;white-space:pre-wrap}"+
+      ".music-user-edit-v104 .memo-input:focus{border-color:rgba(255,232,138,.62);box-shadow:0 0 0 3px rgba(255,232,138,.09)}"+
+      ".music-user-edit-v104 .memo-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0 14px}"+
+      ".music-user-edit-v104 .memo-count{color:rgba(255,255,255,.42);font-size:11px;font-weight:800}"+
+      ".music-user-edit-v104 .memo-save{min-height:44px;padding:0 18px;border-radius:14px;border:1px solid rgba(255,232,138,.30);background:rgba(255,232,138,.12);color:#ffe88a;font-size:14px;font-weight:900}"+
+      ".music-user-edit-v104 .memo-save:disabled{opacity:.48}"+
       ".music-user-edit-v104 .action{width:100%;min-height:56px;margin:8px 0;border-radius:16px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.055);color:#fff;font-size:16px;font-weight:800;text-align:left;padding:0 18px}"+
       ".music-user-edit-v104 .delete{color:#ff7676;border-color:rgba(255,96,96,.25);background:rgba(255,70,70,.08)}"+
       ".music-user-edit-backdrop-v104{position:fixed;inset:0;z-index:2147482400;background:rgba(0,0,0,.42);opacity:0;pointer-events:none;transition:opacity .2s ease}"+
@@ -1119,7 +1126,9 @@
       + '<div class="track-name">'+esc((info && info.title) || (t && t.title) || "追加した音声")+'</div>'
       + '<label class="title-label" for="musicUserTitleV105">曲名</label>'
       + '<div class="title-row"><input id="musicUserTitleV105" class="title-input" type="text" maxlength="80" value="'+esc((t && t.title) || "")+'" autocomplete="off"><button id="musicUserTitleSaveV105" class="title-save" type="button">保存</button></div>'
-      + '<button id="musicUserEditMemoV104" class="action" type="button">歌詞・メモを見る</button>'
+      + '<label class="memo-label" for="musicUserMemoV106">歌詞・メモ</label>'
+      + '<textarea id="musicUserMemoV106" class="memo-input" maxlength="30000" placeholder="歌詞、制作メモ、修正点、公開先URLなどを自由に記入できます。">'+esc(String((t && (t.memo||t.lyrics||t.text)) || "").replace(/\\n/g,"\n"))+'</textarea>'
+      + '<div class="memo-foot"><span id="musicUserMemoCountV106" class="memo-count"></span><button id="musicUserMemoSaveV106" class="memo-save" type="button">メモを保存</button></div>'
       + '<button id="musicUserDeleteV104" class="action delete" type="button">この曲を削除</button>'
       + '</div>';
   }
@@ -1148,6 +1157,22 @@
       console.error("[v1.05] user audio rename failed",err);
       alert("曲名を変更できませんでした。もう一度お試しください。");
       if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent="保存"; }
+    });
+  }
+
+  function saveUserAudioMemoV106(userId,memo){
+    if(!userId || typeof window.MEGANE_USER_AUDIO_MEMO_SAVE_V106!=="function") return;
+    var btn=$("musicUserMemoSaveV106");
+    if(btn){ btn.disabled=true; btn.textContent="保存中…"; }
+    window.MEGANE_USER_AUDIO_MEMO_SAVE_V106(userId,memo).then(function(){
+      state.edit=false;
+      saveState();
+      render();
+      try{ if(window.MEGANE_TOAST) window.MEGANE_TOAST("歌詞・メモを保存しました"); }catch(e){}
+    }).catch(function(err){
+      console.error("[v1.06] user audio memo save failed",err);
+      alert("歌詞・メモを保存できませんでした。もう一度お試しください。");
+      if(btn){ btn.disabled=false; btn.textContent="メモを保存"; }
     });
   }
 
@@ -1188,7 +1213,15 @@
     var closeL = $("musicV7LyricsClose"); if(closeL) closeL.onclick = function(){ state.lyrics = false; render(); };
     var editClose=$("musicUserEditCloseV104"); if(editClose) editClose.onclick=function(){ state.edit=false; render(); };
     var editBg=$("musicUserEditBackdropV104"); if(editBg) editBg.onclick=function(){ state.edit=false; render(); };
-    var editMemo=$("musicUserEditMemoV104"); if(editMemo) editMemo.onclick=function(){ state.edit=false; state.lyrics=true; render(); };
+    var memoInput=$("musicUserMemoV106");
+    var memoCount=$("musicUserMemoCountV106");
+    function updateMemoCountV106(){ if(memoCount && memoInput) memoCount.textContent=String(memoInput.value.length)+" / 30000"; }
+    if(memoInput){ memoInput.addEventListener("input",updateMemoCountV106); updateMemoCountV106(); }
+    var memoSave=$("musicUserMemoSaveV106"); if(memoSave) memoSave.onclick=function(){
+      var box=$("musicUserEditV104");
+      var userId=box && box.dataset ? box.dataset.userAudioId : "";
+      saveUserAudioMemoV106(userId,memoInput ? memoInput.value : "");
+    };
     var titleInput=$("musicUserTitleV105");
     var titleSave=$("musicUserTitleSaveV105");
     function commitTitleV105(){
