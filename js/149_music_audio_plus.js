@@ -1,4 +1,4 @@
-/* v1.11: custom album playback matches built-in albums; long-press opens editor */
+/* v1.11.1: custom album playback + dedicated menu button; long-press reserved for album reorder */
 /* v1.10: custom album detail + add tracks from 持ち物 */
 /* v1.09: custom album creation + 持ち物 label */
 /* v1.08: user video artwork + source-file safety notice */
@@ -699,6 +699,7 @@
       ".music-album-detail110 .head110{display:flex;align-items:center;gap:13px}.music-album-detail110 .cover110{width:74px;height:74px;border-radius:15px;object-fit:cover;background:#100b12}.music-album-detail110 .copy110{min-width:0;flex:1}.music-album-detail110 h3{margin:0;font-size:21px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.music-album-detail110 .count110{margin-top:5px;color:rgba(255,255,255,.58);font-size:12px;font-weight:850}.music-album-detail110 .close110{width:42px;height:42px;border:0;background:transparent;color:#fff;font-size:29px}"+
       ".music-album-detail110 .empty110{margin:25px 0;padding:28px 14px;border:1px dashed rgba(255,255,255,.16);border-radius:18px;color:rgba(255,255,255,.55);text-align:center;font-weight:850;line-height:1.6}.music-album-detail110 .tracks110{display:grid;gap:9px;margin:18px 0}.music-album-detail110 .track110{display:grid;grid-template-columns:46px minmax(0,1fr);align-items:center;gap:11px;padding:9px;border-radius:15px;background:rgba(255,255,255,.055)}.music-album-detail110 .track110 img{width:46px;height:46px;border-radius:11px;object-fit:cover}.music-album-detail110 .track110 strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"+
       ".music-album-detail110 .add110{width:100%;min-height:54px;border:1px solid rgba(255,232,138,.28);border-radius:16px;background:rgba(255,232,138,.11);color:#ffe88a;font-size:16px;font-weight:900}.music-album-picker110{position:fixed;left:12px;right:12px;bottom:calc(86px + env(safe-area-inset-bottom));z-index:2147483010;max-height:70dvh;overflow:auto;padding:17px;border-radius:25px;background:rgba(24,15,26,.995);border:1px solid rgba(255,255,255,.16);box-shadow:0 24px 70px rgba(0,0,0,.66);color:#fff}.music-album-picker110 h3{margin:0 0 12px}.music-album-picker110 label{display:grid;grid-template-columns:24px 48px minmax(0,1fr);align-items:center;gap:10px;padding:9px 3px;border-bottom:1px solid rgba(255,255,255,.07)}.music-album-picker110 label img{width:48px;height:48px;border-radius:11px;object-fit:cover}.music-album-picker110 label strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.music-album-picker110 .actions110{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}.music-album-picker110 button{min-height:48px;border:0;border-radius:14px;background:rgba(255,255,255,.08);color:#fff;font-weight:900}.music-album-picker110 button.primary{background:#fff;color:#251522}"+
+      ".music-v7-album-art.custom-album-menu-host111{position:relative!important}.custom-album-menu111{position:absolute!important;right:4px!important;top:4px!important;z-index:20!important;width:34px!important;height:34px!important;display:grid!important;place-items:center!important;padding:0!important;border:0!important;border-radius:999px!important;background:rgba(18,10,22,.72)!important;color:#fff!important;font-size:23px!important;font-weight:900!important;line-height:1!important;box-shadow:0 5px 16px rgba(0,0,0,.34)!important;-webkit-backdrop-filter:blur(8px)!important;backdrop-filter:blur(8px)!important;touch-action:manipulation!important;-webkit-user-select:none!important;user-select:none!important}.custom-album-menu111:active{transform:scale(.92)!important}"+
       ".music-audio-toast149{position:fixed;left:50%;bottom:calc(158px + env(safe-area-inset-bottom));z-index:2147483003;transform:translateX(-50%);padding:10px 15px;border-radius:999px;background:rgba(14,10,17,.94);border:1px solid rgba(255,255,255,.18);color:#fff;font-size:12px;font-weight:900;white-space:nowrap;pointer-events:none;box-shadow:0 14px 38px rgba(0,0,0,.42);animation:musicAudioToast149 1.5s ease both}"+
       "@keyframes musicAudioToast149{0%{opacity:0;transform:translate(-50%,9px)}14%,76%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-6px)}}@keyframes musicAudioPlusPulse149{to{transform:scale(.94);opacity:.55}}";
     document.head.appendChild(st);
@@ -765,12 +766,9 @@
     document.body.appendChild(sh);
   }
 
-  // v1.11:
+  // v1.11.1:
   // 通常タップは既存アルバムと同じプレイヤーへ任せる。
-  // 空アルバムだけ編集画面を開き、曲入りアルバムは長押しで編集できる。
-  var customAlbumLongPress111=null;
-  var customAlbumSuppressClick111=false;
-
+  // 長押しはアルバム並び替え専用に戻し、編集は右上の「…」から開く。
   function customAlbumFromTarget111(target){
     var btn=target&&target.closest&&target.closest("[data-album]");
     if(!btn || !isAlbumShelf()) return null;
@@ -779,60 +777,48 @@
     return {btn:btn,index:idx,album:album};
   }
 
-  function cancelCustomAlbumLongPress111(){
-    if(customAlbumLongPress111 && customAlbumLongPress111.timer){ clearTimeout(customAlbumLongPress111.timer); }
-    customAlbumLongPress111=null;
+  function decorateCustomAlbums111(){
+    if(!isAlbumShelf()) return;
+    var nodes=document.querySelectorAll(".music-v7-album-grid-final [data-album]");
+    Array.prototype.forEach.call(nodes,function(btn){
+      var idx=Number(btn.dataset.album||0), album=(playlists()||[])[idx];
+      var old=btn.querySelector(":scope > .custom-album-menu111");
+      if(!album || !album._meganeCustomAlbum109){
+        btn.classList.remove("custom-album-menu-host111");
+        if(old) old.remove();
+        return;
+      }
+      btn.classList.add("custom-album-menu-host111");
+      if(old) return;
+      var menu=document.createElement("button");
+      menu.type="button";
+      menu.className="custom-album-menu111";
+      menu.textContent="…";
+      menu.title="アルバムを編集";
+      menu.setAttribute("aria-label","アルバムを編集");
+      ["pointerdown","touchstart","mousedown"].forEach(function(type){
+        menu.addEventListener(type,function(e){ e.stopPropagation(); },{passive:true});
+      });
+      menu.addEventListener("click",function(e){
+        e.preventDefault(); e.stopPropagation(); if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+        var hit=customAlbumFromTarget111(menu);
+        if(hit) openCustomAlbumDetailV110(hit.album);
+      },true);
+      btn.appendChild(menu);
+    });
   }
 
-  document.addEventListener("pointerdown",function(e){
-    var hit=customAlbumFromTarget111(e.target);
-    if(!hit || !(hit.album.tracks||[]).length) return;
-    cancelCustomAlbumLongPress111();
-    customAlbumLongPress111={
-      x:Number(e.clientX||0), y:Number(e.clientY||0), album:hit.album,
-      timer:setTimeout(function(){
-        var album=customAlbumLongPress111&&customAlbumLongPress111.album;
-        customAlbumLongPress111=null;
-        if(!album) return;
-        customAlbumSuppressClick111=true;
-        try{ if(navigator.vibrate) navigator.vibrate(18); }catch(_){ }
-        openCustomAlbumDetailV110(album);
-        setTimeout(function(){ customAlbumSuppressClick111=false; },700);
-      },560)
-    };
-  },true);
-
-  document.addEventListener("pointermove",function(e){
-    if(!customAlbumLongPress111) return;
-    var dx=Math.abs(Number(e.clientX||0)-customAlbumLongPress111.x);
-    var dy=Math.abs(Number(e.clientY||0)-customAlbumLongPress111.y);
-    if(dx>12 || dy>12) cancelCustomAlbumLongPress111();
-  },true);
-  document.addEventListener("pointerup",cancelCustomAlbumLongPress111,true);
-  document.addEventListener("pointercancel",cancelCustomAlbumLongPress111,true);
-
-  document.addEventListener("contextmenu",function(e){
-    var hit=customAlbumFromTarget111(e.target);
-    if(!hit) return;
-    e.preventDefault(); e.stopPropagation();
-    openCustomAlbumDetailV110(hit.album);
-  },true);
-
   document.addEventListener("click",function(e){
+    if(e.target&&e.target.closest&&e.target.closest(".custom-album-menu111")) return;
     var hit=customAlbumFromTarget111(e.target);
     if(!hit) return;
-    if(customAlbumSuppressClick111){
-      e.preventDefault(); e.stopPropagation(); if(e.stopImmediatePropagation)e.stopImmediatePropagation();
-      return;
-    }
     syncOneCustomAlbumTracksV110(hit.album);
-    // 空アルバムには再生対象がないため、従来どおり追加画面を開く。
+    // 空アルバムには再生対象がないため、追加画面を開く。
     if(!(hit.album.tracks||[]).length){
       e.preventDefault(); e.stopPropagation(); if(e.stopImmediatePropagation)e.stopImmediatePropagation();
       openCustomAlbumDetailV110(hit.album);
     }
-    // 曲が入っている場合は何も止めず、52_music_simplified_player.js の
-    // 既存アルバム用クリック処理へそのまま渡す。
+    // 曲入りアルバムは既存プレイヤーへそのまま渡す。
   },true);
 
   function ensureUI(){
@@ -876,10 +862,15 @@
   function boot(){
     ensureUI();
     loadSaved();
-    var obs=new MutationObserver(function(){ syncButton(); });
+    var decorateTimer111=0;
+    var obs=new MutationObserver(function(){
+      syncButton();
+      clearTimeout(decorateTimer111);
+      decorateTimer111=setTimeout(decorateCustomAlbums111,30);
+    });
     obs.observe(document.body,{attributes:true,attributeFilter:["class"],childList:true,subtree:true});
     ["pageshow","resize","orientationchange"].forEach(function(t){ window.addEventListener(t,syncButton,{passive:true}); });
-    document.addEventListener("click",function(){ setTimeout(syncButton,20); },true);
+    document.addEventListener("click",function(){ setTimeout(function(){ syncButton(); decorateCustomAlbums111(); },20); },true);
   }
   window.addEventListener("pagehide",function(){
     Object.keys(objectUrls).forEach(function(k){ try{URL.revokeObjectURL(objectUrls[k]);}catch(_){ } });
