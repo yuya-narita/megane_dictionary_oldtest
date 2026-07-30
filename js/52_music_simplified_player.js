@@ -1089,10 +1089,10 @@
     var st=document.createElement("style");
     st.id="musicUserEditStyleV104";
     st.textContent=
-      ".music-user-edit-v104{position:fixed;left:0;right:0;top:calc(104px + env(safe-area-inset-top));bottom:calc(84px + env(safe-area-inset-bottom));z-index:2147482500;max-height:none;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:18px 18px 24px;border-radius:28px;background:rgba(18,16,22,.985);border:1px solid rgba(255,255,255,.13);box-shadow:0 -18px 60px rgba(0,0,0,.55);transform:translateY(calc(100% + 110px));transition:transform .24s ease;pointer-events:none;box-sizing:border-box}"+
+      ".music-user-edit-v104{position:fixed;left:0;right:0;bottom:calc(84px + env(safe-area-inset-bottom));z-index:2147482500;max-height:calc(100dvh - 205px - env(safe-area-inset-top));overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:18px 18px 24px;border-radius:28px;background:rgba(18,16,22,.985);border:1px solid rgba(255,255,255,.13);box-shadow:0 -18px 60px rgba(0,0,0,.55);transform:translateY(calc(100% + 110px));transition:transform .24s ease;pointer-events:none;box-sizing:border-box}"+
       ".music-user-edit-v104.open{transform:translateY(0);pointer-events:auto}"+
-      ".music-user-edit-v104 .handle{width:48px;height:5px;border-radius:999px;background:rgba(255,255,255,.38);margin:0 auto 14px}"+
-      ".music-user-edit-v104 .head{position:sticky;top:-18px;z-index:4;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 -2px 14px;padding:14px 2px 10px;background:linear-gradient(180deg,rgba(18,16,22,1) 0%,rgba(18,16,22,.985) 78%,rgba(18,16,22,0) 100%)}"+
+      ".music-user-edit-v104 .handle{width:48px;height:5px;border-radius:999px;background:rgba(255,255,255,.38);margin:0 auto 20px}"+
+      ".music-user-edit-v104 .head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}"+
       ".music-user-edit-v104 .head strong{font-size:20px;color:#fff}"+
       ".music-user-edit-v104 .head button{width:40px;height:40px;border:0;background:transparent;color:#fff;font-size:28px}"+
       ".music-user-edit-v104 .track-name{margin:-5px 0 14px;color:rgba(255,255,255,.58);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"+
@@ -1267,7 +1267,10 @@
   function bindPlayer(){
     var back = $("musicV7Back"); if(back) back.onclick = function(){ state.screen = "albums"; state.sheet = false; state.edit = false; savePos(); render(); };
     var more = $("musicV7More"); if(more) more.onclick = function(){
-      if(more.dataset && more.dataset.userAudioId){ state.edit = true; state.lyrics = false; state.sheet = false; render(); }
+      if(more.dataset && more.dataset.userAudioId){
+        state.edit = true; state.lyrics = false; state.sheet = false; render();
+        setTimeout(function(){ var editBox=$("musicUserEditV104"); if(editBox) editBox.scrollTop=0; },0);
+      }
       else{ state.lyrics = true; state.edit = false; state.sheet = false; render(); }
     };
     var prevB = $("musicV7Prev"); if(prevB) prevB.onclick = function(){ seekBy(-15); };
