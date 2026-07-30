@@ -1,4 +1,4 @@
-/* 149_music_audio_plus.js v1.03.1 HOTFIX
+/* 149_music_audio_plus.js v1.04
  * Music mode: ＋から端末内の音声ファイルを「迷子」へ追加。
  * - audio file only
  * - IndexedDB persistence (Blob included)
@@ -146,6 +146,41 @@
       });
     });
   }
+
+  function dbDelete(id){
+    return openDB().then(function(db){
+      return new Promise(function(resolve,reject){
+        var tx=db.transaction(STORE,"readwrite");
+        tx.objectStore(STORE).delete(id);
+        tx.oncomplete=function(){ db.close(); resolve(true); };
+        tx.onerror=function(){ var e=tx.error; db.close(); reject(e||new Error("DB delete failed")); };
+      });
+    });
+  }
+
+  function removeAlbumByUserAudioId(id){
+    var arr=playlists();
+    if(!arr) return;
+    var albumId="user_audio_album_"+id;
+    for(var i=arr.length-1;i>=0;i--){
+      if(arr[i] && arr[i].id===albumId) arr.splice(i,1);
+    }
+    delete loadedIds[albumId];
+  }
+
+  // v1.04: 曲編集ボトムシートから呼ぶ安全な削除API。
+  // IndexedDBの対象1件だけを削除し、他の保存曲には触れない。
+  window.MEGANE_USER_AUDIO_DELETE_V104=function(id){
+    id=String(id||"");
+    if(!id) return Promise.reject(new Error("User audio id required"));
+    return dbDelete(id).then(function(){
+      removeAlbumByUserAudioId(id);
+      if(objectUrls[id]){ try{ URL.revokeObjectURL(objectUrls[id]); }catch(_){ } delete objectUrls[id]; }
+      if(artworkUrls[id]){ try{ URL.revokeObjectURL(artworkUrls[id]); }catch(_){ } delete artworkUrls[id]; }
+      render();
+      return true;
+    });
+  };
 
   function albumFromRow(row){
     if(!row || !row.id || !row.blob) return null;

@@ -1,5 +1,5 @@
 /* 52_music_simplified_player.js
-   MUSIC COMPLETE REBUILD V7
+   MUSIC COMPLETE REBUILD V7 / USER EDIT v1.04
    MUSICだけを完全リビルド。
    - アルバム展示棚
    - Spotify寄り再生画面
@@ -27,6 +27,7 @@
     browsingTrack: 0,
     sheet: false,
     lyrics: false,
+    edit: false,
     playing: false,
     repeat: localStorage.getItem("megane_music_v7_repeat") || "off",
     shuffle: localStorage.getItem("megane_music_v7_shuffle") === "1",
@@ -345,6 +346,12 @@
   }
   function currentTracks(){ return currentAlbum().tracks || []; }
   function currentTrack(){ return currentTracks()[state.track] || currentTracks()[0] || null; }
+
+  function userAudioIdFromTrack(t){
+    var id=t && t.id ? String(t.id) : "";
+    var prefix="user_audio_track_";
+    return id.indexOf(prefix)===0 ? id.slice(prefix.length) : "";
+  }
 
   function browseAlbum(){
     if(state.browsingAlbum === -1){
@@ -972,7 +979,7 @@
     document.body.classList.add("music-v7");
     var v = view(); if(!v) return;
     v.className = "music-view music-v7-view music-v7-player" + (state.sheet ? " sheet-open" : "");
-    var isBrowsingOtherAlbum = (state.browsingAlbum !== state.album && !state.sheet && !state.lyrics);
+    var isBrowsingOtherAlbum = (state.browsingAlbum !== state.album && !state.sheet && !state.lyrics && !state.edit);
     var a = isBrowsingOtherAlbum ? browseAlbum() : (state.queueMode === "favorites" ? currentAlbum() : browseAlbum());
     var t = isBrowsingOtherAlbum ? (browseTrack() || currentTrack()) : (state.queueMode === "favorites" ? currentTrack() : (browseTrack() || currentTrack()));
     var info = parseTitle(t, (isBrowsingOtherAlbum ? state.browsingTrack : (state.queueMode === "favorites" ? state.track : state.browsingTrack)));
@@ -993,7 +1000,7 @@
       + '<div class="music-v7-player-jacket">'+trackJacketHTML(va, t)+'</div>'
       + '<div class="music-v7-now">'
       + '<div><strong>'+esc(info.title)+'</strong><span>'+esc(state.queueMode === "favorites" && va._originTitle ? va._originTitle : a.title)+'</span></div>'
-      + '<button class="music-v7-more" id="musicV7More">…</button>'
+      + '<button class="music-v7-more" id="musicV7More" data-user-audio-id="'+esc(userAudioIdFromTrack(t))+'">…</button>'
       + '</div>'
       + '<div class="music-v7-progress"><input id="musicV7Seek" type="range" min="0" max="1000" value="0"><div><span id="musicV7Cur">0:00</span><span id="musicV7Dur">0:00</span></div></div>'
       + '<div class="music-v7-controls">'
@@ -1005,7 +1012,8 @@
       + '</div>'
       + '</div>'
       + renderSheet()
-      + renderLyrics();
+      + renderLyrics()
+      + renderUserEditSheet(t, info);
 
     var au = audio(); if(au) au.style.display = "none";
     // 画面を開いただけでは音声を差し替えない。
@@ -1073,9 +1081,74 @@
       + '</div>';
   }
 
+  function ensureUserEditStyleV104(){
+    if(document.getElementById("musicUserEditStyleV104")) return;
+    var st=document.createElement("style");
+    st.id="musicUserEditStyleV104";
+    st.textContent=
+      ".music-user-edit-v104{position:fixed;left:0;right:0;bottom:0;z-index:2147482500;padding:10px 18px calc(22px + env(safe-area-inset-bottom));border-radius:28px 28px 0 0;background:rgba(18,16,22,.98);border:1px solid rgba(255,255,255,.13);box-shadow:0 -18px 60px rgba(0,0,0,.55);transform:translateY(110%);transition:transform .24s ease;pointer-events:none}"+
+      ".music-user-edit-v104.open{transform:translateY(0);pointer-events:auto}"+
+      ".music-user-edit-v104 .handle{width:48px;height:5px;border-radius:999px;background:rgba(255,255,255,.38);margin:0 auto 20px}"+
+      ".music-user-edit-v104 .head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}"+
+      ".music-user-edit-v104 .head strong{font-size:20px;color:#fff}"+
+      ".music-user-edit-v104 .head button{width:40px;height:40px;border:0;background:transparent;color:#fff;font-size:28px}"+
+      ".music-user-edit-v104 .track-name{margin:-5px 0 18px;color:rgba(255,255,255,.58);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"+
+      ".music-user-edit-v104 .action{width:100%;min-height:56px;margin:8px 0;border-radius:16px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.055);color:#fff;font-size:16px;font-weight:800;text-align:left;padding:0 18px}"+
+      ".music-user-edit-v104 .delete{color:#ff7676;border-color:rgba(255,96,96,.25);background:rgba(255,70,70,.08)}"+
+      ".music-user-edit-backdrop-v104{position:fixed;inset:0;z-index:2147482400;background:rgba(0,0,0,.42);opacity:0;pointer-events:none;transition:opacity .2s ease}"+
+      ".music-user-edit-backdrop-v104.open{opacity:1;pointer-events:auto}";
+    document.head.appendChild(st);
+  }
+
+  function renderUserEditSheet(t, info){
+    ensureUserEditStyleV104();
+    var userId=userAudioIdFromTrack(t);
+    if(!userId) return "";
+    return '<div id="musicUserEditBackdropV104" class="music-user-edit-backdrop-v104 '+(state.edit?'open':'')+'"></div>'
+      + '<div id="musicUserEditV104" class="music-user-edit-v104 '+(state.edit?'open':'')+'" data-user-audio-id="'+esc(userId)+'">'
+      + '<div class="handle"></div>'
+      + '<div class="head"><strong>曲を編集</strong><button id="musicUserEditCloseV104" type="button">×</button></div>'
+      + '<div class="track-name">'+esc((info && info.title) || (t && t.title) || "追加した音声")+'</div>'
+      + '<button id="musicUserEditMemoV104" class="action" type="button">歌詞・メモを見る</button>'
+      + '<button id="musicUserDeleteV104" class="action delete" type="button">この曲を削除</button>'
+      + '</div>';
+  }
+
+  function removeDeletedTrackLocalStateV104(trackId){
+    var fs=favs().filter(function(id){ return id!==trackId; });
+    saveFavs(fs);
+    saveFavOrder(favOrder().filter(function(id){ return id!==trackId; }));
+    var p=positions();
+    if(Object.prototype.hasOwnProperty.call(p,trackId)){ delete p[trackId]; localStorage.setItem(LS.pos,JSON.stringify(p)); }
+  }
+
+  function deleteUserAudioV104(userId, trackTitle, trackId){
+    if(!userId || typeof window.MEGANE_USER_AUDIO_DELETE_V104!=="function") return;
+    var ok=window.confirm("「"+(trackTitle||"この曲")+"」を削除しますか？\n\nこの操作は元に戻せません。");
+    if(!ok) return;
+    var au=audio();
+    if(au && au.dataset && au.dataset.v7TrackId===trackId){
+      try{ au.pause(); au.removeAttribute("src"); au.load(); }catch(e){}
+    }
+    window.MEGANE_USER_AUDIO_DELETE_V104(userId).then(function(){
+      removeDeletedTrackLocalStateV104(trackId);
+      state.edit=false; state.lyrics=false; state.sheet=false;
+      state.queueMode="album"; state.album=0; state.track=0;
+      state.browsingAlbum=0; state.browsingTrack=0; state.screen="albums";
+      saveState(); render();
+      try{ if(window.MEGANE_TOAST) window.MEGANE_TOAST("曲を削除しました"); }catch(e){}
+    }).catch(function(err){
+      console.error("[v1.04] user audio delete failed",err);
+      alert("削除できませんでした。もう一度お試しください。");
+    });
+  }
+
   function bindPlayer(){
-    var back = $("musicV7Back"); if(back) back.onclick = function(){ state.screen = "albums"; state.sheet = false; savePos(); render(); };
-    var more = $("musicV7More"); if(more) more.onclick = function(){ state.lyrics = true; state.sheet = false; render(); };
+    var back = $("musicV7Back"); if(back) back.onclick = function(){ state.screen = "albums"; state.sheet = false; state.edit = false; savePos(); render(); };
+    var more = $("musicV7More"); if(more) more.onclick = function(){
+      if(more.dataset && more.dataset.userAudioId){ state.edit = true; state.lyrics = false; state.sheet = false; render(); }
+      else{ state.lyrics = true; state.edit = false; state.sheet = false; render(); }
+    };
     var prevB = $("musicV7Prev"); if(prevB) prevB.onclick = function(){ seekBy(-15); };
     var nextB = $("musicV7Next"); if(nextB) nextB.onclick = function(){ seekBy(15); };
     var playB = $("musicV7Play"); if(playB) playB.onclick = togglePlay;
@@ -1084,6 +1157,15 @@
     var shB = $("musicV7Shuffle"); if(shB) shB.onclick = function(){ state.shuffle = !state.shuffle; saveState(); render(); };
     var closeB = $("musicV7SheetClose"); if(closeB) closeB.onclick = function(){ state.sheet = false; render(); };
     var closeL = $("musicV7LyricsClose"); if(closeL) closeL.onclick = function(){ state.lyrics = false; render(); };
+    var editClose=$("musicUserEditCloseV104"); if(editClose) editClose.onclick=function(){ state.edit=false; render(); };
+    var editBg=$("musicUserEditBackdropV104"); if(editBg) editBg.onclick=function(){ state.edit=false; render(); };
+    var editMemo=$("musicUserEditMemoV104"); if(editMemo) editMemo.onclick=function(){ state.edit=false; state.lyrics=true; render(); };
+    var editDelete=$("musicUserDeleteV104"); if(editDelete) editDelete.onclick=function(){
+      var box=$("musicUserEditV104");
+      var userId=box && box.dataset ? box.dataset.userAudioId : "";
+      var t=currentTrack();
+      deleteUserAudioV104(userId, t && t.title, t && t.id);
+    };
 
     var seek = $("musicV7Seek");
     if(seek){
@@ -1547,7 +1629,7 @@
     var musicBtn = $("musicMode");
     if(musicBtn && !musicBtn.dataset.v7Bound){
       musicBtn.dataset.v7Bound = "1";
-      musicBtn.addEventListener("click", function(){ setTimeout(function(){ state.screen = "albums"; state.sheet = false; render(); }, 0); });
+      musicBtn.addEventListener("click", function(){ setTimeout(function(){ state.screen = "albums"; state.sheet = false; state.edit = false; render(); }, 0); });
     }
 
     if(!window.__MEGANE_MUSIC_UNLOCK_CHANGED_BOUND__){
