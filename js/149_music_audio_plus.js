@@ -1,3 +1,4 @@
+/* v1.10: custom album detail + add tracks from 持ち物 */
 /* v1.09: custom album creation + 持ち物 label */
 /* v1.08: user video artwork + source-file safety notice */
 /* v1.07: user artwork image editing */
@@ -23,6 +24,8 @@
   var ALBUM_IMAGE_INPUT_ID = "musicAlbumImage109";
   var PLUS_MENU_ID = "musicPlusMenu109";
   var ALBUM_SHEET_ID = "musicAlbumCreate109";
+  var ALBUM_DETAIL_ID = "musicAlbumDetail110";
+  var ALBUM_PICKER_ID = "musicAlbumPicker110";
   var STYLE_ID = "musicAudioPlusStyle149";
   var USER_MARK = "_meganeUserAudio149";
   var objectUrls = Object.create(null);
@@ -468,12 +471,14 @@
       id:"user_custom_album_"+row.id,
       type:"album",
       title:String(row.title||"新しいアルバム"),
-      desc:"0曲",
+      desc:String((row.trackIds||[]).length)+"曲",
       cover:cover,
       tracks:[],
       createdAt:Number(row.createdAt||Date.now()),
       _meganeCustomAlbum109:true,
-      _userCustomAlbumId:row.id
+      _meganeCustomAlbum110:true,
+      _userCustomAlbumId:row.id,
+      _trackIds:Array.isArray(row.trackIds)?row.trackIds.slice():[]
     };
   }
 
@@ -486,6 +491,54 @@
       return dbPut(row).then(function(){
         var album=customAlbumFromRowV109(row);
         insertAlbum(album); render(); return row;
+      });
+    });
+  };
+
+
+  function userAudioIdFromAlbumV110(album){
+    if(!album) return "";
+    if(album._meganeUserAudio149 && album.tracks && album.tracks[0] && album.tracks[0]._userAudioId) return String(album.tracks[0]._userAudioId);
+    var m=String(album.id||"").match(/^user_audio_album_(.+)$/);
+    return m?m[1]:"";
+  }
+
+  function availableSinglesV110(){
+    var arr=playlists()||[];
+    return arr.filter(function(a){ return a && a.type==="single" && userAudioIdFromAlbumV110(a); });
+  }
+
+  function syncOneCustomAlbumTracksV110(album){
+    if(!album || !album._meganeCustomAlbum109) return album;
+    var ids=Array.isArray(album._trackIds)?album._trackIds:[];
+    var singles=availableSinglesV110();
+    var byId=Object.create(null);
+    singles.forEach(function(a){ var id=userAudioIdFromAlbumV110(a); if(id && a.tracks && a.tracks[0]) byId[id]=a.tracks[0]; });
+    album.tracks=ids.map(function(id){ return byId[String(id)]||null; }).filter(Boolean);
+    album.desc=album.tracks.length+"曲";
+    return album;
+  }
+
+  function syncAllCustomAlbumTracksV110(){
+    (playlists()||[]).forEach(syncOneCustomAlbumTracksV110);
+  }
+
+  function customAlbumRuntimeByIdV110(id){
+    return (playlists()||[]).find(function(a){ return a && a._meganeCustomAlbum109 && String(a._userCustomAlbumId)===String(id); })||null;
+  }
+
+  window.MEGANE_CUSTOM_ALBUM_SET_TRACKS_V110=function(id,trackIds){
+    id=String(id||"");
+    trackIds=Array.isArray(trackIds)?trackIds.map(String).filter(Boolean):[];
+    return dbGet(id).then(function(row){
+      if(!row || row.recordType!=="customAlbum") throw new Error("Custom album not found");
+      row.trackIds=trackIds;
+      row.updatedAt=Date.now();
+      return dbPut(row).then(function(){
+        var album=customAlbumRuntimeByIdV110(id);
+        if(album){ album._trackIds=trackIds.slice(); syncOneCustomAlbumTracksV110(album); }
+        render();
+        return row;
       });
     });
   };
@@ -555,6 +608,7 @@
         var a=albumFromRow(row);
         if(a && insertAlbum(a)) changed=true;
       });
+      syncAllCustomAlbumTracksV110();
       if(changed) render();
 
       // 旧SVGジャケットの1200px PNG化はバックグラウンドで1件ずつ実行。
@@ -615,6 +669,7 @@
       return dbPut(row).then(function(){
       var album=albumFromRow(row);
       insertAlbum(album);
+      syncAllCustomAlbumTracksV110();
       render();
       toast("持ち物に追加しました♪");
       try{ if(navigator.vibrate) navigator.vibrate([12,28,12]); }catch(_){ }
@@ -639,6 +694,10 @@
       ".music-album-create109 h3{margin:0 0 14px;color:#fff;font-size:19px}.music-album-create109 input[type=text]{width:100%;box-sizing:border-box;border:1px solid rgba(255,255,255,.18);border-radius:14px;background:rgba(255,255,255,.07);color:#fff;font-size:16px;padding:13px 14px;outline:none}"+
       ".music-album-create109 .album109-preview{width:112px;height:112px;margin:14px auto;border-radius:18px;overflow:hidden;background:rgba(255,255,255,.06);display:grid;place-items:center;color:rgba(255,255,255,.55);font-weight:900}.music-album-create109 .album109-preview img{width:100%;height:100%;object-fit:cover}"+
       ".music-album-create109 .album109-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.music-album-create109 button{border:0;border-radius:14px;padding:13px;background:rgba(255,255,255,.08);color:#fff;font-weight:900}.music-album-create109 button.primary{background:#fff;color:#251522}.music-album-create109 small{display:block;margin-top:11px;color:rgba(255,255,255,.55);line-height:1.45}"+
+      ".music-album-detail110{position:fixed;inset:calc(92px + env(safe-area-inset-top)) 12px calc(86px + env(safe-area-inset-bottom));z-index:2147483000;overflow:auto;-webkit-overflow-scrolling:touch;padding:18px;border-radius:27px;background:rgba(24,15,26,.985);border:1px solid rgba(255,255,255,.15);box-shadow:0 24px 70px rgba(0,0,0,.62);color:#fff}"+
+      ".music-album-detail110 .head110{display:flex;align-items:center;gap:13px}.music-album-detail110 .cover110{width:74px;height:74px;border-radius:15px;object-fit:cover;background:#100b12}.music-album-detail110 .copy110{min-width:0;flex:1}.music-album-detail110 h3{margin:0;font-size:21px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.music-album-detail110 .count110{margin-top:5px;color:rgba(255,255,255,.58);font-size:12px;font-weight:850}.music-album-detail110 .close110{width:42px;height:42px;border:0;background:transparent;color:#fff;font-size:29px}"+
+      ".music-album-detail110 .empty110{margin:25px 0;padding:28px 14px;border:1px dashed rgba(255,255,255,.16);border-radius:18px;color:rgba(255,255,255,.55);text-align:center;font-weight:850;line-height:1.6}.music-album-detail110 .tracks110{display:grid;gap:9px;margin:18px 0}.music-album-detail110 .track110{display:grid;grid-template-columns:46px minmax(0,1fr);align-items:center;gap:11px;padding:9px;border-radius:15px;background:rgba(255,255,255,.055)}.music-album-detail110 .track110 img{width:46px;height:46px;border-radius:11px;object-fit:cover}.music-album-detail110 .track110 strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"+
+      ".music-album-detail110 .add110{width:100%;min-height:54px;border:1px solid rgba(255,232,138,.28);border-radius:16px;background:rgba(255,232,138,.11);color:#ffe88a;font-size:16px;font-weight:900}.music-album-picker110{position:fixed;left:12px;right:12px;bottom:calc(86px + env(safe-area-inset-bottom));z-index:2147483010;max-height:70dvh;overflow:auto;padding:17px;border-radius:25px;background:rgba(24,15,26,.995);border:1px solid rgba(255,255,255,.16);box-shadow:0 24px 70px rgba(0,0,0,.66);color:#fff}.music-album-picker110 h3{margin:0 0 12px}.music-album-picker110 label{display:grid;grid-template-columns:24px 48px minmax(0,1fr);align-items:center;gap:10px;padding:9px 3px;border-bottom:1px solid rgba(255,255,255,.07)}.music-album-picker110 label img{width:48px;height:48px;border-radius:11px;object-fit:cover}.music-album-picker110 label strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.music-album-picker110 .actions110{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}.music-album-picker110 button{min-height:48px;border:0;border-radius:14px;background:rgba(255,255,255,.08);color:#fff;font-weight:900}.music-album-picker110 button.primary{background:#fff;color:#251522}"+
       ".music-audio-toast149{position:fixed;left:50%;bottom:calc(158px + env(safe-area-inset-bottom));z-index:2147483003;transform:translateX(-50%);padding:10px 15px;border-radius:999px;background:rgba(14,10,17,.94);border:1px solid rgba(255,255,255,.18);color:#fff;font-size:12px;font-weight:900;white-space:nowrap;pointer-events:none;box-shadow:0 14px 38px rgba(0,0,0,.42);animation:musicAudioToast149 1.5s ease both}"+
       "@keyframes musicAudioToast149{0%{opacity:0;transform:translate(-50%,9px)}14%,76%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-6px)}}@keyframes musicAudioPlusPulse149{to{transform:scale(.94);opacity:.55}}";
     document.head.appendChild(st);
@@ -646,7 +705,7 @@
   var pendingAlbumImageV109=null;
   var pendingAlbumImageUrlV109="";
   function closeOverlayV109(){
-    [PLUS_MENU_ID,ALBUM_SHEET_ID,"musicPlusMask109"].forEach(function(id){ var el=q(id); if(el) el.remove(); });
+    [PLUS_MENU_ID,ALBUM_SHEET_ID,ALBUM_DETAIL_ID,ALBUM_PICKER_ID,"musicPlusMask109"].forEach(function(id){ var el=q(id); if(el) el.remove(); });
     if(pendingAlbumImageUrlV109){ try{URL.revokeObjectURL(pendingAlbumImageUrlV109);}catch(_){ } pendingAlbumImageUrlV109=""; }
     pendingAlbumImageV109=null;
   }
@@ -674,6 +733,45 @@
       window.MEGANE_CUSTOM_ALBUM_CREATE_V109(title,pendingAlbumImageV109).then(function(){ closeOverlayV109(); toast("アルバムを作りました♪"); }).catch(function(err){ console.error("[149] album create failed",err); toast("アルバムを作れませんでした"); }).finally(function(){ setBusy(false); syncButton(); });
     };
   }
+
+
+  function escAttrV110(s){ return String(s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  function escHtmlV110(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+
+  function openCustomAlbumDetailV110(album){
+    if(!album || !album._meganeCustomAlbum109) return;
+    closeOverlayV109();
+    syncOneCustomAlbumTracksV110(album);
+    var mask=document.createElement("div"); mask.id="musicPlusMask109"; mask.className="music-plus-mask109"; mask.onclick=closeOverlayV109;
+    var sh=document.createElement("div"); sh.id=ALBUM_DETAIL_ID; sh.className="music-album-detail110";
+    var tracks=album.tracks||[];
+    var rows=tracks.map(function(t){ return '<div class="track110"><img src="'+escAttrV110(t.cover||album.cover||'')+'" alt=""><strong>'+escHtmlV110(t.title||'音声ファイル')+'</strong></div>'; }).join("");
+    sh.innerHTML='<div class="head110"><img class="cover110" src="'+escAttrV110(album.cover||'')+'" alt=""><div class="copy110"><h3>'+escHtmlV110(album.title||'カスタムアルバム')+'</h3><div class="count110">'+tracks.length+'曲</div></div><button type="button" class="close110">×</button></div>'+(tracks.length?'<div class="tracks110">'+rows+'</div>':'<div class="empty110">まだ曲がありません。<br>持ち物から曲を追加できます。</div>')+'<button type="button" class="add110">＋ 持ち物から追加</button>';
+    sh.onclick=function(e){ e.stopPropagation(); };
+    sh.querySelector('.close110').onclick=closeOverlayV109;
+    sh.querySelector('.add110').onclick=function(){ openCustomAlbumPickerV110(album); };
+    document.body.appendChild(mask); document.body.appendChild(sh);
+  }
+
+  function openCustomAlbumPickerV110(album){
+    var old=q(ALBUM_PICKER_ID); if(old) old.remove();
+    var singles=availableSinglesV110();
+    var selected=Object.create(null); (album._trackIds||[]).forEach(function(id){selected[String(id)]=1;});
+    var sh=document.createElement("div"); sh.id=ALBUM_PICKER_ID; sh.className="music-album-picker110";
+    var rows=singles.map(function(a){ var id=userAudioIdFromAlbumV110(a),t=a.tracks&&a.tracks[0]; return '<label><input type="checkbox" data-track-id="'+escAttrV110(id)+'" '+(selected[id]?'checked':'')+'><img src="'+escAttrV110((t&&t.cover)||a.cover||'')+'" alt=""><strong>'+escHtmlV110((t&&t.title)||a.title||'音声ファイル')+'</strong></label>'; }).join('');
+    sh.innerHTML='<h3>🎒 持ち物から追加</h3>'+(rows||'<div class="empty110">持ち物がまだありません。</div>')+'<div class="actions110"><button type="button" data-act="cancel">戻る</button><button type="button" class="primary" data-act="save">追加</button></div>';
+    sh.onclick=function(e){ e.stopPropagation(); var act=e.target&&e.target.dataset&&e.target.dataset.act; if(act==='cancel'){ sh.remove(); } if(act==='save'){ var ids=Array.prototype.slice.call(sh.querySelectorAll('input[data-track-id]:checked')).map(function(x){return x.dataset.trackId;}); var b=e.target; b.disabled=true; window.MEGANE_CUSTOM_ALBUM_SET_TRACKS_V110(album._userCustomAlbumId,ids).then(function(){ toast('アルバムを更新しました♪'); var fresh=customAlbumRuntimeByIdV110(album._userCustomAlbumId)||album; openCustomAlbumDetailV110(fresh); }).catch(function(err){ console.error('[149] album tracks save failed',err); toast('追加できませんでした'); b.disabled=false; }); } };
+    document.body.appendChild(sh);
+  }
+
+  document.addEventListener("click",function(e){
+    var btn=e.target&&e.target.closest&&e.target.closest("[data-album]");
+    if(!btn || !isAlbumShelf()) return;
+    var idx=Number(btn.dataset.album||0), album=(playlists()||[])[idx];
+    if(!album || !album._meganeCustomAlbum109) return;
+    e.preventDefault(); e.stopPropagation(); if(e.stopImmediatePropagation)e.stopImmediatePropagation();
+    openCustomAlbumDetailV110(album);
+  },true);
 
   function ensureUI(){
     injectStyle();
