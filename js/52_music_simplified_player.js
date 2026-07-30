@@ -931,7 +931,7 @@
     html += '</div>';
 
     if(singles.length){
-      html += '<div class="music-v7-singles-head">🎵迷子</div>';
+      html += '<div class="music-v7-singles-head">🎒 持ち物</div>';
       html += '<div class="music-v7-single-list">';
       singles.forEach(function(x){
         var a = x.album;
@@ -963,6 +963,10 @@
       btn.onclick = function(){
         var idx = Number(btn.dataset.album || 0);
         var a = albums()[idx];
+        if(a && a._meganeCustomAlbum109 && !(a.tracks||[]).length){
+          try{ if(window.MEGANE_TOAST) window.MEGANE_TOAST("まだ曲が入っていません"); else alert("まだ曲が入っていません"); }catch(_){ }
+          return;
+        }
         if(musicAlbumLocked(a)){ showMusicUnlockHint(a); return; }
         switchToAlbum(idx);
       };
