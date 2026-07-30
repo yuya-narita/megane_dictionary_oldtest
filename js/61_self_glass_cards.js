@@ -582,6 +582,14 @@
 
       if(next && hasDef(currentWordText())){
         selfActive = true;
+        try {
+          if (typeof window.meganeTrack === "function") {
+            window.meganeTrack("self_definition_open", {
+              word: currentWordText(),
+              source: "self_glass_toggle"
+            });
+          }
+        } catch (_) {}
         try { if(q("glassDialog") && q("glassDialog").close) q("glassDialog").close(); } catch(_){}
         if(typeof render === "function") render("flash");
       }else{
@@ -844,6 +852,14 @@
       const d = q("favoriteDialog");
       if(d && d.open) d.close();
       if(typeof render === "function") render("flash");
+      try {
+        if (typeof window.meganeTrack === "function") {
+          window.meganeTrack("self_definition_open", {
+            word: String(item.word || ""),
+            source: "favorite_list"
+          });
+        }
+      } catch (_) {}
       return true;
     }catch(_){}
     return false;
@@ -870,6 +886,14 @@
       const d = q("favoriteDialog");
       if(d && d.open) d.close();
       if(typeof render === "function") render("flash");
+      try {
+        if (typeof window.meganeTrack === "function") {
+          window.meganeTrack("self_definition_open", {
+            word: String(item.word || ""),
+            source: "favorite_list"
+          });
+        }
+      } catch (_) {}
       return true;
     }catch(_){}
     return false;

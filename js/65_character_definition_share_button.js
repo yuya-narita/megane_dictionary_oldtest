@@ -383,11 +383,8 @@
     if(busy || now-lastAt<700) return false;
     busy=true; lastAt=now;
 
-    try{
-      if(typeof stopAudio === "function") stopAudio();
-      if(typeof stopAllAudio === "function") stopAllAudio();
-      document.querySelectorAll("audio").forEach(a => { try{ a.pause(); }catch(_){} });
-    }catch(_){}
+    // シェア画面を開いても、再生中の音楽・Conferenceは止めない。
+    // iPhone/PWAで共有画面から戻った際も、そのまま再生を継続する。
     if(isSelfCard()){
       try{
         if(window.MEGANE_SELF_CARD_IMAGE_SHARE && typeof window.MEGANE_SELF_CARD_IMAGE_SHARE.openDelivery==="function"){

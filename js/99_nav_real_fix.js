@@ -50,6 +50,16 @@
   }
 
   function stopAudio(e){
+    // production144:
+    // 短押し/長押し判定は144側が担当。
+    // 144が処理した時は旧「全audio停止」へ進まない。
+    try{
+      if(typeof window.MEGANE_AUDIO_CONTINUE_BUTTON === "function"){
+        var handled = window.MEGANE_AUDIO_CONTINUE_BUTTON(e);
+        if(handled === true) return false;
+      }
+    }catch(_){}
+
     stopEvent(e);
     if(typeof window.MEGANE_TOGGLE_MAIN_AUDIO === "function") return window.MEGANE_TOGGLE_MAIN_AUDIO();
     try{ document.querySelectorAll("audio").forEach(a=>{ try{ a.pause(); }catch(_){} }); }catch(_){}

@@ -228,6 +228,16 @@
     }
     save(list);
 
+    // 保存・解除が完了した時点を計測。定義本文やユーザー名は送らない。
+    try {
+      if (typeof window.meganeTrack === "function") {
+        window.meganeTrack(wasOn ? "favorite_remove" : "favorite_add", {
+          word: String(item.word || item.title || ""),
+          glass: item.type === "selfdict" ? "自分メガネ" : String(item.glassName || item.glassId || "")
+        });
+      }
+    } catch (_) {}
+
     // モーダルが開いている時だけ再描画。普段は星だけ更新してチラつきを避ける。
     const d=q("favoriteDialog");
     if(d && d.open) renderList();
@@ -483,9 +493,20 @@
   }
 
   function onOpen(e){
-    const btn=e.target && e.target.closest ? e.target.closest("#randomWord,#favoriteListOpen") : null;
+    const btn=e.target && e.target.closest ? e.target.closest("#randomWord,#randomWordFixed,#favoriteListOpen") : null;
     if(!btn) return;
     try { if(document.body.classList.contains("mode-cards")) return; } catch(_) {}
+
+    // production143:
+    // 音楽・会議では辞書お気に入りを開かず、
+    // モード専用のお気に入り処理へ委譲する。
+    try{
+      if(typeof window.MEGANE_MODE_FAVORITES_OPEN === "function"){
+        const handled = window.MEGANE_MODE_FAVORITES_OPEN(e);
+        if(handled === true) return false;
+      }
+    }catch(_){}
+
     return openFavorites(e);
   }
 
