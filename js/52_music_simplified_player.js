@@ -1,3 +1,4 @@
+/* v1.04.2 UI spacing hotfix: independent bottom buttons preserved */
 /* 52_music_simplified_player.js
    MUSIC COMPLETE REBUILD V7 / USER EDIT v1.04
    MUSICだけを完全リビルド。

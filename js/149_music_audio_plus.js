@@ -1,3 +1,4 @@
+/* v1.04.2 UI spacing hotfix: independent bottom buttons preserved */
 /* 149_music_audio_plus.js v1.04
  * Music mode: ＋から端末内の音声ファイルを「迷子」へ追加。
  * - audio file only
