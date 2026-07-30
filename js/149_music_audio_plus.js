@@ -1,3 +1,4 @@
+/* v1.08: user video artwork + source-file safety notice */
 /* v1.07: user artwork image editing */
 /* v1.06.1: memo viewer + iPhone keyboard layout hotfix */
 /* v1.06: user audio lyrics / memo editing */
@@ -22,7 +23,9 @@
   var USER_MARK = "_meganeUserAudio149";
   var objectUrls = Object.create(null);
   var artworkUrls = Object.create(null);
+  var videoUrls = Object.create(null);
   var ARTWORK_SIZE = 1200;
+  var SOURCE_NOTICE_KEY = "megane_media_source_notice_v108";
   var loadedIds = Object.create(null);
   var busy = false;
 
@@ -51,6 +54,25 @@
   }
   function safeText(s){ return String(s||"").replace(/[<>&\"']/g,""); }
 
+
+
+  function sourceFileNoticeV108(){
+    try{ if(localStorage.getItem(SOURCE_NOTICE_KEY)==="1") return true; }catch(_){ }
+    var ok=window.confirm(
+      "ここは保管庫ではありません。\n\n追加した音声・画像・動画は、端末やブラウザの状態によって失われる可能性があります。\n\n元のファイルは削除せず、端末やクラウドにも残しておいてください。"
+    );
+    if(ok){ try{ localStorage.setItem(SOURCE_NOTICE_KEY,"1"); }catch(_){ } }
+    return !!ok;
+  }
+  window.MEGANE_MEDIA_SOURCE_NOTICE_V108=sourceFileNoticeV108;
+
+  function formatBytesV108(n){
+    n=Number(n||0);
+    if(n<1024) return n+" B";
+    if(n<1024*1024) return (n/1024).toFixed(1)+" KB";
+    if(n<1024*1024*1024) return (n/1024/1024).toFixed(1)+" MB";
+    return (n/1024/1024/1024).toFixed(2)+" GB";
+  }
 
   function legacyCoverData(title){
     var t=safeText(title).slice(0,18);
@@ -109,6 +131,45 @@
       var sx=(sw-side)/2, sy=(sh-side)/2;
       ctx.drawImage(img,sx,sy,side,side,0,0,ARTWORK_SIZE,ARTWORK_SIZE);
       return canvasToPngBlob(canvas);
+    });
+  }
+
+  function posterFromVideoBlobV108(blob){
+    if(!blob || !String(blob.type||"").match(/^video\//)) return Promise.reject(new Error("Video file required"));
+    return new Promise(function(resolve,reject){
+      var url=URL.createObjectURL(blob);
+      var v=document.createElement("video");
+      var finished=false;
+      function cleanup(){ try{ v.pause(); }catch(_){ } try{ URL.revokeObjectURL(url); }catch(_){ } }
+      function fail(err){ if(finished) return; finished=true; cleanup(); reject(err instanceof Error?err:new Error("Video preview failed")); }
+      function capture(){
+        if(finished) return;
+        try{
+          var sw=v.videoWidth||0, sh=v.videoHeight||0;
+          if(!sw || !sh) throw new Error("Invalid video size");
+          var canvas=document.createElement("canvas");
+          canvas.width=ARTWORK_SIZE; canvas.height=ARTWORK_SIZE;
+          var ctx=canvas.getContext("2d");
+          var side=Math.min(sw,sh), sx=(sw-side)/2, sy=(sh-side)/2;
+          ctx.drawImage(v,sx,sy,side,side,0,0,ARTWORK_SIZE,ARTWORK_SIZE);
+          canvasToPngBlob(canvas).then(function(poster){
+            if(finished) return; finished=true; cleanup(); resolve(poster);
+          }).catch(fail);
+        }catch(e){ fail(e); }
+      }
+      v.muted=true; v.playsInline=true; v.preload="auto";
+      v.onerror=function(){ fail(new Error("この動画を読み込めませんでした")); };
+      v.onloadeddata=function(){
+        try{
+          var target=(isFinite(v.duration)&&v.duration>0.2)?Math.min(0.25,v.duration/3):0;
+          if(target>0.01){ v.currentTime=target; } else { capture(); }
+        }catch(_){ capture(); }
+      };
+      v.onseeked=capture;
+      v.src=url;
+      try{ v.load(); }catch(e){ fail(e); }
+      setTimeout(function(){ if(!finished && v.readyState>=2) capture(); },2500);
+      setTimeout(function(){ if(!finished) fail(new Error("動画の静止画を作成できませんでした")); },12000);
     });
   }
 
@@ -205,6 +266,19 @@
       album.cover=cover;
       if(album.tracks && album.tracks[0]) album.tracks[0].cover=cover;
     }
+    if(videoUrls[id]){ try{ URL.revokeObjectURL(videoUrls[id]); }catch(_){ } delete videoUrls[id]; }
+    if(album.tracks && album.tracks[0]){
+      album.tracks[0].video="";
+      album.tracks[0].videoLoop=false;
+      album.tracks[0].artworkType=row.artworkType||"image";
+      if(row.videoBlob){
+        var videoUrl=URL.createObjectURL(row.videoBlob);
+        videoUrls[id]=videoUrl;
+        album.tracks[0].video=videoUrl;
+        album.tracks[0].videoLoop=row.videoLoop!==false;
+        album.tracks[0].artworkType="video";
+      }
+    }
   }
 
   // v1.05: ID・音声Blob・お気に入りを変えず、表示名だけ安全に更新する。
@@ -274,8 +348,13 @@
         row.artworkMime=blob.type||"image/png";
         row.artworkWidth=ARTWORK_SIZE;
         row.artworkHeight=ARTWORK_SIZE;
-        row.artworkVersion=107;
+        row.artworkVersion=108;
         row.artworkAuto=false;
+        row.artworkType="image";
+        row.videoBlob=null;
+        row.videoMime="";
+        row.videoSize=0;
+        row.videoLoop=false;
         row.cover="";
         return dbPut(row);
       });
@@ -296,8 +375,41 @@
         row.artworkMime=blob.type||"image/png";
         row.artworkWidth=ARTWORK_SIZE;
         row.artworkHeight=ARTWORK_SIZE;
-        row.artworkVersion=107;
+        row.artworkVersion=108;
         row.artworkAuto=true;
+        row.artworkType="image";
+        row.videoBlob=null;
+        row.videoMime="";
+        row.videoSize=0;
+        row.videoLoop=false;
+        row.cover="";
+        return dbPut(row);
+      });
+    }).then(function(row){
+      updateLoadedAlbumTitleV105(id,row);
+      render();
+      return row;
+    });
+  };
+
+  window.MEGANE_USER_AUDIO_VIDEO_SAVE_V108=function(id,fileOrBlob){
+    id=String(id||"");
+    if(!id) return Promise.reject(new Error("User audio id required"));
+    if(!fileOrBlob || !String(fileOrBlob.type||"").match(/^video\//)) return Promise.reject(new Error("Video file required"));
+    return posterFromVideoBlobV108(fileOrBlob).then(function(poster){
+      return dbGet(id).then(function(row){
+        if(!row) throw new Error("Audio data not found");
+        row.artworkBlob=poster;
+        row.artworkMime=poster.type||"image/png";
+        row.artworkWidth=ARTWORK_SIZE;
+        row.artworkHeight=ARTWORK_SIZE;
+        row.artworkVersion=108;
+        row.artworkAuto=false;
+        row.artworkType="video";
+        row.videoBlob=fileOrBlob;
+        row.videoMime=fileOrBlob.type||"video/mp4";
+        row.videoSize=Number(fileOrBlob.size||0);
+        row.videoLoop=true;
         row.cover="";
         return dbPut(row);
       });
@@ -317,6 +429,7 @@
       removeAlbumByUserAudioId(id);
       if(objectUrls[id]){ try{ URL.revokeObjectURL(objectUrls[id]); }catch(_){ } delete objectUrls[id]; }
       if(artworkUrls[id]){ try{ URL.revokeObjectURL(artworkUrls[id]); }catch(_){ } delete artworkUrls[id]; }
+      if(videoUrls[id]){ try{ URL.revokeObjectURL(videoUrls[id]); }catch(_){ } delete videoUrls[id]; }
       render();
       return true;
     });
@@ -334,6 +447,9 @@
     var artworkBlob=row.artworkBlob || null;
     var cover=artworkBlob ? URL.createObjectURL(artworkBlob) : (row.cover || legacyCoverData(title));
     if(artworkBlob) artworkUrls[row.id]=cover;
+    if(videoUrls[row.id]){ try{ URL.revokeObjectURL(videoUrls[row.id]); }catch(_){ } delete videoUrls[row.id]; }
+    var video="";
+    if(row.videoBlob){ video=URL.createObjectURL(row.videoBlob); videoUrls[row.id]=video; }
     return {
       id:"user_audio_album_"+row.id,
       type:"single",
@@ -343,11 +459,15 @@
       createdAt:Number(row.createdAt||Date.now()),
       _meganeUserAudio149:true,
       artworkMime: artworkBlob ? (artworkBlob.type || "image/png") : "",
+      artworkType: row.artworkType || (row.videoBlob?"video":"image"),
       tracks:[{
         id:"user_audio_track_"+row.id,
         title:title,
         audio:src,
         cover:cover,
+        video:video,
+        videoLoop:!!video && row.videoLoop!==false,
+        artworkType: row.artworkType || (video?"video":"image"),
         artworkMime: artworkBlob ? (artworkBlob.type || "image/png") : "",
         memo:String(row.memo||row.lyrics||row.text||""),
         tag:title,
@@ -430,7 +550,7 @@
       var row={
         id:uid(), title:title, fileName:file.name||title,
         mime:file.type||"application/octet-stream", size:Number(file.size||0),
-        blob:file, createdAt:Date.now(), artworkBlob:artworkBlob, artworkVersion:107, artworkAuto:true, cover:"", memo:""
+        blob:file, createdAt:Date.now(), artworkBlob:artworkBlob, artworkVersion:108, artworkAuto:true, artworkType:"image", videoBlob:null, videoLoop:false, cover:"", memo:""
       };
       return dbPut(row).then(function(){
       var album=albumFromRow(row);
@@ -472,6 +592,7 @@
       b.addEventListener("click",function(e){
         e.preventDefault(); e.stopPropagation(); if(e.stopImmediatePropagation)e.stopImmediatePropagation();
         if(busy) return;
+        if(!sourceFileNoticeV108()) return;
         var f=q(INPUT_ID); if(f) f.click();
       },true);
       document.body.appendChild(b);
@@ -493,6 +614,7 @@
   window.addEventListener("pagehide",function(){
     Object.keys(objectUrls).forEach(function(k){ try{URL.revokeObjectURL(objectUrls[k]);}catch(_){ } });
     Object.keys(artworkUrls).forEach(function(k){ try{URL.revokeObjectURL(artworkUrls[k]);}catch(_){ } });
+    Object.keys(videoUrls).forEach(function(k){ try{URL.revokeObjectURL(videoUrls[k]);}catch(_){ } });
   });
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot,{once:true}); else boot();
 })();

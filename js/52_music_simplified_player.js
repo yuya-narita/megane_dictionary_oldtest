@@ -1,3 +1,4 @@
+/* v1.08: user video artwork + source-file safety notice */
 /* v1.07: user artwork image editing */
 /* v1.05: user audio title editing */
 /* v1.04.2 UI spacing hotfix: independent bottom buttons preserved */
@@ -226,6 +227,8 @@
             title: t.title || t.name || ("Track " + (ti+1)),
             audio: t.audio || t.src || t.url || "",
             video: t.video || t.movie || t.mv || "",
+            videoLoop: !!t.videoLoop,
+            artworkType: t.artworkType || (t.video ? "video" : "image"),
             cover: t.cover || t.image || t.thumb || t.artwork || "",
             artworkMime: t.artworkMime || t.coverMime || p.artworkMime || "",
             tag: t.tag || p.title || "",
@@ -760,13 +763,17 @@
 
   function trackJacketHTML(a, t){
     if(t && t.video){
-      return '<video id="musicV7Video" data-track-id="'+esc(t.id || "")+'"'
+      return '<video id="musicV7Video" data-track-id="'+esc(t.id || "")+'" data-video-loop="'+(t.videoLoop?'1':'0')+'"'
         + ' src="'+esc(t.video)+'"'
         + ' poster="'+esc((t.cover || (a && a.cover) || ""))+'"'
-        + ' muted playsinline webkit-playsinline preload="metadata"'
+        + ' muted playsinline webkit-playsinline preload="metadata"'+(t.videoLoop?' loop':'')
         + ' style="width:100%;height:100%;display:block;object-fit:cover;background:#000;"></video>';
     }
     return albumCoverHTML(a);
+  }
+
+  function tVideoLoopV108(v){
+    return !!(v && (v.loop || (v.dataset && v.dataset.videoLoop === "1")));
   }
 
   function syncMusicVideo(forceSeek){
@@ -787,10 +794,12 @@
       v.playsInline = true;
       v.playbackRate = a.playbackRate || 1;
 
-      if(isFinite(a.currentTime) && (forceSeek || Math.abs((v.currentTime || 0) - a.currentTime) > 0.35)){
+      if(isFinite(a.currentTime)){
         var target = a.currentTime || 0;
-        if(v.duration && isFinite(v.duration)) target = Math.min(target, Math.max(0, v.duration - 0.05));
-        v.currentTime = target;
+        if(v.duration && isFinite(v.duration) && v.duration > 0){
+          target = (tVideoLoopV108(v) ? (target % v.duration) : Math.min(target, Math.max(0, v.duration - 0.05)));
+        }
+        if(forceSeek || Math.abs((v.currentTime || 0) - target) > 0.35) v.currentTime = target;
       }
 
       if(a.paused || a.ended){
@@ -1114,12 +1123,14 @@
       ".music-user-edit-v104 .artwork-row{display:grid;grid-template-columns:82px minmax(0,1fr);gap:12px;align-items:center;margin-bottom:10px}"+
       ".music-user-edit-v104 .artwork-preview{width:82px;height:82px;border-radius:16px;overflow:hidden;background:#08070a;border:1px solid rgba(255,255,255,.14)}"+
       ".music-user-edit-v104 .artwork-preview img{width:100%;height:100%;display:block;object-fit:cover}"+
+      ".music-user-edit-v104 .artwork-status{margin:4px 0 0;color:#ffe88a;font-size:10px;font-weight:900}"+
       ".music-user-edit-v104 .artwork-actions{display:grid;gap:8px}"+
       ".music-user-edit-v104 .artwork-button{width:100%;min-height:40px;border-radius:13px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.055);color:#fff;font-size:13px;font-weight:850;text-align:left;padding:0 14px}"+
       ".music-user-edit-v104 .artwork-button.reset{color:rgba(255,255,255,.68)}"+
       ".music-user-edit-v104 .artwork-button:disabled{opacity:.48}"+
       ".music-user-edit-v104 .artwork-hint{margin:-2px 2px 12px;color:rgba(255,255,255,.40);font-size:10px;line-height:1.45}"+
-      "#musicUserArtworkInputV107{display:none!important}"+
+      "#musicUserArtworkInputV107,#musicUserVideoInputV108{display:none!important}"+
+      ".music-user-edit-v104 .source-warning{margin:12px 2px 4px;padding:11px 12px;border-radius:13px;background:rgba(255,232,138,.07);border:1px solid rgba(255,232,138,.17);color:rgba(255,255,255,.64);font-size:10px;line-height:1.55}"+
       ".music-user-edit-v104 .action{width:100%;min-height:56px;margin:8px 0;border-radius:16px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.055);color:#fff;font-size:16px;font-weight:800;text-align:left;padding:0 18px}"+
       ".music-user-edit-v104 .delete{color:#ff7676;border-color:rgba(255,96,96,.25);background:rgba(255,70,70,.08)}"+
       ".music-user-edit-backdrop-v104{position:fixed;inset:0;z-index:2147482400;background:rgba(0,0,0,.42);opacity:0;pointer-events:none;transition:opacity .2s ease}"+
@@ -1142,10 +1153,12 @@
       + '<textarea id="musicUserMemoV106" class="memo-input" maxlength="30000" placeholder="歌詞、制作メモ、修正点、公開先URLなどを自由に記入できます。">'+esc(String((t && (t.memo||t.lyrics||t.text)) || "").replace(/\\n/g,"\n"))+'</textarea>'
       + '<div class="memo-foot"><span id="musicUserMemoCountV106" class="memo-count"></span><button id="musicUserMemoSaveV106" class="memo-save" type="button">メモを保存</button></div>'
       + '<button id="musicUserMemoViewV1061" class="memo-view" type="button">歌詞・メモを表示</button>'
-      + '<label class="artwork-label">ジャケット画像</label>'
-      + '<div class="artwork-row"><div class="artwork-preview"><img id="musicUserArtworkPreviewV107" src="'+esc((t && t.cover) || "")+'" alt=""></div><div class="artwork-actions"><button id="musicUserArtworkChooseV107" class="artwork-button" type="button">画像を選ぶ</button><button id="musicUserArtworkResetV107" class="artwork-button reset" type="button">初期画像に戻す</button></div></div>'
-      + '<div class="artwork-hint">選んだ画像は中央を正方形に切り抜き、1200×1200 PNGとして保存します。</div>'
+      + '<label class="artwork-label">ジャケット</label>'
+      + '<div class="artwork-row"><div><div class="artwork-preview"><img id="musicUserArtworkPreviewV107" src="'+esc((t && t.cover) || "")+'" alt=""></div>'+(t&&t.artworkType==="video"?'<div class="artwork-status">● 動画ジャケット</div>':'')+'</div><div class="artwork-actions"><button id="musicUserArtworkChooseV107" class="artwork-button" type="button">画像を選ぶ</button><button id="musicUserVideoChooseV108" class="artwork-button" type="button">動画を選ぶ</button><button id="musicUserArtworkResetV107" class="artwork-button reset" type="button">初期画像に戻す</button></div></div>'
+      + '<div class="artwork-hint">画像は1200×1200に変換。動画は音声と再生・シークが連動し、一覧とiPhoneプレイヤーには動画から作った静止画を表示します。</div>'
+      + '<div class="source-warning">ここは保管庫ではありません。音声・画像・動画の元ファイルは削除せず、端末やクラウドにも残してください。</div>'
       + '<input id="musicUserArtworkInputV107" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif">'
+      + '<input id="musicUserVideoInputV108" type="file" accept="video/*,.mp4,.mov,.m4v,.webm">'
       + '<button id="musicUserDeleteV104" class="action delete" type="button">この曲を削除</button>'
       + '</div>';
   }
@@ -1223,6 +1236,21 @@
       console.error("[v1.07] artwork save failed",err);
       alert("画像を変更できませんでした。別の画像でお試しください。");
       if(choose){ choose.disabled=false; choose.textContent="画像を選ぶ"; }
+    });
+  }
+
+  function changeUserVideoV108(userId,file){
+    if(!userId || !file || typeof window.MEGANE_USER_AUDIO_VIDEO_SAVE_V108!=="function") return;
+    var choose=$("musicUserVideoChooseV108");
+    if(choose){ choose.disabled=true; choose.textContent="静止画を作成中…"; }
+    window.MEGANE_USER_AUDIO_VIDEO_SAVE_V108(userId,file).then(function(){
+      state.edit=false;
+      saveState(); render(); updateMediaSessionV8();
+      try{ if(window.MEGANE_TOAST) window.MEGANE_TOAST("動画ジャケットを設定しました"); }catch(e){}
+    }).catch(function(err){
+      console.error("[v1.08] video artwork save failed",err);
+      alert("動画を設定できませんでした。iPhoneで再生できるMP4・MOVなどをお試しください。");
+      if(choose){ choose.disabled=false; choose.textContent="動画を選ぶ"; }
     });
   }
 
@@ -1312,7 +1340,10 @@
     if(titleInput) titleInput.onkeydown=function(e){ if(e && e.key==="Enter"){ e.preventDefault(); commitTitleV105(); } };
     var artworkInput=$("musicUserArtworkInputV107");
     var artworkChoose=$("musicUserArtworkChooseV107");
-    if(artworkChoose) artworkChoose.onclick=function(){ if(artworkInput) artworkInput.click(); };
+    if(artworkChoose) artworkChoose.onclick=function(){
+      if(typeof window.MEGANE_MEDIA_SOURCE_NOTICE_V108==="function" && !window.MEGANE_MEDIA_SOURCE_NOTICE_V108()) return;
+      if(artworkInput) artworkInput.click();
+    };
     if(artworkInput) artworkInput.onchange=function(){
       var file=artworkInput.files && artworkInput.files[0];
       artworkInput.value="";
@@ -1320,6 +1351,20 @@
       var box=$("musicUserEditV104");
       var userId=box && box.dataset ? box.dataset.userAudioId : "";
       changeUserArtworkV107(userId,file);
+    };
+    var videoInput=$("musicUserVideoInputV108");
+    var videoChoose=$("musicUserVideoChooseV108");
+    if(videoChoose) videoChoose.onclick=function(){
+      if(typeof window.MEGANE_MEDIA_SOURCE_NOTICE_V108==="function" && !window.MEGANE_MEDIA_SOURCE_NOTICE_V108()) return;
+      if(videoInput) videoInput.click();
+    };
+    if(videoInput) videoInput.onchange=function(){
+      var file=videoInput.files && videoInput.files[0];
+      videoInput.value="";
+      if(!file) return;
+      var box=$("musicUserEditV104");
+      var userId=box && box.dataset ? box.dataset.userAudioId : "";
+      changeUserVideoV108(userId,file);
     };
     var artworkReset=$("musicUserArtworkResetV107"); if(artworkReset) artworkReset.onclick=function(){
       var box=$("musicUserEditV104");
