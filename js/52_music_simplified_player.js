@@ -1,3 +1,4 @@
+/* v1.07: user artwork image editing */
 /* v1.05: user audio title editing */
 /* v1.04.2 UI spacing hotfix: independent bottom buttons preserved */
 /* 52_music_simplified_player.js
@@ -1109,6 +1110,16 @@
       ".music-user-edit-v104 .memo-save{min-height:44px;padding:0 18px;border-radius:14px;border:1px solid rgba(255,232,138,.30);background:rgba(255,232,138,.12);color:#ffe88a;font-size:14px;font-weight:900}"+
       ".music-user-edit-v104 .memo-save:disabled{opacity:.48}"+
       ".music-user-edit-v104 .memo-view{width:100%;min-height:50px;margin:0 0 8px;border-radius:15px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.045);color:#fff;font-size:15px;font-weight:850;text-align:left;padding:0 18px}"+
+      ".music-user-edit-v104 .artwork-label{display:block;margin:16px 2px 8px;color:rgba(255,255,255,.72);font-size:12px;font-weight:900}"+
+      ".music-user-edit-v104 .artwork-row{display:grid;grid-template-columns:82px minmax(0,1fr);gap:12px;align-items:center;margin-bottom:10px}"+
+      ".music-user-edit-v104 .artwork-preview{width:82px;height:82px;border-radius:16px;overflow:hidden;background:#08070a;border:1px solid rgba(255,255,255,.14)}"+
+      ".music-user-edit-v104 .artwork-preview img{width:100%;height:100%;display:block;object-fit:cover}"+
+      ".music-user-edit-v104 .artwork-actions{display:grid;gap:8px}"+
+      ".music-user-edit-v104 .artwork-button{width:100%;min-height:40px;border-radius:13px;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.055);color:#fff;font-size:13px;font-weight:850;text-align:left;padding:0 14px}"+
+      ".music-user-edit-v104 .artwork-button.reset{color:rgba(255,255,255,.68)}"+
+      ".music-user-edit-v104 .artwork-button:disabled{opacity:.48}"+
+      ".music-user-edit-v104 .artwork-hint{margin:-2px 2px 12px;color:rgba(255,255,255,.40);font-size:10px;line-height:1.45}"+
+      "#musicUserArtworkInputV107{display:none!important}"+
       ".music-user-edit-v104 .action{width:100%;min-height:56px;margin:8px 0;border-radius:16px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.055);color:#fff;font-size:16px;font-weight:800;text-align:left;padding:0 18px}"+
       ".music-user-edit-v104 .delete{color:#ff7676;border-color:rgba(255,96,96,.25);background:rgba(255,70,70,.08)}"+
       ".music-user-edit-backdrop-v104{position:fixed;inset:0;z-index:2147482400;background:rgba(0,0,0,.42);opacity:0;pointer-events:none;transition:opacity .2s ease}"+
@@ -1131,6 +1142,10 @@
       + '<textarea id="musicUserMemoV106" class="memo-input" maxlength="30000" placeholder="歌詞、制作メモ、修正点、公開先URLなどを自由に記入できます。">'+esc(String((t && (t.memo||t.lyrics||t.text)) || "").replace(/\\n/g,"\n"))+'</textarea>'
       + '<div class="memo-foot"><span id="musicUserMemoCountV106" class="memo-count"></span><button id="musicUserMemoSaveV106" class="memo-save" type="button">メモを保存</button></div>'
       + '<button id="musicUserMemoViewV1061" class="memo-view" type="button">歌詞・メモを表示</button>'
+      + '<label class="artwork-label">ジャケット画像</label>'
+      + '<div class="artwork-row"><div class="artwork-preview"><img id="musicUserArtworkPreviewV107" src="'+esc((t && t.cover) || "")+'" alt=""></div><div class="artwork-actions"><button id="musicUserArtworkChooseV107" class="artwork-button" type="button">画像を選ぶ</button><button id="musicUserArtworkResetV107" class="artwork-button reset" type="button">初期画像に戻す</button></div></div>'
+      + '<div class="artwork-hint">選んだ画像は中央を正方形に切り抜き、1200×1200 PNGとして保存します。</div>'
+      + '<input id="musicUserArtworkInputV107" type="file" accept="image/*,.jpg,.jpeg,.png,.webp,.heic,.heif">'
       + '<button id="musicUserDeleteV104" class="action delete" type="button">この曲を削除</button>'
       + '</div>';
   }
@@ -1193,6 +1208,38 @@
       console.error("[v1.06] user audio memo save failed",err);
       alert("歌詞・メモを保存できませんでした。もう一度お試しください。");
       if(btn){ btn.disabled=false; btn.textContent="メモを保存"; }
+    });
+  }
+
+  function changeUserArtworkV107(userId,file){
+    if(!userId || !file || typeof window.MEGANE_USER_AUDIO_ARTWORK_SAVE_V107!=="function") return;
+    var choose=$("musicUserArtworkChooseV107");
+    if(choose){ choose.disabled=true; choose.textContent="変換中…"; }
+    window.MEGANE_USER_AUDIO_ARTWORK_SAVE_V107(userId,file).then(function(){
+      state.edit=false;
+      saveState(); render(); updateMediaSessionV8();
+      try{ if(window.MEGANE_TOAST) window.MEGANE_TOAST("ジャケットを変更しました"); }catch(e){}
+    }).catch(function(err){
+      console.error("[v1.07] artwork save failed",err);
+      alert("画像を変更できませんでした。別の画像でお試しください。");
+      if(choose){ choose.disabled=false; choose.textContent="画像を選ぶ"; }
+    });
+  }
+
+  function resetUserArtworkV107(userId){
+    if(!userId || typeof window.MEGANE_USER_AUDIO_ARTWORK_RESET_V107!=="function") return;
+    var ok=window.confirm("ジャケットを初期画像に戻しますか？");
+    if(!ok) return;
+    var btn=$("musicUserArtworkResetV107");
+    if(btn){ btn.disabled=true; btn.textContent="戻しています…"; }
+    window.MEGANE_USER_AUDIO_ARTWORK_RESET_V107(userId).then(function(){
+      state.edit=false;
+      saveState(); render(); updateMediaSessionV8();
+      try{ if(window.MEGANE_TOAST) window.MEGANE_TOAST("初期画像に戻しました"); }catch(e){}
+    }).catch(function(err){
+      console.error("[v1.07] artwork reset failed",err);
+      alert("初期画像に戻せませんでした。もう一度お試しください。");
+      if(btn){ btn.disabled=false; btn.textContent="初期画像に戻す"; }
     });
   }
 
@@ -1260,6 +1307,22 @@
     }
     if(titleSave) titleSave.onclick=commitTitleV105;
     if(titleInput) titleInput.onkeydown=function(e){ if(e && e.key==="Enter"){ e.preventDefault(); commitTitleV105(); } };
+    var artworkInput=$("musicUserArtworkInputV107");
+    var artworkChoose=$("musicUserArtworkChooseV107");
+    if(artworkChoose) artworkChoose.onclick=function(){ if(artworkInput) artworkInput.click(); };
+    if(artworkInput) artworkInput.onchange=function(){
+      var file=artworkInput.files && artworkInput.files[0];
+      artworkInput.value="";
+      if(!file) return;
+      var box=$("musicUserEditV104");
+      var userId=box && box.dataset ? box.dataset.userAudioId : "";
+      changeUserArtworkV107(userId,file);
+    };
+    var artworkReset=$("musicUserArtworkResetV107"); if(artworkReset) artworkReset.onclick=function(){
+      var box=$("musicUserEditV104");
+      var userId=box && box.dataset ? box.dataset.userAudioId : "";
+      resetUserArtworkV107(userId);
+    };
     var editDelete=$("musicUserDeleteV104"); if(editDelete) editDelete.onclick=function(){
       var box=$("musicUserEditV104");
       var userId=box && box.dataset ? box.dataset.userAudioId : "";

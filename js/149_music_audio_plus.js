@@ -1,3 +1,4 @@
+/* v1.07: user artwork image editing */
 /* v1.06.1: memo viewer + iPhone keyboard layout hotfix */
 /* v1.06: user audio lyrics / memo editing */
 /* v1.05: user audio title editing */
@@ -260,6 +261,53 @@
     });
   };
 
+
+  // v1.07: user-selected image only updates artwork fields. Audio Blob and track ID stay untouched.
+  window.MEGANE_USER_AUDIO_ARTWORK_SAVE_V107=function(id,fileOrBlob){
+    id=String(id||"");
+    if(!id) return Promise.reject(new Error("User audio id required"));
+    if(!fileOrBlob || !String(fileOrBlob.type||"").match(/^image\//)) return Promise.reject(new Error("Image file required"));
+    return normalizeArtworkBlob(fileOrBlob).then(function(blob){
+      return dbGet(id).then(function(row){
+        if(!row) throw new Error("Audio data not found");
+        row.artworkBlob=blob;
+        row.artworkMime=blob.type||"image/png";
+        row.artworkWidth=ARTWORK_SIZE;
+        row.artworkHeight=ARTWORK_SIZE;
+        row.artworkVersion=107;
+        row.artworkAuto=false;
+        row.cover="";
+        return dbPut(row);
+      });
+    }).then(function(row){
+      updateLoadedAlbumTitleV105(id,row);
+      render();
+      return row;
+    });
+  };
+
+  window.MEGANE_USER_AUDIO_ARTWORK_RESET_V107=function(id){
+    id=String(id||"");
+    if(!id) return Promise.reject(new Error("User audio id required"));
+    return dbGet(id).then(function(row){
+      if(!row) throw new Error("Audio data not found");
+      return defaultArtworkBlob(row.title||row.fileName||"MY AUDIO").then(function(blob){
+        row.artworkBlob=blob;
+        row.artworkMime=blob.type||"image/png";
+        row.artworkWidth=ARTWORK_SIZE;
+        row.artworkHeight=ARTWORK_SIZE;
+        row.artworkVersion=107;
+        row.artworkAuto=true;
+        row.cover="";
+        return dbPut(row);
+      });
+    }).then(function(row){
+      updateLoadedAlbumTitleV105(id,row);
+      render();
+      return row;
+    });
+  };
+
   // v1.04: 曲編集ボトムシートから呼ぶ安全な削除API。
   // IndexedDBの対象1件だけを削除し、他の保存曲には触れない。
   window.MEGANE_USER_AUDIO_DELETE_V104=function(id){
@@ -382,7 +430,7 @@
       var row={
         id:uid(), title:title, fileName:file.name||title,
         mime:file.type||"application/octet-stream", size:Number(file.size||0),
-        blob:file, createdAt:Date.now(), artworkBlob:artworkBlob, artworkVersion:103, cover:"", memo:""
+        blob:file, createdAt:Date.now(), artworkBlob:artworkBlob, artworkVersion:107, artworkAuto:true, cover:"", memo:""
       };
       return dbPut(row).then(function(){
       var album=albumFromRow(row);
