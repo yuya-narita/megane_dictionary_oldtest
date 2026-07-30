@@ -8587,3 +8587,19 @@ body.mode-music.music-v7 #musicView .music-v7-lyrics.open {
     max-height: calc(100dvh - 142px - env(safe-area-inset-top)) !important;
   }
 }
+
+/* === v1.13.1 Custom album: left swipe to remove membership === */
+.music-v7-track.custom-album-mode{padding-right:56px !important;}
+.music-v7-track.custom-album-mode.dragging{
+  transition:none !important;
+  will-change:transform !important;
+}
+.music-v7-track.custom-album-mode.delete-ready{
+  background:rgba(255,70,70,.10) !important;
+}
+.music-v7-track.custom-album-mode.removing{
+  transform:translateX(-130%) !important;
+  opacity:0 !important;
+  transition:transform .18s ease, opacity .18s ease !important;
+  pointer-events:none !important;
+}
