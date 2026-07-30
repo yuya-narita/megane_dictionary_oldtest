@@ -1071,7 +1071,9 @@
     }).join("");
     return '<div id="musicV7Sheet" class="music-v7-sheet">'
       + '<div class="music-v7-handle"></div>'
-      + '<div class="music-v7-sheet-head"><strong>'+esc(a.title)+'</strong><small style="margin-left:10px;color:rgba(255,230,170,.72);font-weight:900;">'+esc(prog && prog.total ? prog.text : "")+'</small><button id="musicV7SheetClose">×</button></div>'
+      + '<div class="music-v7-sheet-head"><strong>'+esc(a.title)+'</strong><small style="margin-left:10px;color:rgba(255,230,170,.72);font-weight:900;">'+esc(prog && prog.total ? prog.text : "")+'</small>'
+      + (a && a._meganeCustomAlbum109 ? '<button id="musicV7CustomAlbumEdit112" data-custom-album-id="'+esc(a._userCustomAlbumId||"")+'" style="margin-left:auto;margin-right:4px;width:auto;padding:0 10px;font-size:13px;font-weight:900;color:#ffe7a0;background:rgba(255,231,160,.10);border:1px solid rgba(255,231,160,.18);border-radius:999px;">編集</button>' : '')
+      + '<button id="musicV7SheetClose">×</button></div>'
       + '<div class="music-v7-track-list">'+rows+'</div>'
       + '</div>';
   }
@@ -1311,6 +1313,10 @@
     var favB = $("musicV7Fav"); if(favB) favB.onclick = function(){ var t = currentTrack(); if(t){ toggleFav(t.id); render(); } };
     var repB = $("musicV7Repeat"); if(repB) repB.onclick = toggleRepeat;
     var shB = $("musicV7Shuffle"); if(shB) shB.onclick = function(){ state.shuffle = !state.shuffle; saveState(); render(); };
+    var albumEdit112 = $("musicV7CustomAlbumEdit112"); if(albumEdit112) albumEdit112.onclick = function(){
+      var id=albumEdit112.dataset && albumEdit112.dataset.customAlbumId;
+      if(id && typeof window.MEGANE_CUSTOM_ALBUM_OPEN_EDIT_V112 === "function") window.MEGANE_CUSTOM_ALBUM_OPEN_EDIT_V112(id);
+    };
     var closeB = $("musicV7SheetClose"); if(closeB) closeB.onclick = function(){ state.sheet = false; render(); };
     var closeL = $("musicV7LyricsClose"); if(closeL) closeL.onclick = function(){ state.lyrics = false; render(); };
     var editClose=$("musicUserEditCloseV104"); if(editClose) editClose.onclick=function(){ state.edit=false; render(); };
