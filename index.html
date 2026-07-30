@@ -12,8 +12,306 @@
 
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>メガネ辞書 MVP clean</title>
-  <link rel="stylesheet" href="./style.css?v=146" />
+  <title>メガネ辞書</title>
+
+  <!-- SEO / OGP START -->
+  <meta name="description" content="メガネ辞書は、複数の視点で言葉を見直し、自分だけの定義も作れる「視点を切り替える辞書」です。辞書、Syntax Conference、音楽、BUG CARD、ミニゲームを収録。">
+  <meta name="author" content="Yuya Narita">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="theme-color" content="#23140f">
+  <meta name="application-name" content="メガネ辞書">
+  <meta name="apple-mobile-web-app-title" content="メガネ辞書">
+
+  <link rel="canonical" href="https://yuya-narita.github.io/megane_dictionary/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="メガネ辞書">
+  <meta property="og:title" content="メガネ辞書｜視点を切り替える辞書">
+  <meta property="og:description" content="あなたなら？ 言葉を複数の視点から観測し、自分の定義も残せるデジタル作品世界。">
+  <meta property="og:url" content="https://yuya-narita.github.io/megane_dictionary/">
+  <meta property="og:image" content="https://yuya-narita.github.io/megane_dictionary/images/ogp.jpg">
+  <meta property="og:image:secure_url" content="https://yuya-narita.github.io/megane_dictionary/images/ogp.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="メガネ辞書のキービジュアル">
+  <meta property="og:locale" content="ja_JP">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="メガネ辞書｜視点を切り替える辞書">
+  <meta name="twitter:description" content="あなたなら？ 言葉を複数の視点から観測し、自分の定義も残せるデジタル作品世界。">
+  <meta name="twitter:image" content="https://yuya-narita.github.io/megane_dictionary/images/ogp.jpg">
+  <meta name="twitter:image:alt" content="メガネ辞書のキービジュアル">
+  <!-- SEO / OGP END -->
+
+  <!-- MEGANE DICTIONARY STRUCTURED DATA START -->
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://yuya-narita.github.io/megane_dictionary/#website",
+      "url": "https://yuya-narita.github.io/megane_dictionary/",
+      "name": "メガネ辞書",
+      "alternateName": "MEGANE DICTIONARY",
+      "inLanguage": "ja",
+      "description": "言葉を複数の視点から観測し、自分の定義も残せるデジタル作品世界。",
+      "creator": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#creator"
+      },
+      "publisher": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#creator"
+      },
+      "image": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#primaryimage"
+      },
+      "mainEntity": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#app"
+      }
+    },
+    {
+      "@type": "WebApplication",
+      "@id": "https://yuya-narita.github.io/megane_dictionary/#app",
+      "url": "https://yuya-narita.github.io/megane_dictionary/",
+      "name": "メガネ辞書",
+      "alternateName": "MEGANE DICTIONARY",
+      "applicationCategory": [
+        "EducationalApplication",
+        "EntertainmentApplication"
+      ],
+      "operatingSystem": "Web",
+      "browserRequirements": "JavaScript対応ブラウザ",
+      "inLanguage": "ja",
+      "isAccessibleForFree": true,
+      "description": "複数のキャラクター視点で言葉の定義を切り替え、自分自身の定義も作成・保存・共有できるWebアプリ。",
+      "image": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#primaryimage"
+      },
+      "author": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#creator"
+      },
+      "creator": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#creator"
+      },
+      "isPartOf": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#website"
+      },
+      "hasPart": [
+        {
+          "@id": "https://yuya-narita.github.io/megane_dictionary/#dictionary"
+        },
+        {
+          "@id": "https://yuya-narita.github.io/megane_dictionary/#conference"
+        },
+        {
+          "@id": "https://yuya-narita.github.io/megane_dictionary/#music"
+        },
+        {
+          "@id": "https://yuya-narita.github.io/megane_dictionary/#bugcards"
+        },
+        {
+          "@id": "https://yuya-narita.github.io/megane_dictionary/#lookingbear"
+        },
+        {
+          "@id": "https://yuya-narita.github.io/megane_dictionary/#characters"
+        }
+      ]
+    },
+    {
+      "@type": "ImageObject",
+      "@id": "https://yuya-narita.github.io/megane_dictionary/#primaryimage",
+      "url": "https://yuya-narita.github.io/megane_dictionary/images/ogp.jpg",
+      "contentUrl": "https://yuya-narita.github.io/megane_dictionary/images/ogp.jpg",
+      "width": 1200,
+      "height": 630,
+      "caption": "メガネ辞書のキービジュアル"
+    },
+    {
+      "@type": "Person",
+      "@id": "https://yuya-narita.github.io/megane_dictionary/#creator",
+      "name": "Yuya Narita",
+      "alternateName": "成田有也",
+      "url": "https://yuya-narita.github.io/megane_dictionary/"
+    },
+    {
+      "@type": "DefinedTermSet",
+      "@id": "https://yuya-narita.github.io/megane_dictionary/#dictionary",
+      "name": "メガネ辞書",
+      "alternateName": "視点を切り替える辞書",
+      "inLanguage": "ja",
+      "description": "同じ言葉を異なる視点から定義し直し、利用者自身の定義も記録できる辞書コンテンツ。",
+      "isPartOf": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#app"
+      },
+      "creator": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#creator"
+      },
+      "about": [
+        "言葉",
+        "視点",
+        "定義",
+        "観測",
+        "認知",
+        "思考"
+      ]
+    },
+    {
+      "@type": "PodcastSeries",
+      "@id": "https://yuya-narita.github.io/megane_dictionary/#conference",
+      "name": "Syntax Conference",
+      "inLanguage": "ja",
+      "description": "ズレア、ゼリス、ニクス、クエリナが、童話・日常・ゲーム・概念を複数の視点から観測する音声会議シリーズ。",
+      "isPartOf": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#app"
+      },
+      "creator": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#creator"
+      },
+      "genre": [
+        "トーク",
+        "思考実験",
+        "物語",
+        "哲学"
+      ]
+    },
+    {
+      "@type": "MusicPlaylist",
+      "@id": "https://yuya-narita.github.io/megane_dictionary/#music",
+      "name": "MEGANE DICTIONARY MUSIC",
+      "inLanguage": "ja",
+      "description": "メガネ辞書の世界観、理論、キャラクター、物語から生まれた音楽コレクション。",
+      "isPartOf": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#app"
+      },
+      "creator": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#creator"
+      }
+    },
+    {
+      "@type": "CreativeWorkSeries",
+      "@id": "https://yuya-narita.github.io/megane_dictionary/#bugcards",
+      "name": "BUG CARD Collection",
+      "inLanguage": "ja",
+      "description": "禁止、比較、承認、沈黙、再帰など、認知や意味のバグを観測するカードコレクション。",
+      "isPartOf": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#app"
+      },
+      "creator": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#creator"
+      },
+      "genre": [
+        "カードコレクション",
+        "コンセプトアート",
+        "思考実験"
+      ]
+    },
+    {
+      "@type": "VideoGame",
+      "@id": "https://yuya-narita.github.io/megane_dictionary/#lookingbear",
+      "name": "LOOKING BEAR",
+      "inLanguage": "ja",
+      "description": "BUG CARDの概念を、操作・反復・選択・観測として体験するミニゲーム群。",
+      "gamePlatform": "Web browser",
+      "applicationCategory": "Game",
+      "isAccessibleForFree": true,
+      "isPartOf": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#app"
+      },
+      "creator": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#creator"
+      },
+      "character": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#observer"
+      }
+    },
+    {
+      "@type": "ItemList",
+      "@id": "https://yuya-narita.github.io/megane_dictionary/#characters",
+      "name": "メガネ辞書の視点キャラクター",
+      "description": "言葉と世界を異なる角度から観測するキャラクター群。",
+      "isPartOf": {
+        "@id": "https://yuya-narita.github.io/megane_dictionary/#app"
+      },
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "item": {
+            "@id": "https://yuya-narita.github.io/megane_dictionary/#zurea"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "item": {
+            "@id": "https://yuya-narita.github.io/megane_dictionary/#xeris"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "item": {
+            "@id": "https://yuya-narita.github.io/megane_dictionary/#nyx"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "item": {
+            "@id": "https://yuya-narita.github.io/megane_dictionary/#quelina"
+          }
+        },
+        {
+          "@type": "ListItem",
+          "position": 5,
+          "item": {
+            "@id": "https://yuya-narita.github.io/megane_dictionary/#observer"
+          }
+        }
+      ]
+    },
+    {
+      "@type": "Thing",
+      "@id": "https://yuya-narita.github.io/megane_dictionary/#zurea",
+      "name": "ZUREA",
+      "alternateName": "ズレア",
+      "description": "難しい概念を日常の言葉へ翻訳し、視点を横断するキャラクター。"
+    },
+    {
+      "@type": "Thing",
+      "@id": "https://yuya-narita.github.io/megane_dictionary/#xeris",
+      "name": "XERIS",
+      "alternateName": "ゼリス",
+      "description": "世界を数式・条件・構造として観測するキャラクター。"
+    },
+    {
+      "@type": "Thing",
+      "@id": "https://yuya-narita.github.io/megane_dictionary/#nyx",
+      "name": "NYX",
+      "alternateName": "ニクス",
+      "description": "VR越しに感情・記憶・危険を観測するキャラクター。"
+    },
+    {
+      "@type": "Thing",
+      "@id": "https://yuya-narita.github.io/megane_dictionary/#quelina",
+      "name": "QUELINA",
+      "alternateName": "クエリナ",
+      "description": "飛び抜けた明るさと創造性で、世界を肯定的に再定義するキャラクター。"
+    },
+    {
+      "@type": "Thing",
+      "@id": "https://yuya-narita.github.io/megane_dictionary/#observer",
+      "name": "THE OBSERVER",
+      "alternateName": "観測者",
+      "description": "頭に亀裂があり、片目が光る白いクマ。LOOKING BEARとBUG CARDを横断する観測者。"
+    }
+  ]
+}
+  </script>
+  <!-- MEGANE DICTIONARY STRUCTURED DATA END -->
+
+  <link rel="stylesheet" href="./style.css?v=152" />
 
   <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png?v=observer1">
   <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png?v=observer1">
@@ -267,7 +565,7 @@ padding:20px;">
   <script src="./js/00_core.js?v=140"></script>
   <script src="./js/10_manga_reader.js?v=conf1"></script>
   <script src="./js/voice-map.js?v=audio1"></script>
-  <script src="./js/20_dictionary_audio.js?v=selfglass16audio"></script>
+  <script src="./js/20_dictionary_audio.js?v=analytics2"></script>
   <script src="./js/30_features_and_hotfixes.js?v=favsingle19"></script>
   <script src="./js/25_conference_player_solid.js?v=solid1"></script>
   <script src="./js/26_conference_resume.js?v=resume1"></script>
@@ -281,10 +579,10 @@ padding:20px;">
   <script src="./js/35_conf_layout_fix.js?v=layoutfix1"></script>
   <script src="./js/36_conf_keep_playing_list.js?v=keepplaying1"></script>
   <script src="./js/37_conf_now_playing_stable.js?v=nowplaying1"></script>
-  <script src="./js/40_music_data.js?v=music2"></script>
+  <script src="./js/40_music_data.js?v=music10"></script>
 
   <script src="./js/46_restore_mode_buttons.js?v=restore1"></script>
-  <script src="./js/52_music_simplified_player.js?v=13"></script>
+  <script src="./js/52_music_simplified_player.js?v=18"></script>
   <script src="./js/80_music_album_lock_patch.js?v=2"></script>
 
 <script src="./js/64_music_v7_tabfix.js?v=cardmusicfix1"></script>
@@ -296,9 +594,9 @@ padding:20px;">
   <script src="./js/58_stop_button_real_fix.js?v=stopreal1"></script>
   <script src="./js/59_plus_word_stop_resume.js?v=v79"></script>
   <script src="./js/60_userdef_single_edit_confirm.js?v=delivery5"></script>
-<script src="./js/61_self_glass_cards.js?v=favsingle19"></script>
+<script src="./js/61_self_glass_cards.js?v=analytics2"></script>
 <script src="./js/62_self_card_image_share.js?v=sharebtn1"></script>
-<script src="./js/65_character_definition_share_button.js?v=10"></script>
+<script src="./js/65_character_definition_share_button.js?v=11"></script>
 <script src="./js/66_userdef_share_hint_text.js?v=1"></script>
 
 <script src="./js/cleanup_ui_only.js"></script>
@@ -317,25 +615,29 @@ padding:20px;">
 
 <script src="js/notice-tutorial-config.js"></script>
 <script src="js/notice-config.js"></script>
-<script src="js/notice-modal.js"></script>
+<script src="js/notice-modal.js?v=2"></script>
 <script src="js/82_observation_log_patch.js?v=2"></script>
 <script src="js/83_developer_patch.js?v=3"></script>
 <script src="js/84_observation_hooks_patch.js"></script>
 <script src="js/85_music_unlock_event_patch.js"></script>
 
-<script src="js/86_nyx_live_log.js?v=1"></script>
+<script src="js/86_nyx_live_log.js?v=2"></script>
 
-<script src="js/105_card_engine.js?v=randomtoggle1"></script>
+<script src="js/105_card_engine.js?v=randomtoggle2"></script>
 <script src="js/106_card_physics_touch.js?v=unified16"></script>
-<script src="./js/80_favorites_singleton.js?v=20"></script>
+<script src="./js/80_favorites_singleton.js?v=analytics2"></script>
 <script src="./js/81_favorites_visual_stabilizer.js?v=5"></script>
 <script src="./js/107_reobserve_184.js?v=5min-v04"></script>
-<script src="./js/108_music_prohibited_stage.js?v=2"></script>
+<script src="./js/108_music_prohibited_stage.js?v=unified1"></script>
 <script src="./js/109_polar_bear_label.js?v=1"></script>
 <script src="./js/110_something_weird.js?v=selfvoice101"></script>
 <script src="./js/111_paradox_playground.js?v=renderer102"></script>
 <script src="./js/120_card_longpress.js?v=common102"></script>
 <script src="./js/140_world_search.js?v=13-animation-plus"></script>
 <script src="./js/142_dictionary_plus_align.js?v=1"></script>
+<script src="./js/143_mode_favorites.js?v=reorder1"></script>
+<script src="./js/144_audio_continue_drag.js?v=production9"></script>
+<script src="./js/145_analytics_events.js?v=2"></script>
+<script src="./js/146_dictionary_page_fold.js?v=1"></script>
 </body>
 </html>
