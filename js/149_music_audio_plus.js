@@ -685,20 +685,29 @@
     document.body.appendChild(el);
     setTimeout(function(){ if(el.parentNode) el.remove(); },1500);
   }
+  function ensureAlbumEditImageInputV112(){
+    var editAlbumImage=q(ALBUM_EDIT_IMAGE_INPUT_ID);
+    if(editAlbumImage) return editAlbumImage;
+    editAlbumImage=document.createElement("input");
+    editAlbumImage.id=ALBUM_EDIT_IMAGE_INPUT_ID;
+    editAlbumImage.type="file";
+    editAlbumImage.accept="image/*";
+    editAlbumImage.addEventListener("change",function(){
+      var f=editAlbumImage.files&&editAlbumImage.files[0];
+      editAlbumImage.value="";
+      if(!f) return;
+      pendingAlbumEditImageV112=f;
+      if(pendingAlbumEditImageUrlV112){ try{URL.revokeObjectURL(pendingAlbumEditImageUrlV112);}catch(_){ } }
+      pendingAlbumEditImageUrlV112=URL.createObjectURL(f);
+      var pv=q("musicAlbumEditPreview112");
+      if(pv) pv.src=pendingAlbumEditImageUrlV112;
+    });
+    document.body.appendChild(editAlbumImage);
+    return editAlbumImage;
+  }
   function setBusy(on){
     busy=!!on;
-    var editAlbumImage=q(ALBUM_EDIT_IMAGE_INPUT_ID);
-    if(!editAlbumImage){
-      editAlbumImage=document.createElement("input"); editAlbumImage.id=ALBUM_EDIT_IMAGE_INPUT_ID; editAlbumImage.type="file"; editAlbumImage.accept="image/*";
-      editAlbumImage.addEventListener("change",function(){
-        var f=editAlbumImage.files&&editAlbumImage.files[0]; editAlbumImage.value=""; if(!f) return;
-        pendingAlbumEditImageV112=f;
-        if(pendingAlbumEditImageUrlV112){ try{URL.revokeObjectURL(pendingAlbumEditImageUrlV112);}catch(_){ } }
-        pendingAlbumEditImageUrlV112=URL.createObjectURL(f);
-        var pv=q("musicAlbumEditPreview112"); if(pv) pv.src=pendingAlbumEditImageUrlV112;
-      });
-      document.body.appendChild(editAlbumImage);
-    }
+    ensureAlbumEditImageInputV112();
     var b=q(BUTTON_ID);
     if(b){ b.disabled=busy; b.classList.toggle("busy",busy); b.textContent=busy?"…":"＋"; }
   }
@@ -868,7 +877,7 @@
       e.stopPropagation();
       var act=e.target&&e.target.dataset&&e.target.dataset.act;
       if(act==='close'){ close(); return; }
-      if(act==='image'){ if(!sourceFileNoticeV108()) return; var inp=q(ALBUM_EDIT_IMAGE_INPUT_ID); if(inp) inp.click(); return; }
+      if(act==='image'){ if(!sourceFileNoticeV108()) return; var inp=ensureAlbumEditImageInputV112(); if(inp) inp.click(); return; }
       if(act==='reset'){
         pendingAlbumEditImageV112={_reset:true};
         defaultAlbumArtworkBlobV109(String((q('musicAlbumEditTitle112')||{}).value||album.title)).then(function(blob){
@@ -922,6 +931,7 @@
       input.addEventListener("change",function(){ var f=input.files&&input.files[0]; input.value=""; if(f) addFile(f); });
       document.body.appendChild(input);
     }
+    ensureAlbumEditImageInputV112();
     var albumImage=q(ALBUM_IMAGE_INPUT_ID);
     if(!albumImage){
       albumImage=document.createElement("input"); albumImage.id=ALBUM_IMAGE_INPUT_ID; albumImage.type="file"; albumImage.accept="image/*";
