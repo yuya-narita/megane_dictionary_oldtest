@@ -1,5 +1,6 @@
+/* v1.05: user audio title editing */
 /* v1.04.2 UI spacing hotfix: independent bottom buttons preserved */
-/* 149_music_audio_plus.js v1.04
+/* 149_music_audio_plus.js v1.05
  * Music mode: ＋から端末内の音声ファイルを「迷子」へ追加。
  * - audio file only
  * - IndexedDB persistence (Blob included)
@@ -148,6 +149,18 @@
     });
   }
 
+  function dbGet(id){
+    return openDB().then(function(db){
+      return new Promise(function(resolve,reject){
+        var tx=db.transaction(STORE,"readonly");
+        var req=tx.objectStore(STORE).get(id);
+        req.onsuccess=function(){ resolve(req.result || null); };
+        req.onerror=function(){ reject(req.error||new Error("DB read failed")); };
+        tx.oncomplete=function(){ db.close(); };
+      });
+    });
+  }
+
   function dbDelete(id){
     return openDB().then(function(db){
       return new Promise(function(resolve,reject){
@@ -168,6 +181,57 @@
     }
     delete loadedIds[albumId];
   }
+
+  function updateLoadedAlbumTitleV105(id,row){
+    var arr=playlists();
+    if(!arr) return;
+    var albumId="user_audio_album_"+id;
+    var album=arr.find(function(a){ return a && a.id===albumId; });
+    if(!album) return;
+    var title=String(row.title||row.fileName||"音声ファイル");
+    album.title=title;
+    if(album.tracks && album.tracks[0]){
+      album.tracks[0].title=title;
+      album.tracks[0].tag=title;
+    }
+    if(row.artworkBlob){
+      if(artworkUrls[id]){ try{ URL.revokeObjectURL(artworkUrls[id]); }catch(_){ } }
+      var cover=URL.createObjectURL(row.artworkBlob);
+      artworkUrls[id]=cover;
+      album.cover=cover;
+      if(album.tracks && album.tracks[0]) album.tracks[0].cover=cover;
+    }
+  }
+
+  // v1.05: ID・音声Blob・お気に入りを変えず、表示名だけ安全に更新する。
+  window.MEGANE_USER_AUDIO_RENAME_V105=function(id,newTitle){
+    id=String(id||"");
+    newTitle=String(newTitle||"").trim().slice(0,80);
+    if(!id) return Promise.reject(new Error("User audio id required"));
+    if(!newTitle) return Promise.reject(new Error("Title required"));
+    return dbGet(id).then(function(row){
+      if(!row) throw new Error("Audio data not found");
+      row.title=newTitle;
+      // 現時点のユーザー音声は自動生成ジャケット。将来ユーザー画像を設定した行は
+      // artworkAuto=false にすることで、曲名変更時にも画像を保持できる。
+      if(row.artworkAuto===false){
+        return dbPut(row);
+      }
+      return defaultArtworkBlob(newTitle).then(function(blob){
+        row.artworkBlob=blob;
+        row.artworkMime=blob.type||"image/png";
+        row.artworkWidth=ARTWORK_SIZE;
+        row.artworkHeight=ARTWORK_SIZE;
+        row.artworkAuto=true;
+        row.cover="";
+        return dbPut(row);
+      }).catch(function(){ return dbPut(row); });
+    }).then(function(row){
+      updateLoadedAlbumTitleV105(id,row);
+      render();
+      return row;
+    });
+  };
 
   // v1.04: 曲編集ボトムシートから呼ぶ安全な削除API。
   // IndexedDBの対象1件だけを削除し、他の保存曲には触れない。

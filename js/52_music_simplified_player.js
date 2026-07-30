@@ -1,3 +1,4 @@
+/* v1.05: user audio title editing */
 /* v1.04.2 UI spacing hotfix: independent bottom buttons preserved */
 /* 52_music_simplified_player.js
    MUSIC COMPLETE REBUILD V7 / USER EDIT v1.04
@@ -1093,7 +1094,13 @@
       ".music-user-edit-v104 .head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}"+
       ".music-user-edit-v104 .head strong{font-size:20px;color:#fff}"+
       ".music-user-edit-v104 .head button{width:40px;height:40px;border:0;background:transparent;color:#fff;font-size:28px}"+
-      ".music-user-edit-v104 .track-name{margin:-5px 0 18px;color:rgba(255,255,255,.58);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"+
+      ".music-user-edit-v104 .track-name{margin:-5px 0 14px;color:rgba(255,255,255,.58);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}"+
+      ".music-user-edit-v104 .title-label{display:block;margin:4px 2px 7px;color:rgba(255,255,255,.72);font-size:12px;font-weight:900}"+
+      ".music-user-edit-v104 .title-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px;margin-bottom:14px}"+
+      ".music-user-edit-v104 .title-input{min-width:0;height:52px;padding:0 14px;border-radius:15px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.065);color:#fff;font-size:16px;font-weight:800;outline:none}"+
+      ".music-user-edit-v104 .title-input:focus{border-color:rgba(255,232,138,.62);box-shadow:0 0 0 3px rgba(255,232,138,.09)}"+
+      ".music-user-edit-v104 .title-save{height:52px;padding:0 15px;border-radius:15px;border:1px solid rgba(255,232,138,.30);background:rgba(255,232,138,.12);color:#ffe88a;font-size:14px;font-weight:900;white-space:nowrap}"+
+      ".music-user-edit-v104 .title-save:disabled{opacity:.48}"+
       ".music-user-edit-v104 .action{width:100%;min-height:56px;margin:8px 0;border-radius:16px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.055);color:#fff;font-size:16px;font-weight:800;text-align:left;padding:0 18px}"+
       ".music-user-edit-v104 .delete{color:#ff7676;border-color:rgba(255,96,96,.25);background:rgba(255,70,70,.08)}"+
       ".music-user-edit-backdrop-v104{position:fixed;inset:0;z-index:2147482400;background:rgba(0,0,0,.42);opacity:0;pointer-events:none;transition:opacity .2s ease}"+
@@ -1110,6 +1117,8 @@
       + '<div class="handle"></div>'
       + '<div class="head"><strong>曲を編集</strong><button id="musicUserEditCloseV104" type="button">×</button></div>'
       + '<div class="track-name">'+esc((info && info.title) || (t && t.title) || "追加した音声")+'</div>'
+      + '<label class="title-label" for="musicUserTitleV105">曲名</label>'
+      + '<div class="title-row"><input id="musicUserTitleV105" class="title-input" type="text" maxlength="80" value="'+esc((t && t.title) || "")+'" autocomplete="off"><button id="musicUserTitleSaveV105" class="title-save" type="button">保存</button></div>'
       + '<button id="musicUserEditMemoV104" class="action" type="button">歌詞・メモを見る</button>'
       + '<button id="musicUserDeleteV104" class="action delete" type="button">この曲を削除</button>'
       + '</div>';
@@ -1121,6 +1130,25 @@
     saveFavOrder(favOrder().filter(function(id){ return id!==trackId; }));
     var p=positions();
     if(Object.prototype.hasOwnProperty.call(p,trackId)){ delete p[trackId]; localStorage.setItem(LS.pos,JSON.stringify(p)); }
+  }
+
+  function renameUserAudioV105(userId,newTitle){
+    newTitle=String(newTitle||"").trim();
+    if(!userId || typeof window.MEGANE_USER_AUDIO_RENAME_V105!=="function") return;
+    if(!newTitle){ alert("曲名を入力してください。"); return; }
+    var saveBtn=$("musicUserTitleSaveV105");
+    if(saveBtn){ saveBtn.disabled=true; saveBtn.textContent="保存中…"; }
+    window.MEGANE_USER_AUDIO_RENAME_V105(userId,newTitle).then(function(){
+      state.edit=false;
+      saveState();
+      render();
+      updateMediaSessionV8();
+      try{ if(window.MEGANE_TOAST) window.MEGANE_TOAST("曲名を変更しました"); }catch(e){}
+    }).catch(function(err){
+      console.error("[v1.05] user audio rename failed",err);
+      alert("曲名を変更できませんでした。もう一度お試しください。");
+      if(saveBtn){ saveBtn.disabled=false; saveBtn.textContent="保存"; }
+    });
   }
 
   function deleteUserAudioV104(userId, trackTitle, trackId){
@@ -1161,6 +1189,15 @@
     var editClose=$("musicUserEditCloseV104"); if(editClose) editClose.onclick=function(){ state.edit=false; render(); };
     var editBg=$("musicUserEditBackdropV104"); if(editBg) editBg.onclick=function(){ state.edit=false; render(); };
     var editMemo=$("musicUserEditMemoV104"); if(editMemo) editMemo.onclick=function(){ state.edit=false; state.lyrics=true; render(); };
+    var titleInput=$("musicUserTitleV105");
+    var titleSave=$("musicUserTitleSaveV105");
+    function commitTitleV105(){
+      var box=$("musicUserEditV104");
+      var userId=box && box.dataset ? box.dataset.userAudioId : "";
+      renameUserAudioV105(userId,titleInput && titleInput.value);
+    }
+    if(titleSave) titleSave.onclick=commitTitleV105;
+    if(titleInput) titleInput.onkeydown=function(e){ if(e && e.key==="Enter"){ e.preventDefault(); commitTitleV105(); } };
     var editDelete=$("musicUserDeleteV104"); if(editDelete) editDelete.onclick=function(){
       var box=$("musicUserEditV104");
       var userId=box && box.dataset ? box.dataset.userAudioId : "";
