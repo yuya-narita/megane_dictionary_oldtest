@@ -1,3 +1,4 @@
+/* v1.06.1: memo viewer + iPhone keyboard layout hotfix */
 /* v1.06: user audio lyrics / memo editing */
 /* v1.05: user audio title editing */
 /* v1.04.2 UI spacing hotfix: independent bottom buttons preserved */
