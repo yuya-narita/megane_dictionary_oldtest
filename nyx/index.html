@@ -3,67 +3,57 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#02070b">
-  <title>NYX OBSERVATION TERMINAL v0.4</title>
+  <meta name="theme-color" content="#02070d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>NYX OBSERVATION TERMINAL v0.5</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="ambient-grid" aria-hidden="true"></div>
+  <div class="blue-haze" aria-hidden="true"></div>
   <div class="scanlines" aria-hidden="true"></div>
   <div class="sweep" aria-hidden="true"></div>
 
   <main class="terminal-shell" id="dropZone">
-    <header class="terminal-header">
+    <header class="terminal-header glass-panel">
       <div class="title-block">
-        <p class="eyebrow">MEGANE DICTIONARY / LOCAL OBSERVATION NODE</p>
+        <p class="eyebrow">MEGANE DICTIONARY / NXS LOCAL OBSERVATION NODE</p>
         <h1>NYX OBSERVATION TERMINAL</h1>
         <div class="version-row">
-          <span>SYSTEM v0.4.2</span>
-          <span class="signal"><i></i> STANDBY</span>
+          <span>SYSTEM v0.5</span>
+          <span class="signal"><i></i><b id="headerState">CONNECTED</b></span>
         </div>
       </div>
-
       <div class="network-badge">
-        <span>LOCAL</span>
-        <strong>OFFLINE</strong>
+        <span>DATA LINK</span>
+        <strong>LOCAL / 042-A</strong>
       </div>
     </header>
 
-    <section class="system-strip">
-      <div>
-        <span class="label">STATUS</span>
-        <strong id="status">READY</strong>
-      </div>
-      <div>
-        <span class="label">FILE</span>
-        <strong id="fileName">---</strong>
-      </div>
-      <div>
-        <span class="label">ENCODING</span>
-        <strong>UTF-8</strong>
-      </div>
+    <section class="system-strip glass-panel" aria-label="system status">
+      <div><span class="label">MODE</span><strong id="modeReadout">VIEWER</strong></div>
+      <div><span class="label">LOG</span><strong id="fileName">OFFICIAL-001</strong></div>
+      <div><span class="label">VOICE</span><strong id="voiceStatus">NO STREAM</strong></div>
+      <div><span class="label">CACHE</span><strong id="cacheStatus">LOCAL OK</strong></div>
     </section>
 
-    <section class="file-panel">
-      <label class="file-button" for="fileInput">
-        <span>SELECT LOCAL FILE</span>
-        <small>TXT / MD</small>
-      </label>
+    <section class="command-deck glass-panel">
+      <button id="officialLog" class="command active"><b>01</b><span>OFFICIAL LOG<small>ニクスのどうでもいい観測</small></span></button>
+      <button id="newLog" class="command"><b>02</b><span>NEW LOG<small>直接入力して作成</small></span></button>
+      <label class="command file-command" for="fileInput"><b>03</b><span>SELECT LOCAL FILE<small>TXT / MD</small></span></label>
       <input id="fileInput" type="file" accept=".txt,.md,text/plain,text/markdown">
-      <div class="drop-message">
-        <span id="selectedFile">DROP FILE HERE / NO FILE SELECTED</span>
-        <span class="privacy">LOCAL PROCESSING ONLY</span>
-      </div>
+      <button id="myLogs" class="command"><b>04</b><span>MY LOGS<small id="savedCount">0 LOGS SAVED</small></span></button>
     </section>
 
-    <section class="viewer-frame">
+    <section class="viewer-frame glass-panel">
       <div class="corner corner-tl"></div><div class="corner corner-tr"></div>
       <div class="corner corner-bl"></div><div class="corner corner-br"></div>
 
       <div class="viewer-toolbar">
         <div class="log-title">
-          <span>OBSERVATION LOG</span>
-          <b id="logId">#UNASSIGNED</b>
+          <span id="viewerModeLabel">OBSERVATION LOG</span>
+          <b id="logId">#NXS-001</b>
         </div>
         <div class="readout">
           <span id="charReadout">000000 / 000000</span>
@@ -71,36 +61,57 @@
         </div>
       </div>
 
+      <div class="subject-row" id="subjectRow">
+        <span>SUBJECT</span>
+        <strong id="subjectDisplay">カップ麺の麺径と満足感の関係について</strong>
+      </div>
+
       <div class="text-viewport" id="viewport" tabindex="0">
-        <div class="boot-layer" id="bootLayer">
+        <div class="boot-layer" id="bootLayer" hidden>
           <div class="nyx-mark">N</div>
-          <p id="bootText">WAITING FOR LOCAL TEXT DATA</p>
-          <small>Content will not be uploaded or analyzed.</small>
+          <p id="bootText">DATA LINK ESTABLISHED</p>
+          <small>READ ONLY / LOCAL OBSERVATION</small>
         </div>
 
         <div class="reading-layer" id="readingLayer">
           <pre id="screen"></pre><span id="cursor" class="cursor cursor-nextline" hidden>▋</span>
         </div>
 
+        <div class="editor-layer" id="editorLayer" hidden>
+          <label class="editor-field subject-editor">
+            <span>SUBJECT / 件名</span>
+            <input id="titleInput" maxlength="120" placeholder="観測対象を入力">
+          </label>
+          <label class="editor-field body-editor">
+            <span>RAW LOG / 本文</span>
+            <textarea id="bodyInput" placeholder="ここに直接入力、またはテキストを貼り付ける。"></textarea>
+          </label>
+        </div>
       </div>
 
       <div class="end-layer" id="endLayer" hidden>
         <span>END OF OBSERVATION</span>
         <div class="end-line"></div>
-        <small>RAW TEXT DISPLAY COMPLETE</small>
+        <small>VOICE STREAM CLOSED / LOG DISPLAY COMPLETE</small>
+      </div>
+
+      <div class="record-overlay" id="recordOverlay" hidden>
+        <span class="rec-dot"></span>
+        <strong>VOICE STREAM RECORDING</strong>
+        <time id="recordTimer">00:00</time>
       </div>
 
       <div class="progress-track"><div id="progressBar"></div></div>
     </section>
 
-    <section class="controls" id="controls">
-      <button id="playPause" class="primary" disabled>
-        <span id="playIcon">▶</span><span id="playLabel">PLAY</span>
-      </button>
-      <button id="restart" disabled>↺ RESTART</button>
+    <section class="controls glass-panel" id="controls">
+      <button id="playPause" class="primary"><span id="playIcon">▶</span><span id="playLabel">OBSERVE</span></button>
+      <button id="restart">↺ RESTART</button>
+      <button id="editToggle">✎ EDIT</button>
+      <button id="recordButton">● RECORD</button>
+      <button id="saveLog" disabled>⌁ SAVE LOG</button>
 
-      <label class="speed-control">
-        <span>SPEED</span>
+      <label class="speed-control"><span>SPEED</span>
         <select id="speed">
           <option value="0.5">×0.5</option>
           <option value="0.75" selected>×0.75</option>
@@ -111,16 +122,44 @@
         </select>
       </label>
 
-      <button id="soundToggle" aria-pressed="true">SOUND ON</button>
-      <button id="exportLog" disabled>EXPORT LOG</button>
+      <button id="typingSoundToggle" aria-pressed="true">TYPE SOUND ON</button>
+      <label class="voice-file" for="voiceInput">＋ VOICE FILE</label>
+      <input id="voiceInput" type="file" accept="audio/*">
+    </section>
+
+    <section class="telemetry glass-panel" aria-hidden="true">
+      <div><span>PACKET LOSS</span><b id="packetValue">0.02%</b></div>
+      <div><span>SYNC DELAY</span><b id="syncValue">014 ms</b></div>
+      <div><span>MEMORY TRACE</span><b id="memoryValue">STABLE</b></div>
+      <div class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
     </section>
 
     <footer>
-      <span>NYX RAW TEXT DISPLAY PROTOCOL</span>
-      <span id="footerState">NO ACTIVE OBSERVATION</span>
+      <span>NXS // OBSERVE LOG PROTOCOL</span>
+      <span id="footerState">READ ONLY SESSION</span>
     </footer>
   </main>
 
+  <dialog id="logsDialog" class="logs-dialog">
+    <form method="dialog" class="dialog-shell">
+      <header><div><small>LOCAL ARCHIVE</small><h2>MY LOGS</h2></div><button value="close" aria-label="閉じる">×</button></header>
+      <div id="logsList" class="logs-list"></div>
+      <p class="empty-logs" id="emptyLogs">保存されたログはまだない。</p>
+    </form>
+  </dialog>
+
+  <dialog id="saveDialog" class="save-dialog">
+    <form method="dialog" class="save-shell">
+      <div class="write-sequence" id="writeSequence">
+        <small>NXS LOCAL CACHE</small>
+        <strong id="writeMessage">WRITING LOG...</strong>
+        <div class="write-bar"><i id="writeBar"></i></div>
+        <span id="writeDetail">VERIFYING DATA</span>
+      </div>
+    </form>
+  </dialog>
+
+  <audio id="voicePlayer" preload="metadata"></audio>
   <script src="script.js"></script>
 </body>
 </html>
