@@ -28,15 +28,30 @@ function updateReadouts(){
   lineReadout.textContent=`${String(text ? (text.match(/\n/g)||[]).length+1 : 0).padStart(3,"0")} LINES`;
   progressBar.style.width=text.length?`${index/text.length*100}%`:"0%";
 }
-function ensureAudio(){
+async function ensureAudio(){
   if(!audioContext){
     const AC=window.AudioContext||window.webkitAudioContext;
     if(AC)audioContext=new AC();
   }
+  if(audioContext && audioContext.state==="suspended"){
+    try{await audioContext.resume()}catch(_){}
+  }
+  return audioContext;
 }
-function tone(freq=760,duration=.025,volume=.018,type="square"){
+async function unlockAudio(){
+  const ctx=await ensureAudio();
+  if(!ctx)return;
+  try{
+    const buffer=ctx.createBuffer(1,1,22050);
+    const source=ctx.createBufferSource();
+    source.buffer=buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+  }catch(_){}
+}
+async function tone(freq=760,duration=.025,volume=.018,type="square"){
   if(!soundEnabled)return;
-  ensureAudio(); if(!audioContext)return;
+  await ensureAudio(); if(!audioContext)return;
   const osc=audioContext.createOscillator(),gain=audioContext.createGain();
   osc.type=type;osc.frequency.value=freq;
   gain.gain.setValueAtTime(volume,audioContext.currentTime);
@@ -93,7 +108,10 @@ function finishPlayback(){
   playing=false;clearTimeout(timer);index=text.length;updateReadouts();
   setStatus("OBSERVATION COMPLETE");playIcon.textContent="▶";playLabel.textContent="REPLAY";
   cursor.hidden=false;tone(980,.08,.03,"sine");setTimeout(()=>tone(620,.11,.025,"sine"),90);
-  setTimeout(()=>{showEndLayer()},1100);
+  setTimeout(()=>{
+    showEndLayer();
+    viewport.scrollTop=viewport.scrollHeight;
+  },1100);
 }
 async function loadFile(file){
   if(!file)return;
@@ -107,12 +125,17 @@ async function loadFile(file){
   updateReadouts();await runBootSequence();
 }
 
+
+["touchstart","pointerdown","click"].forEach(evt=>{
+  document.addEventListener(evt,unlockAudio,{once:true,passive:true});
+});
+
 fileInput.addEventListener("change",e=>loadFile(e.target.files[0]));
 ["dragenter","dragover"].forEach(type=>dropZone.addEventListener(type,e=>{e.preventDefault();dropZone.classList.add("dragover")}));
 ["dragleave","drop"].forEach(type=>dropZone.addEventListener(type,e=>{e.preventDefault();dropZone.classList.remove("dragover")}));
 dropZone.addEventListener("drop",e=>loadFile(e.dataTransfer.files[0]));
 
-playPause.addEventListener("click",()=>{ensureAudio();playing?pausePlayback():startPlayback()});
+playPause.addEventListener("click",async()=>{await unlockAudio();playing?pausePlayback():startPlayback()});
 restartBtn.addEventListener("click",()=>{
   pausePlayback();index=0;screen.textContent="";cursor.hidden=false;hideEndLayer();updateReadouts();setStatus("READY TO REPLAY");
 });
@@ -129,3 +152,10 @@ exportLog.addEventListener("click",()=>{
 speedSelect.addEventListener("change",()=>{if(playing){clearTimeout(timer);tick()}});
 endLayer.addEventListener("click",()=>{hideEndLayer()});
 updateReadouts();
+
+
+document.addEventListener("touchmove",e=>{
+  if(innerWidth>680)return;
+  const allowed=e.target.closest("#viewport, #controls, select, button, label");
+  if(!allowed)e.preventDefault();
+},{passive:false});
