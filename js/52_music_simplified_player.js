@@ -51,8 +51,35 @@
     favReorderRow: null,
     favReorderStartX: 0,
     favReorderStartY: 0,
-    seeking: false
+    seeking: false,
+    libraryScrollY: 0
   };
+
+  function saveLibraryScrollV1141(){
+    try{
+      var root = document.scrollingElement || document.documentElement || document.body;
+      state.libraryScrollY = Math.max(0, Number(window.scrollY || window.pageYOffset || (root && root.scrollTop) || 0));
+    }catch(_){ state.libraryScrollY = 0; }
+  }
+
+  function restoreLibraryScrollV1141(){
+    var y = Math.max(0, Number(state.libraryScrollY || 0));
+    function apply(){
+      try{
+        var root = document.scrollingElement || document.documentElement || document.body;
+        window.scrollTo(0, y);
+        if(root) root.scrollTop = y;
+      }catch(_){ }
+    }
+    // iPhone Safariは再描画直後だと高さが未確定なことがあるため段階的に復元する。
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        apply();
+        setTimeout(apply, 60);
+        setTimeout(apply, 180);
+      });
+    });
+  }
 
   function $(id){ return document.getElementById(id); }
   function view(){ return $("musicView"); }
@@ -637,6 +664,7 @@
   }
 
   function switchToAlbum(i){
+    saveLibraryScrollV1141();
     var lockAlbum = albums()[i];
     if(musicAlbumLocked(lockAlbum)){ showMusicUnlockHint(lockAlbum); return; }
 
@@ -659,6 +687,7 @@
   }
 
   function switchToFavorites(){
+    saveLibraryScrollV1141();
     // お気に入り曲は「閲覧」だけでは現在の再生キューを変更しない。
     // ここで queueMode="favorites" にすると、renderPlayer() 内の setAudioForCurrent(false) が走り、
     // アルバム再生中の音声が止まる/差し替わる原因になる。
@@ -1326,7 +1355,14 @@
   }
 
   function bindPlayer(){
-    var back = $("musicV7Back"); if(back) back.onclick = function(){ state.screen = "albums"; state.sheet = false; state.edit = false; savePos(); render(); };
+    var back = $("musicV7Back"); if(back) back.onclick = function(){
+      state.screen = "albums";
+      state.sheet = false;
+      state.edit = false;
+      savePos();
+      render();
+      restoreLibraryScrollV1141();
+    };
     var more = $("musicV7More"); if(more) more.onclick = function(){
       if(more.dataset && more.dataset.userAudioId){
         state.edit = true; state.lyrics = false; state.sheet = false; render();
@@ -2093,7 +2129,13 @@
     render();
   };
 
-  window.MEGANE_MUSIC_V7_OPEN_ALBUMS = function(){ state.screen = "albums"; state.sheet = false; state.lyrics = false; render(); };
+  window.MEGANE_MUSIC_V7_OPEN_ALBUMS = function(){
+    state.screen = "albums";
+    state.sheet = false;
+    state.lyrics = false;
+    render();
+    restoreLibraryScrollV1141();
+  };
 })();
 
 
