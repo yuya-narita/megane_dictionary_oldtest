@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#02070d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>NYX OBSERVATION TERMINAL v0.7</title>
+  <title>NYX OBSERVATION TERMINAL v0.8</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -18,10 +18,11 @@
   <main class="terminal-shell" id="dropZone">
     <header class="terminal-header glass-panel">
       <div class="title-block">
+        <button id="hostReturn" class="host-return" type="button" aria-label="メガネ辞書へ戻る"><span class="host-core">◎</span><span>HOST</span></button>
         <p class="eyebrow">MEGANE DICTIONARY / NXS LOCAL OBSERVATION NODE</p>
         <h1>NYX OBSERVATION TERMINAL</h1>
         <div class="version-row">
-          <span>SYSTEM v0.7</span>
+          <span>SYSTEM v0.8</span>
           <span class="signal"><i></i><b id="headerState">CONNECTED</b></span>
         </div>
       </div>
@@ -73,7 +74,14 @@
           <small>READ ONLY / LOCAL OBSERVATION</small>
         </div>
 
-        <div class="standby-layer" id="standbyLayer">
+        <div class="no-target-layer" id="noTargetLayer">
+          <div class="idle-reticle" aria-hidden="true"><i></i><i></i><span></span></div>
+          <small>NO TARGET SELECTED</small>
+          <strong>SELECT ARCHIVE</strong>
+          <p>観測対象を選べ。</p>
+        </div>
+
+        <div class="standby-layer" id="standbyLayer" hidden>
           <button class="standby-orbit" id="standbyTarget" type="button" aria-label="観測を開始"><i></i><i></i><i></i><span></span></button>
           <small>OBSERVATION TARGET LOCKED</small>
           <strong id="standbyTitle">カップ麺の麺径と満足感の関係について</strong>
@@ -153,7 +161,14 @@
       <span>NXS // OBSERVE LOG PROTOCOL</span>
       <span id="footerState">READ ONLY SESSION</span>
     </footer>
+    <div class="return-hint" id="returnHint" aria-hidden="true"><span>↓</span> RETURN TO HOST</div>
   </main>
+
+  <div class="host-transition" id="hostTransition" hidden>
+    <div class="host-transition-core">◎</div>
+    <strong id="hostTransitionText">RETURNING TO HOST...</strong>
+    <small id="hostTransitionSub">観測終了。</small>
+  </div>
 
 
   <dialog id="officialDialog" class="logs-dialog archive-dialog">

@@ -13,7 +13,7 @@ const OFFICIAL_LOGS = [OFFICIAL_LOG];
 
 const $ = (id) => document.getElementById(id);
 const els = {
-  screen: $('screen'), cursor: $('cursor'), viewport: $('viewport'), endLayer: $('endLayer'), standbyLayer: $('standbyLayer'), standbyTarget: $('standbyTarget'), standbyTitle: $('standbyTitle'), standbyId: $('standbyId'), standbyVoice: $('standbyVoice'), standbyLength: $('standbyLength'), cinematicSequence: $('cinematicSequence'), sequenceText: $('sequenceText'),
+  screen: $('screen'), cursor: $('cursor'), viewport: $('viewport'), endLayer: $('endLayer'), noTargetLayer: $('noTargetLayer'), standbyLayer: $('standbyLayer'), standbyTarget: $('standbyTarget'), standbyTitle: $('standbyTitle'), standbyId: $('standbyId'), standbyVoice: $('standbyVoice'), standbyLength: $('standbyLength'), cinematicSequence: $('cinematicSequence'), sequenceText: $('sequenceText'),
   editorLayer: $('editorLayer'), readingLayer: $('readingLayer'), titleInput: $('titleInput'), bodyInput: $('bodyInput'),
   editToggle: $('editToggle'),
   recordButton: $('recordButton'), saveLog: $('saveLog'), speed: $('speed'), typingSoundToggle: $('typingSoundToggle'),
@@ -24,7 +24,8 @@ const els = {
   status: $('headerState'), modeReadout: $('modeReadout'), fileName: $('fileName'), voiceStatus: $('voiceStatus'), cacheStatus: $('cacheStatus'),
   viewerModeLabel: $('viewerModeLabel'), logId: $('logId'), subjectDisplay: $('subjectDisplay'), subjectRow: $('subjectRow'),
   charReadout: $('charReadout'), lineReadout: $('lineReadout'), progressBar: $('progressBar'), footerState: $('footerState'),
-  recordOverlay: $('recordOverlay'), recordTimer: $('recordTimer'), packetValue: $('packetValue'), syncValue: $('syncValue'), memoryValue: $('memoryValue')
+  recordOverlay: $('recordOverlay'), recordTimer: $('recordTimer'), packetValue: $('packetValue'), syncValue: $('syncValue'), memoryValue: $('memoryValue'),
+  hostReturn: $('hostReturn'), hostTransition: $('hostTransition'), hostTransitionText: $('hostTransitionText'), hostTransitionSub: $('hostTransitionSub'), returnHint: $('returnHint')
 };
 
 let currentLog = structuredClone(OFFICIAL_LOG);
@@ -44,6 +45,8 @@ let recordTimerId = null;
 let sequenceTimer = null;
 let reviewMode = false;
 let tapStart = null;
+let editingOfficial = false;
+let returningToHost = false;
 
 const LOGS_KEY = 'nyxObservationLogsV05';
 
@@ -57,6 +60,34 @@ function uid() { return `nxs-${Date.now()}-${Math.random().toString(36).slice(2,
 function formatNumber(n, len=6) { return String(n).padStart(len, '0'); }
 function sanitizeFilename(name) { return (name || 'untitled').replace(/[\\/:*?"<>|]/g, '_').slice(0,80); }
 
+function setNoTarget() {
+  stopPlayback();
+  closeVoiceUrl();
+  currentLog = { id:'', displayId:'#UNASSIGNED', title:'', body:'', official:false };
+  mode = 'view';
+  reviewMode = false;
+  charIndex = 0;
+  editingOfficial = false;
+  els.noTargetLayer.hidden = false;
+  els.standbyLayer.hidden = true;
+  els.cinematicSequence.hidden = true;
+  els.readingLayer.hidden = true;
+  els.editorLayer.hidden = true;
+  els.endLayer.hidden = true;
+  els.subjectRow.hidden = true;
+  els.screen.textContent = '';
+  els.cursor.hidden = true;
+  els.status.textContent = 'CONNECTED';
+  els.modeReadout.textContent = 'STANDBY';
+  els.fileName.textContent = 'NO TARGET';
+  els.viewerModeLabel.textContent = 'OBSERVATION NODE';
+  els.logId.textContent = '#UNASSIGNED';
+  els.footerState.textContent = 'SELECT ARCHIVE';
+  els.saveLog.disabled = true;
+  setVoiceState('NO STREAM');
+  updateReadout();
+}
+
 function setCurrentLog(log, source = 'local') {
   stopPlayback();
   closeVoiceUrl();
@@ -67,6 +98,7 @@ function setCurrentLog(log, source = 'local') {
   recordedBlob = null;
 
   els.editorLayer.hidden = true;
+  els.noTargetLayer.hidden = true;
   els.readingLayer.hidden = true;
   els.standbyLayer.hidden = false;
   els.cinematicSequence.hidden = true;
@@ -90,7 +122,7 @@ function setCurrentLog(log, source = 'local') {
   els.footerState.textContent = currentLog.official ? 'READ ONLY SESSION' : 'LOCAL LOG SESSION';
   els.editToggle.textContent = '✎ EDIT';
   els.saveLog.disabled = !!currentLog.official;
-  els.status.textContent = 'CONNECTED';
+  els.status.textContent = 'LOCKED';
 
   if (currentLog.audioId) restoreAudioForLog(currentLog.audioId);
   else setVoiceState('NO STREAM');
@@ -99,6 +131,7 @@ function setCurrentLog(log, source = 'local') {
 }
 function enterEdit(newBlank = false) {
   stopPlayback();
+  editingOfficial = !!currentLog.official;
   mode = 'edit';
   if (newBlank) {
     currentLog = { id: uid(), displayId: '#LOCAL-NEW', title: '', body: '', createdAt: new Date().toISOString(), official: false };
@@ -107,6 +140,7 @@ function enterEdit(newBlank = false) {
   els.titleInput.value = currentLog.title || '';
   els.bodyInput.value = currentLog.body || '';
   els.readingLayer.hidden = true;
+  els.noTargetLayer.hidden = true;
   els.standbyLayer.hidden = true;
   els.cinematicSequence.hidden = true;
   els.editorLayer.hidden = false;
@@ -189,7 +223,7 @@ async function startPlayback() {
     try { if (els.voicePlayer.ended) els.voicePlayer.currentTime = 0; await els.voicePlayer.play(); setVoiceState('STREAM ACTIVE'); }
     catch { setVoiceState('TAP REQUIRED'); }
   }
-  const steps = ['ESTABLISHING DATA LINK','VOICE CHANNEL VERIFIED','EXPANDING OBSERVATION FIELD'];
+  const steps = ['ESTABLISHING DATA LINK','VOICE CHANNEL VERIFIED','問題ない。','EXPANDING OBSERVATION FIELD'];
   let step = 0;
   els.sequenceText.textContent = steps[0];
   clearInterval(sequenceTimer);
@@ -252,7 +286,7 @@ function resetToStandby(animate = true) {
     els.cinematicSequence.hidden = true;
     els.standbyLayer.hidden = false;
     shell?.classList.remove('cinematic-active', 'resetting');
-    els.status.textContent = 'CONNECTED';
+    els.status.textContent = 'LOCKED';
     els.footerState.textContent = currentLog.official ? 'READ ONLY SESSION' : 'LOCAL LOG SESSION';
   };
 
@@ -336,7 +370,8 @@ async function restoreAudioForLog(audioId){ try{ const blob=await getAudio(audio
 async function saveCurrentLog() {
   if (mode === 'edit') { currentLog.title = els.titleInput.value.trim() || 'UNTITLED OBSERVATION'; currentLog.body = els.bodyInput.value; }
   if (!currentLog.body.trim()) { alert('本文が空です。'); return; }
-  currentLog.official = false; currentLog.updatedAt = new Date().toISOString(); currentLog.createdAt ||= currentLog.updatedAt; currentLog.id ||= uid(); currentLog.displayId ||= `#LOCAL-${String(Date.now()).slice(-4)}`;
+  if (editingOfficial) localStorage.setItem('nyxOfficialModificationPending', '1');
+  currentLog.official = false; editingOfficial = false; currentLog.updatedAt = new Date().toISOString(); currentLog.createdAt ||= currentLog.updatedAt; currentLog.id ||= uid(); currentLog.displayId ||= `#LOCAL-${String(Date.now()).slice(-4)}`;
   if (recordedBlob) { currentLog.audioId = currentLog.audioId || `audio-${currentLog.id}`; await putAudio(currentLog.audioId, recordedBlob); }
   const logs = loadStoredLogs(); const existing = logs.findIndex(l => l.id === currentLog.id);
   const stored = { id:currentLog.id, displayId:currentLog.displayId, title:currentLog.title, body:currentLog.body, createdAt:currentLog.createdAt, updatedAt:currentLog.updatedAt, audioId:currentLog.audioId || null };
@@ -425,4 +460,139 @@ setInterval(()=>{els.packetValue.textContent=`${(Math.random()*.04).toFixed(2)}%
 
 updateSavedCount();
 renderOfficialLogs();
-setCurrentLog(structuredClone(OFFICIAL_LOG),'official');
+initializeV08();
+
+
+/* v0.8 HOST LINK / GESTURE INTERFACE */
+function playHostStoreSound() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const ctx = audioContext || new Ctx();
+    audioContext = ctx;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(155, now);
+    osc.frequency.exponentialRampToValueAtTime(42, now + .48);
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1200, now);
+    filter.frequency.exponentialRampToValueAtTime(140, now + .48);
+    gain.gain.setValueAtTime(.0001, now);
+    gain.gain.exponentialRampToValueAtTime(.055, now + .035);
+    gain.gain.exponentialRampToValueAtTime(.0001, now + .5);
+    osc.connect(filter).connect(gain).connect(ctx.destination);
+    osc.start(now); osc.stop(now + .52);
+  } catch {}
+}
+
+function resolveHostDestination() {
+  const params = new URLSearchParams(location.search);
+  return params.get('host') || document.body.dataset.hostUrl || '';
+}
+
+function navigateToHost() {
+  const destination = resolveHostDestination();
+  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v0.8' }, '*'); } catch {}
+  if (destination) { location.href = destination; return; }
+  if (history.length > 1) { history.back(); return; }
+  // Standalone preview fallback: return to idle terminal instead of trapping the user.
+  returningToHost = false;
+  els.hostTransition.hidden = true;
+  document.querySelector('.terminal-shell')?.classList.remove('host-returning');
+  document.querySelector('.terminal-shell').style.removeProperty('transform');
+  document.querySelector('.terminal-shell').style.removeProperty('opacity');
+  setNoTarget();
+}
+
+function returnToHost(source = 'button') {
+  if (returningToHost) return;
+  returningToHost = true;
+  stopPlayback();
+  if (mediaRecorder?.state === 'recording') stopRecording();
+  els.status.textContent = 'ARCHIVING';
+  els.footerState.textContent = source === 'gesture' ? 'GESTURE LINK / HOST' : 'HOST LINK / RETURN';
+  els.hostTransitionText.textContent = source === 'gesture' ? 'HOST LINK RESTORED...' : 'RETURNING TO HOST...';
+  els.hostTransitionSub.textContent = source === 'gesture' ? 'また来い。' : '観測終了。';
+  els.hostTransition.hidden = false;
+  playHostStoreSound();
+  const shell = document.querySelector('.terminal-shell');
+  shell.style.removeProperty('transform');
+  shell.classList.remove('host-dragging');
+  shell.classList.add('host-returning');
+  localStorage.setItem('nyxHostGestureSeen', '1');
+  setTimeout(navigateToHost, 560);
+}
+
+els.hostReturn.addEventListener('click', () => returnToHost('button'));
+
+let hostTouch = null;
+const shell = document.querySelector('.terminal-shell');
+function viewportIsAtTop() { return els.viewport.hidden || els.viewport.scrollTop <= 2; }
+shell.addEventListener('touchstart', e => {
+  if (returningToHost || e.touches.length !== 1 || mode === 'edit' || document.querySelector('dialog[open]')) return;
+  const t = e.touches[0];
+  hostTouch = { x:t.clientX, y:t.clientY, dy:0, active:false };
+}, { passive:true });
+shell.addEventListener('touchmove', e => {
+  if (!hostTouch || e.touches.length !== 1 || returningToHost) return;
+  const t = e.touches[0];
+  const dx = t.clientX - hostTouch.x;
+  const dy = t.clientY - hostTouch.y;
+  if (dy <= 0 || Math.abs(dx) > Math.abs(dy) * .72 || !viewportIsAtTop()) return;
+  if (dy > 14) hostTouch.active = true;
+  if (!hostTouch.active) return;
+  e.preventDefault();
+  hostTouch.dy = Math.min(dy, 180);
+  shell.classList.add('host-dragging');
+  const progress = Math.min(hostTouch.dy / 130, 1);
+  shell.style.transform = `translateY(${hostTouch.dy * .42}px) scale(${1 - progress * .035})`;
+  shell.style.opacity = String(1 - progress * .16);
+  if (hostTouch.dy > 28) els.returnHint.classList.add('visible');
+  if (hostTouch.dy > 108) els.returnHint.innerHTML = '<span>↓</span> RELEASE TO HOST';
+  else els.returnHint.innerHTML = '<span>↓</span> RETURN TO HOST';
+}, { passive:false });
+shell.addEventListener('touchend', () => {
+  if (!hostTouch) return;
+  const trigger = hostTouch.active && hostTouch.dy > 108;
+  hostTouch = null;
+  els.returnHint.classList.remove('visible');
+  if (trigger) { returnToHost('gesture'); return; }
+  shell.classList.remove('host-dragging');
+  shell.style.removeProperty('transform');
+  shell.style.removeProperty('opacity');
+}, { passive:true });
+shell.addEventListener('touchcancel', () => {
+  hostTouch = null;
+  els.returnHint.classList.remove('visible');
+  shell.classList.remove('host-dragging');
+  shell.style.removeProperty('transform');
+  shell.style.removeProperty('opacity');
+}, { passive:true });
+
+function showFirstGestureHint() {
+  if (localStorage.getItem('nyxHostGestureSeen')) return;
+  setTimeout(() => {
+    if (returningToHost) return;
+    els.returnHint.innerHTML = '<span>↓</span> SWIPE DOWN TO HOST';
+    els.returnHint.classList.add('visible');
+    setTimeout(() => els.returnHint.classList.remove('visible'), 2300);
+  }, 1500);
+}
+
+function showOfficialRecoveryIfNeeded() {
+  if (!localStorage.getItem('nyxOfficialModificationPending')) return;
+  localStorage.removeItem('nyxOfficialModificationPending');
+  els.hostTransitionText.textContent = 'UNAUTHORIZED MODIFICATION DETECTED';
+  els.hostTransitionSub.textContent = 'RESTORING OFFICIAL ARCHIVE...';
+  els.hostTransition.hidden = false;
+  setTimeout(() => { els.hostTransitionText.textContent = 'RESTORE COMPLETE.'; els.hostTransitionSub.textContent = '改変は禁止。'; }, 850);
+  setTimeout(() => { els.hostTransition.hidden = true; }, 1650);
+}
+
+function initializeV08() {
+  setNoTarget();
+  showOfficialRecoveryIfNeeded();
+  showFirstGestureHint();
+}
