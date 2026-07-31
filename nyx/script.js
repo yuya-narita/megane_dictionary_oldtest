@@ -9,14 +9,16 @@ const OFFICIAL_LOG = {
   official: true
 };
 
+const OFFICIAL_LOGS = [OFFICIAL_LOG];
+
 const $ = (id) => document.getElementById(id);
 const els = {
-  screen: $('screen'), cursor: $('cursor'), viewport: $('viewport'), endLayer: $('endLayer'),
+  screen: $('screen'), cursor: $('cursor'), viewport: $('viewport'), endLayer: $('endLayer'), standbyLayer: $('standbyLayer'), standbyTitle: $('standbyTitle'), standbyId: $('standbyId'), standbyVoice: $('standbyVoice'), standbyLength: $('standbyLength'), cinematicSequence: $('cinematicSequence'), sequenceText: $('sequenceText'),
   editorLayer: $('editorLayer'), readingLayer: $('readingLayer'), titleInput: $('titleInput'), bodyInput: $('bodyInput'),
   playPause: $('playPause'), playIcon: $('playIcon'), playLabel: $('playLabel'), restart: $('restart'), editToggle: $('editToggle'),
   recordButton: $('recordButton'), saveLog: $('saveLog'), speed: $('speed'), typingSoundToggle: $('typingSoundToggle'),
   fileInput: $('fileInput'), voiceInput: $('voiceInput'), voicePlayer: $('voicePlayer'),
-  officialLog: $('officialLog'), newLog: $('newLog'), myLogs: $('myLogs'),
+  officialLog: $('officialLog'), officialDialog: $('officialDialog'), officialList: $('officialList'), officialCount: $('officialCount'), newLog: $('newLog'), myLogs: $('myLogs'),
   logsDialog: $('logsDialog'), logsList: $('logsList'), emptyLogs: $('emptyLogs'), savedCount: $('savedCount'),
   saveDialog: $('saveDialog'), writeBar: $('writeBar'), writeMessage: $('writeMessage'), writeDetail: $('writeDetail'),
   status: $('headerState'), modeReadout: $('modeReadout'), fileName: $('fileName'), voiceStatus: $('voiceStatus'), cacheStatus: $('cacheStatus'),
@@ -39,6 +41,7 @@ let recordingStream = null;
 let recordedChunks = [];
 let recordStartedAt = 0;
 let recordTimerId = null;
+let sequenceTimer = null;
 
 const LOGS_KEY = 'nyxObservationLogsV05';
 
@@ -59,10 +62,22 @@ function setCurrentLog(log, source = 'local') {
   charIndex = 0;
   mode = 'view';
   els.editorLayer.hidden = true;
-  els.readingLayer.hidden = false;
+  els.readingLayer.hidden = true;
+  els.standbyLayer.hidden = true;
+  els.cinematicSequence.hidden = true;
+  document.querySelector('.terminal-shell')?.classList.remove('cinematic-active');
+  els.standbyLayer.hidden = false;
+  els.cinematicSequence.hidden = true;
+  document.querySelector('.terminal-shell')?.classList.remove('cinematic-active');
   els.subjectRow.hidden = false;
   els.endLayer.hidden = true;
+  els.readingLayer.hidden = false;
+  els.standbyLayer.hidden = true;
   els.screen.textContent = '';
+  els.standbyTitle.textContent = currentLog.title || 'UNTITLED OBSERVATION';
+  els.standbyId.textContent = currentLog.displayId || '#LOCAL';
+  els.standbyLength.textContent = `${String((currentLog.body || '').length).padStart(4,'0')} CHARS`;
+  els.standbyVoice.textContent = currentLog.audioId ? 'ARCHIVE READY' : 'NO STREAM';
   els.cursor.hidden = true;
   els.titleInput.value = currentLog.title || '';
   els.bodyInput.value = currentLog.body || '';
@@ -137,12 +152,13 @@ function updateReadout() {
 }
 
 function delayForChar(char) {
-  const speed = Number(els.speed.value) || .75;
-  const base = 30 / speed;
-  if (char === '\n') return base * 5.2;
-  if ('。！？'.includes(char)) return base * 8;
-  if ('、，,'.includes(char)) return base * 3.2;
-  if ('—…'.includes(char)) return base * 4;
+  const speed = Number(els.speed.value) || .5;
+  const base = 34 / speed;
+  if (char === '\n') return base * 6.4;
+  if ('。！？'.includes(char)) return base * 10;
+  if ('、，,'.includes(char)) return base * 4.1;
+  if ('—…'.includes(char)) return base * 6.5;
+  if ('」』）)'.includes(char)) return base * 2.2;
   return base;
 }
 
@@ -162,18 +178,37 @@ function typingTick() {
 }
 
 async function startPlayback() {
-  if (mode !== 'view' || !currentLog.body) return;
+  if (mode !== 'view' || !currentLog.body || playing) return;
   els.endLayer.hidden = true;
   if (charIndex >= currentLog.body.length) restartPlayback(false);
   playing = true;
   els.playIcon.textContent = 'Ⅱ'; els.playLabel.textContent = 'PAUSE';
-  els.status.textContent = 'OBSERVING'; els.footerState.textContent = 'LIVE OBSERVATION'; els.cursor.hidden = false;
+  els.status.textContent = 'LINKING'; els.footerState.textContent = 'OPENING OBSERVATION SPACE';
+  els.standbyLayer.hidden = true;
+  els.readingLayer.hidden = true;
+  els.cinematicSequence.hidden = false;
+  document.querySelector('.terminal-shell')?.classList.add('cinematic-active');
   try { await ensureAudioContext(); } catch {}
   if (els.voicePlayer.src) {
     try { if (els.voicePlayer.ended) els.voicePlayer.currentTime = 0; await els.voicePlayer.play(); setVoiceState('STREAM ACTIVE'); }
     catch { setVoiceState('TAP REQUIRED'); }
   }
-  typeNext();
+  const steps = ['ESTABLISHING DATA LINK','VOICE CHANNEL VERIFIED','EXPANDING OBSERVATION FIELD'];
+  let step = 0;
+  els.sequenceText.textContent = steps[0];
+  clearInterval(sequenceTimer);
+  sequenceTimer = setInterval(() => {
+    step += 1;
+    if (step < steps.length) els.sequenceText.textContent = steps[step];
+  }, 230);
+  setTimeout(() => {
+    clearInterval(sequenceTimer); sequenceTimer = null;
+    if (!playing) return;
+    els.cinematicSequence.hidden = true;
+    els.readingLayer.hidden = false;
+    els.status.textContent = 'OBSERVING'; els.footerState.textContent = 'LIVE OBSERVATION'; els.cursor.hidden = false;
+    typeNext();
+  }, 760);
 }
 function typeNext() {
   if (!playing) return;
@@ -187,19 +222,19 @@ function typeNext() {
   typingTimer = setTimeout(typeNext, delayForChar(char));
 }
 function pausePlayback() {
-  playing = false; clearTimeout(typingTimer); typingTimer = null;
+  playing = false; clearTimeout(typingTimer); typingTimer = null; clearInterval(sequenceTimer); sequenceTimer = null;
   els.playIcon.textContent = '▶'; els.playLabel.textContent = 'RESUME'; els.status.textContent = 'PAUSED'; els.cursor.hidden = true;
   if (!els.voicePlayer.paused) els.voicePlayer.pause();
 }
-function stopPlayback() { playing = false; clearTimeout(typingTimer); typingTimer = null; els.voicePlayer.pause(); }
+function stopPlayback() { playing = false; clearTimeout(typingTimer); typingTimer = null; clearInterval(sequenceTimer); sequenceTimer = null; els.voicePlayer.pause(); }
 function restartPlayback(autoPlay = true) {
-  stopPlayback(); charIndex = 0; els.screen.textContent = ''; els.endLayer.hidden = true; els.viewport.scrollTop = 0; updateReadout();
+  stopPlayback(); charIndex = 0; els.screen.textContent = ''; els.endLayer.hidden = true; els.cinematicSequence.hidden = true; els.readingLayer.hidden = true; els.standbyLayer.hidden = false; document.querySelector('.terminal-shell')?.classList.remove('cinematic-active'); els.viewport.scrollTop = 0; updateReadout();
   els.playIcon.textContent = '▶'; els.playLabel.textContent = 'OBSERVE'; els.status.textContent = 'CONNECTED';
   if (els.voicePlayer.src) els.voicePlayer.currentTime = 0;
   if (autoPlay) startPlayback();
 }
 function finishPlayback() {
-  stopPlayback(); els.cursor.hidden = true; els.endLayer.hidden = false;
+  stopPlayback(); els.cursor.hidden = true; els.readingLayer.hidden = false; els.standbyLayer.hidden = true; els.cinematicSequence.hidden = true; els.endLayer.hidden = false;
   els.playIcon.textContent = '▶'; els.playLabel.textContent = 'REPLAY'; els.status.textContent = 'ARCHIVED'; els.footerState.textContent = 'OBSERVATION COMPLETE';
   setVoiceState(els.voicePlayer.src ? 'STREAM CLOSED' : 'NO STREAM');
 }
@@ -207,6 +242,8 @@ function finishPlayback() {
 function revealCompletedLog() {
   if (els.endLayer.hidden) return;
   els.endLayer.hidden = true;
+  els.readingLayer.hidden = false;
+  els.standbyLayer.hidden = true;
   els.screen.textContent = currentLog.body || '';
   charIndex = currentLog.body?.length || 0;
   updateReadout();
@@ -216,7 +253,7 @@ function revealCompletedLog() {
   els.viewport.focus({ preventScroll: true });
 }
 
-function setVoiceState(text) { els.voiceStatus.textContent = text; }
+function setVoiceState(text) { els.voiceStatus.textContent = text; if (els.standbyVoice) els.standbyVoice.textContent = text; }
 function closeVoiceUrl() { if (voiceUrl) URL.revokeObjectURL(voiceUrl); voiceUrl = ''; els.voicePlayer.removeAttribute('src'); els.voicePlayer.load(); }
 function attachVoiceBlob(blob, label='LOCAL VOICE') {
   closeVoiceUrl(); voiceUrl = URL.createObjectURL(blob); els.voicePlayer.src = voiceUrl; recordedBlob = blob; setVoiceState(label);
@@ -267,16 +304,44 @@ async function saveCurrentLog() {
 }
 function showSaveSequence(){ return new Promise(resolve=>{ els.writeMessage.textContent='WRITING LOG...'; els.writeDetail.textContent='VERIFYING DATA'; els.writeBar.style.width='0%'; els.saveDialog.showModal(); requestAnimationFrame(()=>els.writeBar.style.width='72%'); setTimeout(()=>{ els.writeMessage.textContent='LOG SAVED.'; els.writeDetail.textContent='NXS // LOCAL STORAGE'; els.writeBar.style.width='100%'; },620); setTimeout(()=>{ els.saveDialog.close(); resolve(); },1250); }); }
 
+function makeArchiveCard(log, { deletable = false } = {}) {
+  const card = document.createElement('article');
+  card.className = 'log-card tappable-card';
+  card.tabIndex = 0;
+  card.setAttribute('role','button');
+  const info = document.createElement('div'); info.className = 'archive-card-info';
+  const h = document.createElement('h3'); h.textContent = log.title;
+  const p = document.createElement('p');
+  const stamp = new Date(log.updatedAt || log.createdAt).toLocaleString('ja-JP');
+  p.textContent = `${stamp} / ${log.audioId ? 'VOICE ATTACHED' : (log.official ? 'NXS OFFICIAL' : 'TEXT ONLY')}`;
+  info.append(h,p);
+  const openLog = () => {
+    els.logsDialog.open && els.logsDialog.close();
+    els.officialDialog.open && els.officialDialog.close();
+    setCurrentLog(log, log.official ? 'official' : 'archive');
+  };
+  info.addEventListener('click', openLog);
+  card.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target === card) { e.preventDefault(); openLog(); } });
+  card.append(info);
+  if (deletable) {
+    const del = document.createElement('button'); del.type='button'; del.className='delete archive-delete'; del.textContent='DELETE';
+    del.onclick=async e=>{ e.stopPropagation(); if(!confirm(`「${log.title}」を削除しますか？`))return; await deleteAudio(log.audioId); saveStoredLogs(loadStoredLogs().filter(x=>x.id!==log.id)); renderLogs(); };
+    card.append(del);
+  } else {
+    const arrow = document.createElement('span'); arrow.className='archive-arrow'; arrow.textContent='OPEN  ›'; card.append(arrow);
+  }
+  return card;
+}
+
+function renderOfficialLogs() {
+  els.officialList.innerHTML = '';
+  OFFICIAL_LOGS.forEach(log => els.officialList.append(makeArchiveCard(structuredClone(log))));
+  els.officialCount.textContent = `${OFFICIAL_LOGS.length} LOG${OFFICIAL_LOGS.length === 1 ? '' : 'S'} AVAILABLE`;
+}
+
 function renderLogs() {
   const logs = loadStoredLogs(); els.logsList.innerHTML=''; els.emptyLogs.hidden = logs.length>0;
-  logs.forEach(log=>{
-    const card=document.createElement('article'); card.className='log-card';
-    const info=document.createElement('div'); const h=document.createElement('h3'); h.textContent=log.title; const p=document.createElement('p'); p.textContent=`${new Date(log.updatedAt||log.createdAt).toLocaleString('ja-JP')} / ${log.audioId?'VOICE ATTACHED':'TEXT ONLY'}`; info.append(h,p);
-    const actions=document.createElement('div'); actions.className='card-actions';
-    const open=document.createElement('button'); open.type='button'; open.textContent='OPEN'; open.onclick=()=>{ els.logsDialog.close(); setCurrentLog(log,'archive'); };
-    const del=document.createElement('button'); del.type='button'; del.className='delete'; del.textContent='DELETE'; del.onclick=async()=>{ if(!confirm(`「${log.title}」を削除しますか？`))return; await deleteAudio(log.audioId); saveStoredLogs(loadStoredLogs().filter(x=>x.id!==log.id)); renderLogs(); };
-    actions.append(open,del); card.append(info,actions); els.logsList.append(card);
-  });
+  logs.forEach(log => els.logsList.append(makeArchiveCard(log,{deletable:true})));
 }
 
 els.playPause.addEventListener('click',()=> playing ? pausePlayback() : startPlayback());
@@ -288,7 +353,7 @@ els.editorLayer.addEventListener('focusout', () => setTimeout(() => {
 els.restart.addEventListener('click',()=>restartPlayback(false));
 els.editToggle.addEventListener('click',()=> mode==='edit' ? exitEditToPreview() : enterEdit(false));
 els.newLog.addEventListener('click',()=>enterEdit(true));
-els.officialLog.addEventListener('click',()=>setCurrentLog(structuredClone(OFFICIAL_LOG),'official'));
+els.officialLog.addEventListener('click',()=>{renderOfficialLogs();els.officialDialog.showModal();});
 els.myLogs.addEventListener('click',()=>{renderLogs();els.logsDialog.showModal();});
 els.saveLog.addEventListener('click',saveCurrentLog);
 els.recordButton.addEventListener('click',()=> mediaRecorder?.state==='recording' ? stopRecording() : beginRecording());
@@ -305,4 +370,5 @@ $('dropZone').addEventListener('drop',async e=>{e.preventDefault();const file=e.
 setInterval(()=>{els.packetValue.textContent=`${(Math.random()*.04).toFixed(2)}%`;els.syncValue.textContent=`${String(Math.floor(8+Math.random()*19)).padStart(3,'0')} ms`;els.memoryValue.textContent=Math.random()>.08?'STABLE':'SYNCING';},2400);
 
 updateSavedCount();
+renderOfficialLogs();
 setCurrentLog(structuredClone(OFFICIAL_LOG),'official');

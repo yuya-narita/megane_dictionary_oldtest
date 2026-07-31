@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#02070d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>NYX OBSERVATION TERMINAL v0.5.1</title>
+  <title>NYX OBSERVATION TERMINAL v0.6</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -21,7 +21,7 @@
         <p class="eyebrow">MEGANE DICTIONARY / NXS LOCAL OBSERVATION NODE</p>
         <h1>NYX OBSERVATION TERMINAL</h1>
         <div class="version-row">
-          <span>SYSTEM v0.5.1</span>
+          <span>SYSTEM v0.6</span>
           <span class="signal"><i></i><b id="headerState">CONNECTED</b></span>
         </div>
       </div>
@@ -39,7 +39,7 @@
     </section>
 
     <section class="command-deck glass-panel">
-      <button id="officialLog" class="command active"><b>01</b><span>OFFICIAL LOG<small>ニクスのどうでもいい観測</small></span></button>
+      <button id="officialLog" class="command active"><b>01</b><span>OFFICIAL ARCHIVE<small id="officialCount">1 LOG AVAILABLE</small></span></button>
       <button id="newLog" class="command"><b>02</b><span>NEW LOG<small>直接入力して作成</small></span></button>
       <label class="command file-command" for="fileInput"><b>03</b><span>SELECT LOCAL FILE<small>TXT / MD</small></span></label>
       <input id="fileInput" type="file" accept=".txt,.md,text/plain,text/markdown">
@@ -73,7 +73,25 @@
           <small>READ ONLY / LOCAL OBSERVATION</small>
         </div>
 
-        <div class="reading-layer" id="readingLayer">
+        <div class="standby-layer" id="standbyLayer">
+          <div class="standby-orbit" aria-hidden="true"><i></i><i></i><i></i></div>
+          <small>OBSERVATION TARGET LOCKED</small>
+          <strong id="standbyTitle">カップ麺の麺径と満足感の関係について</strong>
+          <div class="standby-meta">
+            <span><b>ARCHIVE</b><em id="standbyId">#NXS-001</em></span>
+            <span><b>VOICE</b><em id="standbyVoice">NO STREAM</em></span>
+            <span><b>DATA</b><em id="standbyLength">0000 CHARS</em></span>
+          </div>
+          <p>PRESS <b>OBSERVE</b> TO OPEN LIVE LOG</p>
+        </div>
+
+        <div class="cinematic-sequence" id="cinematicSequence" hidden>
+          <span id="sequenceText">ESTABLISHING DATA LINK</span>
+          <div class="sequence-line"><i></i></div>
+          <small>NXS // LIVE OBSERVATION CHANNEL</small>
+        </div>
+
+        <div class="reading-layer" id="readingLayer" hidden>
           <pre id="screen"></pre><span id="cursor" class="cursor cursor-nextline" hidden>▋</span>
         </div>
 
@@ -113,8 +131,10 @@
 
       <label class="speed-control"><span>SPEED</span>
         <select id="speed">
-          <option value="0.5">×0.5</option>
-          <option value="0.75" selected>×0.75</option>
+          <option value="0.25">×0.25</option>
+          <option value="0.35">×0.35</option>
+          <option value="0.5" selected>×0.5</option>
+          <option value="0.75">×0.75</option>
           <option value="1">×1</option>
           <option value="1.5">×1.5</option>
           <option value="2">×2</option>
@@ -139,6 +159,14 @@
       <span id="footerState">READ ONLY SESSION</span>
     </footer>
   </main>
+
+
+  <dialog id="officialDialog" class="logs-dialog archive-dialog">
+    <form method="dialog" class="dialog-shell">
+      <header><div><small>NXS SECURE STORAGE</small><h2>OFFICIAL ARCHIVE</h2></div><button value="close" aria-label="閉じる">×</button></header>
+      <div id="officialList" class="logs-list"></div>
+    </form>
+  </dialog>
 
   <dialog id="logsDialog" class="logs-dialog">
     <form method="dialog" class="dialog-shell">
