@@ -1,4 +1,4 @@
-/* v1.14.4: re-tap active Music tab to smoothly return library to top */
+/* v1.14.5: music re-tap smooth-top wins over pending anchor restoration */
 /* v1.14.3: restore library position by clicked-card anchor, not guessed scroll container */
 /* v1.12.4: preserve auto-artwork metadata for custom album inheritance */
 /* v1.08: user video artwork + source-file safety notice */
@@ -55,7 +55,9 @@
     favReorderStartY: 0,
     seeking: false,
     libraryScrollY: 0,
-    libraryAnchor: null
+    libraryAnchor: null,
+    libraryRestoreToken: 0,
+    libraryRestoreBlockedUntil: 0
   };
 
   function libraryScrollerV1142(){
@@ -119,34 +121,74 @@
     }catch(_){ state.libraryScrollY = 0; }
   }
 
-  function smoothLibraryToTopV1144(){
-    // 「音楽」再タップは明示的な先頭移動なので、古い復元位置も破棄する。
+  function smoothLibraryToTopV1145(){
+    // タブ再タップは「位置復元」より優先する。
+    // 既に予約済みの段階復元タイマーも token で無効化する。
+    state.libraryRestoreToken += 1;
+    state.libraryRestoreBlockedUntil = Date.now() + 1200;
     state.libraryScrollY = 0;
     state.libraryAnchor = null;
 
     var list = $("musicList") || libraryScrollerV1142();
-    var scroller = list ? nearestScrollableV1143(list) : null;
+    var elements = [];
+    var seen = [];
 
-    try{
-      if(scroller && scroller !== document.body && scroller !== document.documentElement){
-        if(typeof scroller.scrollTo === "function") scroller.scrollTo({ top: 0, behavior: "smooth" });
-        else scroller.scrollTop = 0;
-        return;
-      }
-
-      // 現在の画面はページ本体がスクロールする構造。Safariを含めwindowを優先する。
-      window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
-    }catch(_){
-      try{
-        if(scroller) scroller.scrollTop = 0;
-        else window.scrollTo(0, 0);
-      }catch(__){}
+    function add(el){
+      if(!el || seen.indexOf(el) >= 0) return;
+      seen.push(el);
+      elements.push(el);
     }
+
+    // musicList自身・その祖先・ページ本体を全部候補にする。
+    // 実際に動いている要素だけが current > 0 になる。
+    var n = list;
+    while(n && n !== document.body && n !== document.documentElement){
+      add(n);
+      n = n.parentElement;
+    }
+    add(document.scrollingElement);
+    add(document.documentElement);
+    add(document.body);
+
+    var starts = elements.map(function(el){
+      return Math.max(0, Number(el && el.scrollTop || 0));
+    });
+    var windowStart = Math.max(0, Number(window.scrollY || window.pageYOffset || 0));
+    var duration = 520;
+    var started = null;
+
+    function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+
+    function step(now){
+      if(started === null) started = now;
+      var t = Math.min(1, (now - started) / duration);
+      var k = 1 - easeOutCubic(t);
+
+      elements.forEach(function(el, i){
+        try{ el.scrollTop = starts[i] * k; }catch(_){ }
+      });
+      try{ window.scrollTo(0, windowStart * k); }catch(_){ }
+
+      if(t < 1){
+        requestAnimationFrame(step);
+      }else{
+        elements.forEach(function(el){ try{ el.scrollTop = 0; }catch(_){ } });
+        try{ window.scrollTo(0, 0); }catch(_){ }
+        state.libraryScrollY = 0;
+        state.libraryAnchor = null;
+      }
+    }
+
+    requestAnimationFrame(step);
   }
 
   function restoreLibraryScrollV1141(){
+    if(Date.now() < Number(state.libraryRestoreBlockedUntil || 0)) return;
+    var token = Number(state.libraryRestoreToken || 0);
     var y = Math.max(0, Number(state.libraryScrollY || 0));
     function apply(){
+      if(token !== Number(state.libraryRestoreToken || 0)) return;
+      if(Date.now() < Number(state.libraryRestoreBlockedUntil || 0)) return;
       try{
         if(restoreLibraryAnchorV1143()) return;
         var scroller = libraryScrollerV1142();
@@ -2083,7 +2125,7 @@
         var alreadyInMusic = !!(musicView && !musicView.hidden && state.screen === "albums");
 
         if(alreadyInMusic){
-          setTimeout(smoothLibraryToTopV1144, 0);
+          setTimeout(smoothLibraryToTopV1145, 40);
           return;
         }
 
@@ -2093,7 +2135,7 @@
           state.edit = false;
           render();
         }, 0);
-      });
+      }, true);
     }
 
     if(!window.__MEGANE_MUSIC_UNLOCK_CHANGED_BOUND__){
