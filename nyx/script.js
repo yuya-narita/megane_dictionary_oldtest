@@ -73,6 +73,10 @@ function setCurrentLog(log, source = 'local') {
   els.viewerModeLabel.textContent = 'OBSERVATION LOG';
   els.footerState.textContent = currentLog.official ? 'READ ONLY SESSION' : 'LOCAL LOG SESSION';
   els.editToggle.textContent = '✎ EDIT';
+  els.playPause.disabled = false;
+  els.restart.disabled = false;
+  els.playIcon.textContent = '▶';
+  els.playLabel.textContent = 'OBSERVE';
   els.saveLog.disabled = !!currentLog.official;
   recordedBlob = null;
   if (currentLog.audioId) restoreAudioForLog(currentLog.audioId);
@@ -109,8 +113,19 @@ function exitEditToPreview() {
   currentLog.title = els.titleInput.value.trim() || 'UNTITLED OBSERVATION';
   currentLog.body = els.bodyInput.value;
   currentLog.official = false;
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   setCurrentLog(currentLog, 'draft');
   els.saveLog.disabled = false;
+  restoreMobileViewport();
+}
+
+function restoreMobileViewport() {
+  requestAnimationFrame(() => {
+    window.scrollTo(0, 0);
+    els.viewport.scrollTop = 0;
+    document.documentElement.style.removeProperty('--keyboard-height');
+  });
+  setTimeout(() => window.scrollTo(0, 0), 180);
 }
 
 function updateReadout() {
@@ -189,6 +204,18 @@ function finishPlayback() {
   setVoiceState(els.voicePlayer.src ? 'STREAM CLOSED' : 'NO STREAM');
 }
 
+function revealCompletedLog() {
+  if (els.endLayer.hidden) return;
+  els.endLayer.hidden = true;
+  els.screen.textContent = currentLog.body || '';
+  charIndex = currentLog.body?.length || 0;
+  updateReadout();
+  els.status.textContent = 'ARCHIVE VIEW';
+  els.footerState.textContent = 'SCROLL REVIEW ENABLED';
+  els.viewport.scrollTop = 0;
+  els.viewport.focus({ preventScroll: true });
+}
+
 function setVoiceState(text) { els.voiceStatus.textContent = text; }
 function closeVoiceUrl() { if (voiceUrl) URL.revokeObjectURL(voiceUrl); voiceUrl = ''; els.voicePlayer.removeAttribute('src'); els.voicePlayer.load(); }
 function attachVoiceBlob(blob, label='LOCAL VOICE') {
@@ -253,6 +280,11 @@ function renderLogs() {
 }
 
 els.playPause.addEventListener('click',()=> playing ? pausePlayback() : startPlayback());
+els.endLayer.addEventListener('click', revealCompletedLog);
+els.endLayer.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); revealCompletedLog(); } });
+els.editorLayer.addEventListener('focusout', () => setTimeout(() => {
+  if (!els.editorLayer.contains(document.activeElement)) restoreMobileViewport();
+}, 80));
 els.restart.addEventListener('click',()=>restartPlayback(false));
 els.editToggle.addEventListener('click',()=> mode==='edit' ? exitEditToPreview() : enterEdit(false));
 els.newLog.addEventListener('click',()=>enterEdit(true));
