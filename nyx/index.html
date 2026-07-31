@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#02070b">
+  <title>NYX OBSERVATION TERMINAL v0.4</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="ambient-grid" aria-hidden="true"></div>
+  <div class="scanlines" aria-hidden="true"></div>
+  <div class="sweep" aria-hidden="true"></div>
+
+  <main class="terminal-shell" id="dropZone">
+    <header class="terminal-header">
+      <div class="title-block">
+        <p class="eyebrow">MEGANE DICTIONARY / LOCAL OBSERVATION NODE</p>
+        <h1>NYX OBSERVATION TERMINAL</h1>
+        <div class="version-row">
+          <span>SYSTEM v0.4.1</span>
+          <span class="signal"><i></i> STANDBY</span>
+        </div>
+      </div>
+
+      <div class="network-badge">
+        <span>LOCAL</span>
+        <strong>OFFLINE</strong>
+      </div>
+    </header>
+
+    <section class="system-strip">
+      <div>
+        <span class="label">STATUS</span>
+        <strong id="status">READY</strong>
+      </div>
+      <div>
+        <span class="label">FILE</span>
+        <strong id="fileName">---</strong>
+      </div>
+      <div>
+        <span class="label">ENCODING</span>
+        <strong>UTF-8</strong>
+      </div>
+    </section>
+
+    <section class="file-panel">
+      <label class="file-button" for="fileInput">
+        <span>SELECT LOCAL FILE</span>
+        <small>TXT / MD</small>
+      </label>
+      <input id="fileInput" type="file" accept=".txt,.md,text/plain,text/markdown">
+      <div class="drop-message">
+        <span id="selectedFile">DROP FILE HERE / NO FILE SELECTED</span>
+        <span class="privacy">LOCAL PROCESSING ONLY</span>
+      </div>
+    </section>
+
+    <section class="viewer-frame">
+      <div class="corner corner-tl"></div><div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div><div class="corner corner-br"></div>
+
+      <div class="viewer-toolbar">
+        <div class="log-title">
+          <span>OBSERVATION LOG</span>
+          <b id="logId">#UNASSIGNED</b>
+        </div>
+        <div class="readout">
+          <span id="charReadout">000000 / 000000</span>
+          <span id="lineReadout">000 LINES</span>
+        </div>
+      </div>
+
+      <div class="text-viewport" id="viewport" tabindex="0">
+        <div class="boot-layer" id="bootLayer">
+          <div class="nyx-mark">N</div>
+          <p id="bootText">WAITING FOR LOCAL TEXT DATA</p>
+          <small>Content will not be uploaded or analyzed.</small>
+        </div>
+
+        <div class="reading-layer" id="readingLayer">
+          <pre id="screen"></pre><span id="cursor" class="cursor cursor-nextline" hidden>▋</span>
+        </div>
+
+        <div class="end-layer" id="endLayer" hidden>
+          <span>END OF OBSERVATION</span>
+          <div class="end-line"></div>
+          <small>RAW TEXT DISPLAY COMPLETE</small>
+        </div>
+      </div>
+
+      <div class="progress-track"><div id="progressBar"></div></div>
+    </section>
+
+    <section class="controls" id="controls">
+      <button id="playPause" class="primary" disabled>
+        <span id="playIcon">▶</span><span id="playLabel">PLAY</span>
+      </button>
+      <button id="restart" disabled>↺ RESTART</button>
+
+      <label class="speed-control">
+        <span>SPEED</span>
+        <select id="speed">
+          <option value="0.5">×0.5</option>
+          <option value="0.75" selected>×0.75</option>
+          <option value="1">×1</option>
+          <option value="1.5">×1.5</option>
+          <option value="2">×2</option>
+          <option value="4">×4</option>
+        </select>
+      </label>
+
+      <button id="soundToggle" aria-pressed="true">SOUND ON</button>
+      <button id="exportLog" disabled>EXPORT LOG</button>
+    </section>
+
+    <footer>
+      <span>NYX RAW TEXT DISPLAY PROTOCOL</span>
+      <span id="footerState">NO ACTIVE OBSERVATION</span>
+    </footer>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
