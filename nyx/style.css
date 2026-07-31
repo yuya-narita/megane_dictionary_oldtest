@@ -67,3 +67,25 @@ dialog[open]::backdrop{animation:backdropIn .3s ease}@keyframes backdropIn{from{
   .archive-delete{min-width:76px}.archive-arrow{padding-inline:5px}
 }
 @media(prefers-reduced-motion:reduce){.viewer-frame,.glass-panel::after,.standby-orbit i,.sequence-line i{animation:none!important;transition:none!important}}
+
+/* v0.7 HOLOGRAPHIC DIRECT CONTROL */
+.text-viewport{touch-action:pan-y;-webkit-tap-highlight-color:transparent}
+.standby-orbit{appearance:none;-webkit-appearance:none;padding:0;background:transparent;color:inherit;cursor:pointer;touch-action:manipulation;outline:0}
+.standby-orbit span{position:absolute;inset:25px;border-radius:50%;background:rgba(118,232,255,.08)}
+.standby-orbit:hover,.standby-orbit:focus-visible{border-color:rgba(124,232,255,.72);box-shadow:0 0 50px rgba(37,191,242,.22),inset 0 0 28px rgba(37,191,242,.12)}
+.standby-orbit:active{transform:scale(.92);filter:brightness(1.6)}
+.standby-orbit:active::after{box-shadow:0 0 30px #25bff2}
+.controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible;gap:8px}
+.controls button{width:100%;min-width:0;min-height:46px;font-size:10px;letter-spacing:.08em}
+.controls #saveLog:not(:disabled){color:#e8fbff;border-color:var(--line-strong);background:linear-gradient(135deg,rgba(12,82,111,.62),rgba(2,29,46,.88))}
+.editor-layer{grid-template-rows:auto minmax(0,1fr) auto}
+.editor-tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.editor-setting,.editor-tools button{min-height:46px;border:1px solid rgba(68,173,211,.26);background:rgba(1,13,23,.84);color:#9dc9d8;padding:8px 10px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:9px;letter-spacing:.05em;text-align:center}
+.editor-setting{flex-direction:column}.editor-setting span{font-size:7px;color:var(--muted);letter-spacing:.12em}.editor-setting b{font-size:9px;font-weight:500;color:#bfeefa}.editor-setting select{width:100%;border:0;outline:0;background:transparent;color:var(--text);font-size:9px;text-align:center}
+.subject-row{transition:background .2s,border-color .2s}
+.terminal-shell.resetting .viewer-frame{animation:fieldReset .76s cubic-bezier(.4,0,.2,1)}
+@keyframes fieldReset{0%{filter:brightness(1);transform:scaleY(1)}42%{filter:brightness(1.45);transform:scaleY(.78)}100%{filter:brightness(1);transform:scaleY(1)}}
+@media(max-width:720px){
+  .controls{gap:6px}.controls button{padding-inline:6px;font-size:9px}
+  .editor-tools{grid-template-columns:1fr 1fr}.editor-tools .voice-file{grid-column:1/-1}
+}

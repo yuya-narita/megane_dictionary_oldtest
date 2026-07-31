@@ -13,9 +13,9 @@ const OFFICIAL_LOGS = [OFFICIAL_LOG];
 
 const $ = (id) => document.getElementById(id);
 const els = {
-  screen: $('screen'), cursor: $('cursor'), viewport: $('viewport'), endLayer: $('endLayer'), standbyLayer: $('standbyLayer'), standbyTitle: $('standbyTitle'), standbyId: $('standbyId'), standbyVoice: $('standbyVoice'), standbyLength: $('standbyLength'), cinematicSequence: $('cinematicSequence'), sequenceText: $('sequenceText'),
+  screen: $('screen'), cursor: $('cursor'), viewport: $('viewport'), endLayer: $('endLayer'), standbyLayer: $('standbyLayer'), standbyTarget: $('standbyTarget'), standbyTitle: $('standbyTitle'), standbyId: $('standbyId'), standbyVoice: $('standbyVoice'), standbyLength: $('standbyLength'), cinematicSequence: $('cinematicSequence'), sequenceText: $('sequenceText'),
   editorLayer: $('editorLayer'), readingLayer: $('readingLayer'), titleInput: $('titleInput'), bodyInput: $('bodyInput'),
-  playPause: $('playPause'), playIcon: $('playIcon'), playLabel: $('playLabel'), restart: $('restart'), editToggle: $('editToggle'),
+  editToggle: $('editToggle'),
   recordButton: $('recordButton'), saveLog: $('saveLog'), speed: $('speed'), typingSoundToggle: $('typingSoundToggle'),
   fileInput: $('fileInput'), voiceInput: $('voiceInput'), voicePlayer: $('voicePlayer'),
   officialLog: $('officialLog'), officialDialog: $('officialDialog'), officialList: $('officialList'), officialCount: $('officialCount'), newLog: $('newLog'), myLogs: $('myLogs'),
@@ -42,6 +42,8 @@ let recordedChunks = [];
 let recordStartedAt = 0;
 let recordTimerId = null;
 let sequenceTimer = null;
+let reviewMode = false;
+let tapStart = null;
 
 const LOGS_KEY = 'nyxObservationLogsV05';
 
@@ -61,24 +63,23 @@ function setCurrentLog(log, source = 'local') {
   currentLog = { ...log };
   charIndex = 0;
   mode = 'view';
+  reviewMode = false;
+  recordedBlob = null;
+
   els.editorLayer.hidden = true;
   els.readingLayer.hidden = true;
-  els.standbyLayer.hidden = true;
-  els.cinematicSequence.hidden = true;
-  document.querySelector('.terminal-shell')?.classList.remove('cinematic-active');
   els.standbyLayer.hidden = false;
   els.cinematicSequence.hidden = true;
-  document.querySelector('.terminal-shell')?.classList.remove('cinematic-active');
-  els.subjectRow.hidden = false;
   els.endLayer.hidden = true;
-  els.readingLayer.hidden = false;
-  els.standbyLayer.hidden = true;
+  els.subjectRow.hidden = false;
   els.screen.textContent = '';
+  els.cursor.hidden = true;
+  document.querySelector('.terminal-shell')?.classList.remove('cinematic-active', 'resetting');
+
   els.standbyTitle.textContent = currentLog.title || 'UNTITLED OBSERVATION';
   els.standbyId.textContent = currentLog.displayId || '#LOCAL';
   els.standbyLength.textContent = `${String((currentLog.body || '').length).padStart(4,'0')} CHARS`;
   els.standbyVoice.textContent = currentLog.audioId ? 'ARCHIVE READY' : 'NO STREAM';
-  els.cursor.hidden = true;
   els.titleInput.value = currentLog.title || '';
   els.bodyInput.value = currentLog.body || '';
   els.subjectDisplay.textContent = currentLog.title || 'UNTITLED OBSERVATION';
@@ -88,18 +89,14 @@ function setCurrentLog(log, source = 'local') {
   els.viewerModeLabel.textContent = 'OBSERVATION LOG';
   els.footerState.textContent = currentLog.official ? 'READ ONLY SESSION' : 'LOCAL LOG SESSION';
   els.editToggle.textContent = '✎ EDIT';
-  els.playPause.disabled = false;
-  els.restart.disabled = false;
-  els.playIcon.textContent = '▶';
-  els.playLabel.textContent = 'OBSERVE';
   els.saveLog.disabled = !!currentLog.official;
-  recordedBlob = null;
+  els.status.textContent = 'CONNECTED';
+
   if (currentLog.audioId) restoreAudioForLog(currentLog.audioId);
   else setVoiceState('NO STREAM');
   updateReadout();
   els.viewport.scrollTop = 0;
 }
-
 function enterEdit(newBlank = false) {
   stopPlayback();
   mode = 'edit';
@@ -110,6 +107,8 @@ function enterEdit(newBlank = false) {
   els.titleInput.value = currentLog.title || '';
   els.bodyInput.value = currentLog.body || '';
   els.readingLayer.hidden = true;
+  els.standbyLayer.hidden = true;
+  els.cinematicSequence.hidden = true;
   els.editorLayer.hidden = false;
   els.subjectRow.hidden = true;
   els.endLayer.hidden = true;
@@ -117,8 +116,6 @@ function enterEdit(newBlank = false) {
   els.viewerModeLabel.textContent = 'LOG EDITOR';
   els.logId.textContent = currentLog.displayId || '#LOCAL-NEW';
   els.editToggle.textContent = '◉ PREVIEW';
-  els.playPause.disabled = true;
-  els.restart.disabled = true;
   els.saveLog.disabled = false;
   els.footerState.textContent = 'WRITE ACCESS ENABLED';
   setTimeout(() => (newBlank ? els.titleInput : els.bodyInput).focus(), 80);
@@ -180,9 +177,8 @@ function typingTick() {
 async function startPlayback() {
   if (mode !== 'view' || !currentLog.body || playing) return;
   els.endLayer.hidden = true;
-  if (charIndex >= currentLog.body.length) restartPlayback(false);
+  if (charIndex >= currentLog.body.length) resetToStandby(false);
   playing = true;
-  els.playIcon.textContent = 'Ⅱ'; els.playLabel.textContent = 'PAUSE';
   els.status.textContent = 'LINKING'; els.footerState.textContent = 'OPENING OBSERVATION SPACE';
   els.standbyLayer.hidden = true;
   els.readingLayer.hidden = true;
@@ -223,19 +219,63 @@ function typeNext() {
 }
 function pausePlayback() {
   playing = false; clearTimeout(typingTimer); typingTimer = null; clearInterval(sequenceTimer); sequenceTimer = null;
-  els.playIcon.textContent = '▶'; els.playLabel.textContent = 'RESUME'; els.status.textContent = 'PAUSED'; els.cursor.hidden = true;
+  els.status.textContent = 'PAUSED'; els.footerState.textContent = 'TOUCH FIELD TO RESUME'; els.cursor.hidden = true;
   if (!els.voicePlayer.paused) els.voicePlayer.pause();
 }
+async function resumePlayback() {
+  if (mode !== 'view' || playing || charIndex <= 0 || charIndex >= (currentLog.body?.length || 0)) return;
+  playing = true;
+  els.status.textContent = 'OBSERVING';
+  els.footerState.textContent = 'LIVE OBSERVATION';
+  els.cursor.hidden = false;
+  try { await ensureAudioContext(); } catch {}
+  if (els.voicePlayer.src) {
+    try { await els.voicePlayer.play(); setVoiceState('STREAM ACTIVE'); }
+    catch { setVoiceState('TAP REQUIRED'); }
+  }
+  typeNext();
+}
 function stopPlayback() { playing = false; clearTimeout(typingTimer); typingTimer = null; clearInterval(sequenceTimer); sequenceTimer = null; els.voicePlayer.pause(); }
-function restartPlayback(autoPlay = true) {
-  stopPlayback(); charIndex = 0; els.screen.textContent = ''; els.endLayer.hidden = true; els.cinematicSequence.hidden = true; els.readingLayer.hidden = true; els.standbyLayer.hidden = false; document.querySelector('.terminal-shell')?.classList.remove('cinematic-active'); els.viewport.scrollTop = 0; updateReadout();
-  els.playIcon.textContent = '▶'; els.playLabel.textContent = 'OBSERVE'; els.status.textContent = 'CONNECTED';
+function resetToStandby(animate = true) {
+  stopPlayback();
+  reviewMode = false;
+  charIndex = 0;
+  els.screen.textContent = '';
+  els.endLayer.hidden = true;
+  els.readingLayer.hidden = true;
+  els.viewport.scrollTop = 0;
+  updateReadout();
   if (els.voicePlayer.src) els.voicePlayer.currentTime = 0;
-  if (autoPlay) startPlayback();
+
+  const shell = document.querySelector('.terminal-shell');
+  const finishReset = () => {
+    els.cinematicSequence.hidden = true;
+    els.standbyLayer.hidden = false;
+    shell?.classList.remove('cinematic-active', 'resetting');
+    els.status.textContent = 'CONNECTED';
+    els.footerState.textContent = currentLog.official ? 'READ ONLY SESSION' : 'LOCAL LOG SESSION';
+  };
+
+  if (!animate) { finishReset(); return; }
+  els.standbyLayer.hidden = true;
+  els.cinematicSequence.hidden = false;
+  shell?.classList.add('resetting');
+  const steps = ['CLEARING LIVE BUFFER','RECALIBRATING TARGET','TARGET LOCK RESTORED'];
+  let step = 0;
+  els.sequenceText.textContent = steps[0];
+  clearInterval(sequenceTimer);
+  sequenceTimer = setInterval(() => {
+    step += 1;
+    if (step < steps.length) els.sequenceText.textContent = steps[step];
+  }, 230);
+  setTimeout(() => {
+    clearInterval(sequenceTimer); sequenceTimer = null;
+    finishReset();
+  }, 760);
 }
 function finishPlayback() {
   stopPlayback(); els.cursor.hidden = true; els.readingLayer.hidden = false; els.standbyLayer.hidden = true; els.cinematicSequence.hidden = true; els.endLayer.hidden = false;
-  els.playIcon.textContent = '▶'; els.playLabel.textContent = 'REPLAY'; els.status.textContent = 'ARCHIVED'; els.footerState.textContent = 'OBSERVATION COMPLETE';
+  reviewMode = false; els.status.textContent = 'ARCHIVED'; els.footerState.textContent = 'OBSERVATION COMPLETE';
   setVoiceState(els.voicePlayer.src ? 'STREAM CLOSED' : 'NO STREAM');
 }
 
@@ -247,8 +287,9 @@ function revealCompletedLog() {
   els.screen.textContent = currentLog.body || '';
   charIndex = currentLog.body?.length || 0;
   updateReadout();
+  reviewMode = true;
   els.status.textContent = 'ARCHIVE VIEW';
-  els.footerState.textContent = 'SCROLL REVIEW ENABLED';
+  els.footerState.textContent = 'SUBJECT TAP / RESET TARGET';
   els.viewport.scrollTop = 0;
   els.viewport.focus({ preventScroll: true });
 }
@@ -344,13 +385,12 @@ function renderLogs() {
   logs.forEach(log => els.logsList.append(makeArchiveCard(log,{deletable:true})));
 }
 
-els.playPause.addEventListener('click',()=> playing ? pausePlayback() : startPlayback());
+els.standbyTarget.addEventListener('click', startPlayback);
 els.endLayer.addEventListener('click', revealCompletedLog);
 els.endLayer.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); revealCompletedLog(); } });
 els.editorLayer.addEventListener('focusout', () => setTimeout(() => {
   if (!els.editorLayer.contains(document.activeElement)) restoreMobileViewport();
 }, 80));
-els.restart.addEventListener('click',()=>restartPlayback(false));
 els.editToggle.addEventListener('click',()=> mode==='edit' ? exitEditToPreview() : enterEdit(false));
 els.newLog.addEventListener('click',()=>enterEdit(true));
 els.officialLog.addEventListener('click',()=>{renderOfficialLogs();els.officialDialog.showModal();});
@@ -362,6 +402,20 @@ els.fileInput.addEventListener('change',async e=>{ const file=e.target.files?.[0
 els.voiceInput.addEventListener('change',e=>{ const file=e.target.files?.[0]; if(!file)return; attachVoiceBlob(file,'LOCAL FILE READY'); els.saveLog.disabled=!!currentLog.official; e.target.value=''; });
 els.bodyInput.addEventListener('input',()=>{els.saveLog.disabled=false;});
 els.titleInput.addEventListener('input',()=>{els.saveLog.disabled=false;});
+
+els.viewport.addEventListener('pointerdown', e => {
+  if (mode !== 'view' || !els.endLayer.hidden || !els.editorLayer.hidden) return;
+  tapStart = { x:e.clientX, y:e.clientY, t:Date.now() };
+});
+els.viewport.addEventListener('pointerup', e => {
+  if (!tapStart || mode !== 'view' || !els.endLayer.hidden || !els.editorLayer.hidden) { tapStart = null; return; }
+  const moved = Math.hypot(e.clientX - tapStart.x, e.clientY - tapStart.y);
+  const elapsed = Date.now() - tapStart.t;
+  tapStart = null;
+  if (moved > 12 || elapsed > 650 || !els.standbyLayer.hidden || !els.cinematicSequence.hidden || reviewMode) return;
+  if (playing) pausePlayback(); else if (charIndex > 0 && charIndex < (currentLog.body?.length || 0)) resumePlayback();
+});
+els.subjectRow.addEventListener('click', () => { if (reviewMode) resetToStandby(true); });
 els.voicePlayer.addEventListener('ended',()=>setVoiceState('STREAM CLOSED'));
 
 ['dragenter','dragover'].forEach(type=>$('dropZone').addEventListener(type,e=>{e.preventDefault();e.dataTransfer.dropEffect='copy';}));

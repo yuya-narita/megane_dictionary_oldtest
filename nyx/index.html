@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#02070d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>NYX OBSERVATION TERMINAL v0.6</title>
+  <title>NYX OBSERVATION TERMINAL v0.7</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -21,7 +21,7 @@
         <p class="eyebrow">MEGANE DICTIONARY / NXS LOCAL OBSERVATION NODE</p>
         <h1>NYX OBSERVATION TERMINAL</h1>
         <div class="version-row">
-          <span>SYSTEM v0.6</span>
+          <span>SYSTEM v0.7</span>
           <span class="signal"><i></i><b id="headerState">CONNECTED</b></span>
         </div>
       </div>
@@ -74,7 +74,7 @@
         </div>
 
         <div class="standby-layer" id="standbyLayer">
-          <div class="standby-orbit" aria-hidden="true"><i></i><i></i><i></i></div>
+          <button class="standby-orbit" id="standbyTarget" type="button" aria-label="観測を開始"><i></i><i></i><i></i><span></span></button>
           <small>OBSERVATION TARGET LOCKED</small>
           <strong id="standbyTitle">カップ麺の麺径と満足感の関係について</strong>
           <div class="standby-meta">
@@ -82,7 +82,7 @@
             <span><b>VOICE</b><em id="standbyVoice">NO STREAM</em></span>
             <span><b>DATA</b><em id="standbyLength">0000 CHARS</em></span>
           </div>
-          <p>PRESS <b>OBSERVE</b> TO OPEN LIVE LOG</p>
+          <p>TOUCH <b>TARGET</b> TO OPEN LIVE LOG</p>
         </div>
 
         <div class="cinematic-sequence" id="cinematicSequence" hidden>
@@ -104,6 +104,20 @@
             <span>RAW LOG / 本文</span>
             <textarea id="bodyInput" placeholder="ここに直接入力、またはテキストを貼り付ける。"></textarea>
           </label>
+          <div class="editor-tools" aria-label="log settings">
+            <label class="editor-setting"><span>DISPLAY RATE</span>
+              <select id="speed">
+                <option value="0.25">VERY SLOW</option>
+                <option value="0.35">SLOW</option>
+                <option value="0.5" selected>NORMAL</option>
+                <option value="0.75">FAST</option>
+                <option value="1">RAPID</option>
+              </select>
+            </label>
+            <button id="typingSoundToggle" type="button" aria-pressed="true">TYPE SOUND ON</button>
+            <label class="editor-setting voice-file" for="voiceInput"><span>VOICE STREAM</span><b>＋ SELECT FILE</b></label>
+            <input id="voiceInput" type="file" accept="audio/*">
+          </div>
         </div>
       </div>
 
@@ -123,28 +137,9 @@
     </section>
 
     <section class="controls glass-panel" id="controls">
-      <button id="playPause" class="primary"><span id="playIcon">▶</span><span id="playLabel">OBSERVE</span></button>
-      <button id="restart">↺ RESTART</button>
       <button id="editToggle">✎ EDIT</button>
       <button id="recordButton">● RECORD</button>
       <button id="saveLog" disabled>⌁ SAVE LOG</button>
-
-      <label class="speed-control"><span>SPEED</span>
-        <select id="speed">
-          <option value="0.25">×0.25</option>
-          <option value="0.35">×0.35</option>
-          <option value="0.5" selected>×0.5</option>
-          <option value="0.75">×0.75</option>
-          <option value="1">×1</option>
-          <option value="1.5">×1.5</option>
-          <option value="2">×2</option>
-          <option value="4">×4</option>
-        </select>
-      </label>
-
-      <button id="typingSoundToggle" aria-pressed="true">TYPE SOUND ON</button>
-      <label class="voice-file" for="voiceInput">＋ VOICE FILE</label>
-      <input id="voiceInput" type="file" accept="audio/*">
     </section>
 
     <section class="telemetry glass-panel" aria-hidden="true">
