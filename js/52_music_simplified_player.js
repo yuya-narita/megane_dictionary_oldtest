@@ -1,3 +1,4 @@
+/* v1.14.4: re-tap active Music tab to smoothly return library to top */
 /* v1.14.3: restore library position by clicked-card anchor, not guessed scroll container */
 /* v1.12.4: preserve auto-artwork metadata for custom album inheritance */
 /* v1.08: user video artwork + source-file safety notice */
@@ -116,6 +117,31 @@
       var root = document.scrollingElement || document.documentElement || document.body;
       state.libraryScrollY = Math.max(0, Number(window.scrollY || window.pageYOffset || (root && root.scrollTop) || 0));
     }catch(_){ state.libraryScrollY = 0; }
+  }
+
+  function smoothLibraryToTopV1144(){
+    // 「音楽」再タップは明示的な先頭移動なので、古い復元位置も破棄する。
+    state.libraryScrollY = 0;
+    state.libraryAnchor = null;
+
+    var list = $("musicList") || libraryScrollerV1142();
+    var scroller = list ? nearestScrollableV1143(list) : null;
+
+    try{
+      if(scroller && scroller !== document.body && scroller !== document.documentElement){
+        if(typeof scroller.scrollTo === "function") scroller.scrollTo({ top: 0, behavior: "smooth" });
+        else scroller.scrollTop = 0;
+        return;
+      }
+
+      // 現在の画面はページ本体がスクロールする構造。Safariを含めwindowを優先する。
+      window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    }catch(_){
+      try{
+        if(scroller) scroller.scrollTop = 0;
+        else window.scrollTo(0, 0);
+      }catch(__){}
+    }
   }
 
   function restoreLibraryScrollV1141(){
@@ -2051,7 +2077,23 @@
     var musicBtn = $("musicMode");
     if(musicBtn && !musicBtn.dataset.v7Bound){
       musicBtn.dataset.v7Bound = "1";
-      musicBtn.addEventListener("click", function(){ setTimeout(function(){ state.screen = "albums"; state.sheet = false; state.edit = false; render(); }, 0); });
+      musicBtn.addEventListener("click", function(){
+        // クリック前から音楽ライブラリを表示中なら、再描画せず滑らかに先頭へ戻す。
+        var musicView = view();
+        var alreadyInMusic = !!(musicView && !musicView.hidden && state.screen === "albums");
+
+        if(alreadyInMusic){
+          setTimeout(smoothLibraryToTopV1144, 0);
+          return;
+        }
+
+        setTimeout(function(){
+          state.screen = "albums";
+          state.sheet = false;
+          state.edit = false;
+          render();
+        }, 0);
+      });
     }
 
     if(!window.__MEGANE_MUSIC_UNLOCK_CHANGED_BOUND__){
