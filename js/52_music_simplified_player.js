@@ -1,3 +1,4 @@
+/* v1.14.3: restore library position by clicked-card anchor, not guessed scroll container */
 /* v1.12.4: preserve auto-artwork metadata for custom album inheritance */
 /* v1.08: user video artwork + source-file safety notice */
 /* v1.07: user artwork image editing */
@@ -52,11 +53,66 @@
     favReorderStartX: 0,
     favReorderStartY: 0,
     seeking: false,
-    libraryScrollY: 0
+    libraryScrollY: 0,
+    libraryAnchor: null
   };
+
+  function libraryScrollerV1142(){
+    var v = view();
+    if(!v) return null;
+    return v.querySelector(".music-list") || v.querySelector(".music-v7-albums") || v;
+  }
+
+
+  function rememberLibraryAnchorV1143(el, key){
+    try{
+      if(!el) return;
+      state.libraryAnchor = {
+        key: String(key || ""),
+        top: Number(el.getBoundingClientRect().top || 0)
+      };
+    }catch(_){ state.libraryAnchor = null; }
+  }
+
+  function nearestScrollableV1143(el){
+    var n = el && el.parentElement;
+    while(n && n !== document.body && n !== document.documentElement){
+      try{
+        var cs = getComputedStyle(n);
+        var oy = cs && cs.overflowY;
+        if((oy === "auto" || oy === "scroll" || oy === "overlay") && n.scrollHeight > n.clientHeight + 2) return n;
+      }catch(_){ }
+      n = n.parentElement;
+    }
+    return null;
+  }
+
+  function restoreLibraryAnchorV1143(){
+    var a = state.libraryAnchor;
+    if(!a || !a.key) return false;
+    var list = $("musicList");
+    if(!list) return false;
+    var el = null;
+    if(a.key === "favorites") el = $("musicV7FavAlbum");
+    else {
+      try{ el = list.querySelector('[data-album="'+CSS.escape(a.key)+'"]'); }catch(_){ el = list.querySelector('[data-album="'+a.key.replace(/"/g,'\\"')+'"]'); }
+    }
+    if(!el) return false;
+    var delta = Number(el.getBoundingClientRect().top || 0) - Number(a.top || 0);
+    if(Math.abs(delta) < 1) return true;
+    var scroller = nearestScrollableV1143(el);
+    if(scroller) scroller.scrollTop += delta;
+    else window.scrollBy(0, delta);
+    return true;
+  }
 
   function saveLibraryScrollV1141(){
     try{
+      var scroller = libraryScrollerV1142();
+      if(scroller){
+        state.libraryScrollY = Math.max(0, Number(scroller.scrollTop || 0));
+        return;
+      }
       var root = document.scrollingElement || document.documentElement || document.body;
       state.libraryScrollY = Math.max(0, Number(window.scrollY || window.pageYOffset || (root && root.scrollTop) || 0));
     }catch(_){ state.libraryScrollY = 0; }
@@ -66,17 +122,25 @@
     var y = Math.max(0, Number(state.libraryScrollY || 0));
     function apply(){
       try{
+        if(restoreLibraryAnchorV1143()) return;
+        var scroller = libraryScrollerV1142();
+        if(scroller){
+          scroller.scrollTop = y;
+          return;
+        }
         var root = document.scrollingElement || document.documentElement || document.body;
         window.scrollTo(0, y);
         if(root) root.scrollTop = y;
       }catch(_){ }
     }
-    // iPhone Safariは再描画直後だと高さが未確定なことがあるため段階的に復元する。
+    // 実際にスクロールしているのは window ではなく .music-list。
+    // iPhone Safariでは再描画直後に高さが未確定なことがあるため段階的に復元する。
     requestAnimationFrame(function(){
       requestAnimationFrame(function(){
         apply();
         setTimeout(apply, 60);
         setTimeout(apply, 180);
+        setTimeout(apply, 360);
       });
     });
   }
@@ -1015,6 +1079,7 @@
     list.querySelectorAll("[data-album]").forEach(function(btn){
       btn.onclick = function(){
         var idx = Number(btn.dataset.album || 0);
+        rememberLibraryAnchorV1143(btn, String(idx));
         var a = albums()[idx];
         if(a && a._meganeCustomAlbum109 && !(a.tracks||[]).length){
           try{ if(window.MEGANE_TOAST) window.MEGANE_TOAST("まだ曲が入っていません"); else alert("まだ曲が入っていません"); }catch(_){ }
@@ -1028,6 +1093,7 @@
     var fav = $("musicV7FavAlbum");
     if(fav){
       var openFavAlbum = function(ev){
+        rememberLibraryAnchorV1143(fav, "favorites");
         if(ev){
           ev.preventDefault();
           ev.stopPropagation();
