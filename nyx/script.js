@@ -542,7 +542,7 @@ async function autosaveCurrentLog({ cinematic = false, force = false } = {}) {
     autosaveDirty = false;
     markAutosaveState('synced');
 
-    const shouldShow = cinematic || !autosaveFirstCommitShown;
+    const shouldShow = cinematic;
     if (shouldShow) {
       autosaveFirstCommitShown = true;
       await showSaveSequence();
@@ -555,7 +555,9 @@ async function autosaveCurrentLog({ cinematic = false, force = false } = {}) {
 
 async function flushAutosave({ cinematic = false } = {}) {
   clearTimeout(autosaveTimer);
-  if (autosaveDirty || recordedBlob) await autosaveCurrentLog({ cinematic, force:true });
+  if (autosaveDirty || recordedBlob || (cinematic && hasMeaningfulDraft())) {
+    await autosaveCurrentLog({ cinematic, force:true });
+  }
 }
 function showSaveSequence(){ return new Promise(resolve=>{ els.writeMessage.textContent='WRITING LOG...'; els.writeDetail.textContent='VERIFYING DATA'; els.writeBar.style.width='0%'; els.saveDialog.showModal(); requestAnimationFrame(()=>els.writeBar.style.width='72%'); setTimeout(()=>{ els.writeMessage.textContent='LOG SAVED.'; els.writeDetail.textContent='NXS // LOCAL STORAGE'; els.writeBar.style.width='100%'; },620); setTimeout(()=>{ els.saveDialog.close(); resolve(); },1250); }); }
 
@@ -808,7 +810,7 @@ $('dropZone').addEventListener('drop',async e=>{
 });
 
 
-/* v1.0 TARGET / PLAYBACK GESTURES */
+/* v1.0.1 TARGET / PLAYBACK GESTURES */
 function distanceBetweenTouches(touches) {
   const a = touches[0], b = touches[1];
   return Math.hypot(b.clientX-a.clientX,b.clientY-a.clientY);
@@ -921,7 +923,7 @@ function resolveHostDestination() {
 
 function navigateToHost() {
   const destination = resolveHostDestination();
-  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v1.0' }, '*'); } catch {}
+  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v1.0.1' }, '*'); } catch {}
   if (destination) { location.href = destination; return; }
   if (history.length > 1) { history.back(); return; }
   // Standalone preview fallback: return to idle terminal instead of trapping the user.

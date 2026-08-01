@@ -294,3 +294,41 @@ dialog[open]::backdrop{animation:backdropIn .3s ease}@keyframes backdropIn{from{
 /* Autosave telemetry states */
 #cacheStatus.syncing,#memoryValue.syncing{color:#ffd489;text-shadow:0 0 9px rgba(255,190,70,.25)}
 #cacheStatus.synced,#memoryValue.synced{color:#79f2d0;text-shadow:0 0 9px rgba(70,255,199,.2)}
+
+
+/* v1.0.1 — calmer autosave / larger editor / record state clarity */
+.controls #recordButton.record-ready{
+  color:var(--text);
+  border-color:rgba(73,183,222,.28);
+  background:linear-gradient(145deg,rgba(1,20,31,.94),rgba(1,10,18,.98));
+  box-shadow:inset 0 0 18px rgba(35,175,225,.035);
+  animation:none;
+}
+.controls #recordButton.record-ready::first-letter{
+  color:#ff536b;
+  text-shadow:0 0 12px rgba(255,57,86,.7);
+}
+.controls #recordButton.recording{
+  color:#ffd7dc;
+  border-color:rgba(255,84,108,.74);
+  background:
+    radial-gradient(circle at 50% 0%,rgba(255,70,94,.19),transparent 68%),
+    linear-gradient(145deg,rgba(70,3,16,.94),rgba(25,2,9,.98));
+}
+
+.editor-layer{
+  grid-template-rows:auto minmax(540px,1fr) auto!important;
+}
+.body-editor,
+.body-editor textarea{
+  min-height:540px!important;
+}
+@media(max-width:720px){
+  .editor-layer{
+    grid-template-rows:auto minmax(72vh,1fr) auto!important;
+  }
+  .body-editor,
+  .body-editor textarea{
+    min-height:72vh!important;
+  }
+}
