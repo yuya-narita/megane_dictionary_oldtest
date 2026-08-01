@@ -8603,3 +8603,89 @@ body.mode-music.music-v7 #musicView .music-v7-lyrics.open {
   transition:transform .18s ease, opacity .18s ease !important;
   pointer-events:none !important;
 }
+
+
+/* NYX terminal hidden entrance */
+.glass-item.nyx-hold-active{
+  border-color:rgba(76,224,255,.72)!important;
+  box-shadow:
+    inset 0 0 0 1px rgba(105,235,255,.12),
+    0 0 22px rgba(37,210,255,.16)!important;
+  transform:scale(.992);
+}
+.glass-item.nyx-hold-active::after{
+  content:"LINKING";
+  position:absolute;
+  right:16px;
+  bottom:10px;
+  color:rgba(117,235,255,.82);
+  font:600 9px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing:.14em;
+}
+.glass-item.nyx-link-acquired{
+  filter:brightness(1.25);
+}
+.nyx-terminal-link-overlay{
+  position:fixed;
+  inset:0;
+  z-index:2147483646;
+  display:grid;
+  place-content:center;
+  justify-items:center;
+  gap:12px;
+  padding:24px;
+  background:
+    radial-gradient(circle at 50% 46%,rgba(12,86,113,.28),transparent 34%),
+    rgba(0,8,14,.96);
+  color:#aef7ff;
+  opacity:0;
+  transform:scale(1.025);
+  transition:opacity .22s ease,transform .45s cubic-bezier(.2,.8,.2,1);
+  pointer-events:all;
+}
+.nyx-terminal-link-overlay[hidden]{display:none!important}
+.nyx-terminal-link-overlay.is-visible{
+  opacity:1;
+  transform:scale(1);
+}
+.nyx-terminal-link-overlay strong{
+  margin-top:12px;
+  font:700 22px/1.1 ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing:.18em;
+  text-shadow:0 0 16px rgba(76,226,255,.46);
+}
+.nyx-terminal-link-overlay span{
+  font:600 11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing:.13em;
+  color:rgba(181,240,248,.72);
+}
+.nyx-terminal-link-overlay small{
+  margin-top:5px;
+  font-size:12px;
+  color:rgba(188,238,244,.6);
+}
+.nyx-link-core{
+  position:relative;
+  width:92px;
+  height:92px;
+}
+.nyx-link-core::before{
+  content:"";
+  position:absolute;
+  inset:32px;
+  border-radius:50%;
+  background:#61eaff;
+  box-shadow:0 0 22px rgba(71,228,255,.78);
+}
+.nyx-link-core i{
+  position:absolute;
+  inset:0;
+  border:1px solid rgba(87,226,255,.52);
+  border-radius:50%;
+  animation:nyxLinkSpin 1.5s linear infinite;
+}
+.nyx-link-core i:nth-child(2){inset:10px;animation-direction:reverse;animation-duration:1.1s}
+.nyx-link-core i:nth-child(3){inset:22px;animation-duration:.8s}
+@keyframes nyxLinkSpin{
+  to{transform:rotate(360deg)}
+}
