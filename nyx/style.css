@@ -332,3 +332,50 @@ dialog[open]::backdrop{animation:backdropIn .3s ease}@keyframes backdropIn{from{
     min-height:72vh!important;
   }
 }
+
+
+/* v1.0.2 — explicit record indicator + consistent full-height editor */
+.controls #recordButton.record-ready{
+  color:var(--text)!important;
+  border-color:rgba(73,183,222,.28)!important;
+  background:linear-gradient(145deg,rgba(1,20,31,.94),rgba(1,10,18,.98))!important;
+  box-shadow:inset 0 0 18px rgba(35,175,225,.035)!important;
+  animation:none!important;
+}
+.controls #recordButton .record-dot{
+  color:#ff536b;
+  text-shadow:0 0 12px rgba(255,57,86,.78);
+  margin-right:.45em;
+}
+.controls #recordButton .record-label{
+  color:inherit;
+}
+.controls #recordButton.recording{
+  color:#ffd7dc!important;
+  border-color:rgba(255,84,108,.74)!important;
+  background:
+    radial-gradient(circle at 50% 0%,rgba(255,70,94,.19),transparent 68%),
+    linear-gradient(145deg,rgba(70,3,16,.94),rgba(25,2,9,.98))!important;
+}
+.controls #recordButton.recording .record-stop{
+  color:#ff8797;
+  margin-right:.45em;
+  text-shadow:0 0 12px rgba(255,57,86,.72);
+}
+/* New Log and existing-log EDIT now share the same cinematic vertical space. */
+.terminal-shell.cinematic-active .editor-layer{
+  grid-template-rows:auto minmax(72svh,1fr) auto!important;
+}
+.terminal-shell.cinematic-active .body-editor,
+.terminal-shell.cinematic-active .body-editor textarea{
+  min-height:72svh!important;
+}
+@media(max-width:720px){
+  .terminal-shell.cinematic-active .editor-layer{
+    grid-template-rows:auto minmax(72svh,1fr) auto!important;
+  }
+  .terminal-shell.cinematic-active .body-editor,
+  .terminal-shell.cinematic-active .body-editor textarea{
+    min-height:72svh!important;
+  }
+}

@@ -149,6 +149,7 @@ function setCurrentLog(log, source = 'local') {
 }
 function enterEdit(newBlank = false) {
   stopPlayback();
+  document.querySelector('.terminal-shell')?.classList.add('cinematic-active');
   editingOfficial = !!currentLog.official;
   mode = 'edit';
   if (newBlank) {
@@ -444,13 +445,13 @@ async function beginRecording() {
       recordingStream?.getTracks().forEach(t => t.stop()); recordingStream = null;
     };
     mediaRecorder.start(); recordStartedAt = Date.now();
-    els.recordButton.classList.remove('record-ready'); els.recordButton.classList.add('recording'); els.recordButton.textContent = '■ STOP REC'; els.recordOverlay.hidden = false;
+    els.recordButton.classList.remove('record-ready'); els.recordButton.classList.add('recording'); els.recordButton.innerHTML = '<span class="record-stop" aria-hidden="true">■</span><span class="record-label">STOP REC</span>'; els.recordOverlay.hidden = false;
     els.modeReadout.textContent = 'RECORDING'; setVoiceState('STREAM REC');
     recordTimerId = setInterval(updateRecordTimer,250); updateRecordTimer();
   } catch (err) { alert(`録音を開始できませんでした。\n${err.message || err}`); }
 }
 function updateRecordTimer(){ const sec=Math.floor((Date.now()-recordStartedAt)/1000); els.recordTimer.textContent=`${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`; }
-function stopRecording(){ if(mediaRecorder?.state==='recording') mediaRecorder.stop(); clearInterval(recordTimerId); recordTimerId=null; els.recordButton.classList.remove('recording'); els.recordButton.classList.add('record-ready'); els.recordButton.textContent='● RECORD'; els.recordOverlay.hidden=true; els.modeReadout.textContent=mode==='edit'?'EDITOR':'VIEWER'; }
+function stopRecording(){ if(mediaRecorder?.state==='recording') mediaRecorder.stop(); clearInterval(recordTimerId); recordTimerId=null; els.recordButton.classList.remove('recording'); els.recordButton.classList.add('record-ready'); els.recordButton.innerHTML='<span class="record-dot" aria-hidden="true">●</span><span class="record-label">RECORD</span>'; els.recordOverlay.hidden=true; els.modeReadout.textContent=mode==='edit'?'EDITOR':'VIEWER'; }
 
 function openDB() {
   return new Promise((resolve,reject)=>{ const req=indexedDB.open('NyxObservationDB',1); req.onupgradeneeded=()=>{ if(!req.result.objectStoreNames.contains('audio')) req.result.createObjectStore('audio'); }; req.onsuccess=()=>resolve(req.result); req.onerror=()=>reject(req.error); });
@@ -810,7 +811,7 @@ $('dropZone').addEventListener('drop',async e=>{
 });
 
 
-/* v1.0.1 TARGET / PLAYBACK GESTURES */
+/* v1.0.2 TARGET / PLAYBACK GESTURES */
 function distanceBetweenTouches(touches) {
   const a = touches[0], b = touches[1];
   return Math.hypot(b.clientX-a.clientX,b.clientY-a.clientY);
@@ -923,7 +924,7 @@ function resolveHostDestination() {
 
 function navigateToHost() {
   const destination = resolveHostDestination();
-  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v1.0.1' }, '*'); } catch {}
+  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v1.0.2' }, '*'); } catch {}
   if (destination) { location.href = destination; return; }
   if (history.length > 1) { history.back(); return; }
   // Standalone preview fallback: return to idle terminal instead of trapping the user.
