@@ -8,7 +8,7 @@ window.NYX_OFFICIAL_LOGS=[
  id:"official-001",displayId:"#NXS-001",
  title:"カップ麺の麺径と満足感の関係について",
  createdAt:"2026-02-04T16:26:00+09:00",official:true,
- // voiceSrc:"./audio/nxs_001.mp3",
+ voiceSrc:"./audio/nxs_001.mp3",
  segments:[
   {time:0.0,text:"…アクセスログ検知。"},
   {time:2.8,text:"silent_packet://nxs-observe"},
