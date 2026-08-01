@@ -16,7 +16,7 @@ const els = {
   screen: $('screen'), cursor: $('cursor'), viewport: $('viewport'), endLayer: $('endLayer'), noTargetLayer: $('noTargetLayer'), standbyLayer: $('standbyLayer'), standbyTarget: $('standbyTarget'), standbyTitle: $('standbyTitle'), standbyId: $('standbyId'), standbyVoice: $('standbyVoice'), standbyLength: $('standbyLength'), cinematicSequence: $('cinematicSequence'), sequenceText: $('sequenceText'),
   editorLayer: $('editorLayer'), readingLayer: $('readingLayer'), titleInput: $('titleInput'), bodyInput: $('bodyInput'),
   editToggle: $('editToggle'),
-  recordButton: $('recordButton'), saveLog: $('saveLog'), speed: $('speed'), typingSoundToggle: $('typingSoundToggle'),
+  recordButton: $('recordButton'), speed: $('speed'), typingSoundToggle: $('typingSoundToggle'),
   fileInput: $('fileInput'), voiceInput: $('voiceInput'), voicePlayer: $('voicePlayer'),
   officialLog: $('officialLog'), officialDialog: $('officialDialog'), officialList: $('officialList'), officialCount: $('officialCount'), newLog: $('newLog'), myLogs: $('myLogs'),
   logsDialog: $('logsDialog'), logsList: $('logsList'), emptyLogs: $('emptyLogs'), savedCount: $('savedCount'),
@@ -25,7 +25,8 @@ const els = {
   viewerModeLabel: $('viewerModeLabel'), logId: $('logId'), subjectDisplay: $('subjectDisplay'), subjectRow: $('subjectRow'),
   charReadout: $('charReadout'), lineReadout: $('lineReadout'), progressBar: $('progressBar'), footerState: $('footerState'),
   recordOverlay: $('recordOverlay'), recordTimer: $('recordTimer'), packetValue: $('packetValue'), syncValue: $('syncValue'), memoryValue: $('memoryValue'),
-  hostReturn: $('hostReturn'), hostTransition: $('hostTransition'), hostTransitionText: $('hostTransitionText'), hostTransitionSub: $('hostTransitionSub'), returnHint: $('returnHint')
+  hostReturn: $('hostReturn'), hostTransition: $('hostTransition'), hostTransitionText: $('hostTransitionText'), hostTransitionSub: $('hostTransitionSub'), returnHint: $('returnHint'),
+  deleteDialog: $('deleteDialog'), deleteTargetTitle: $('deleteTargetTitle'), deleteConfirm: $('deleteConfirm'), deleteCancel: $('deleteCancel')
 };
 
 let currentLog = structuredClone(OFFICIAL_LOG);
@@ -52,6 +53,12 @@ let activeArchiveIndex = -1;
 let gestureMessageTimer = null;
 let pinchState = null;
 let horizontalTouch = null;
+let autosaveTimer = null;
+let autosaveDirty = false;
+let autosaveInFlight = false;
+let autosaveFirstCommitShown = false;
+let pendingDeleteLog = null;
+let typingSoundCounter = 0;
 
 const LOGS_KEY = 'nyxObservationLogsV05';
 
@@ -75,6 +82,9 @@ function setNoTarget() {
   editingOfficial = false;
   activeArchiveType = null;
   activeArchiveIndex = -1;
+  autosaveDirty = false;
+  clearTimeout(autosaveTimer);
+  markAutosaveState('idle');
   els.noTargetLayer.hidden = false;
   els.standbyLayer.hidden = true;
   els.cinematicSequence.hidden = true;
@@ -90,7 +100,6 @@ function setNoTarget() {
   els.viewerModeLabel.textContent = 'OBSERVATION NODE';
   els.logId.textContent = '#UNASSIGNED';
   els.footerState.textContent = 'SELECT ARCHIVE';
-  els.saveLog.disabled = true;
   setVoiceState('NO STREAM');
   updateReadout();
 }
@@ -103,6 +112,9 @@ function setCurrentLog(log, source = 'local') {
   mode = 'view';
   reviewMode = false;
   recordedBlob = null;
+  autosaveFirstCommitShown = !currentLog.official && !!currentLog.id;
+  autosaveDirty = false;
+  markAutosaveState('idle');
 
   els.editorLayer.hidden = true;
   els.noTargetLayer.hidden = true;
@@ -128,7 +140,6 @@ function setCurrentLog(log, source = 'local') {
   els.viewerModeLabel.textContent = 'OBSERVATION LOG';
   els.footerState.textContent = currentLog.official ? 'READ ONLY SESSION' : 'LOCAL LOG SESSION';
   els.editToggle.textContent = '✎ EDIT';
-  els.saveLog.disabled = !!currentLog.official;
   els.status.textContent = 'LOCKED';
 
   if (currentLog.audioId) restoreAudioForLog(currentLog.audioId);
@@ -141,6 +152,8 @@ function enterEdit(newBlank = false) {
   editingOfficial = !!currentLog.official;
   mode = 'edit';
   if (newBlank) {
+    autosaveFirstCommitShown = false;
+    autosaveDirty = false;
     currentLog = { id: uid(), displayId: '#LOCAL-NEW', title: '', body: '', createdAt: new Date().toISOString(), official: false };
     recordedBlob = null; closeVoiceUrl(); setVoiceState('NO STREAM');
   }
@@ -157,7 +170,6 @@ function enterEdit(newBlank = false) {
   els.viewerModeLabel.textContent = 'LOG EDITOR';
   els.logId.textContent = currentLog.displayId || '#LOCAL-NEW';
   els.editToggle.textContent = '◉ PREVIEW';
-  els.saveLog.disabled = false;
   els.footerState.textContent = 'WRITE ACCESS ENABLED';
   setTimeout(() => (newBlank ? els.titleInput : els.bodyInput).focus(), 80);
 }
@@ -168,7 +180,6 @@ function exitEditToPreview() {
   currentLog.official = false;
   if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   setCurrentLog(currentLog, 'draft');
-  els.saveLog.disabled = false;
   restoreMobileViewport();
 }
 
@@ -205,13 +216,13 @@ async function ensureAudioContext() {
   if (audioContext.state === 'suspended') await audioContext.resume();
 }
 function playHudTone({
-  start = 1050,
-  end = 720,
-  duration = .032,
-  volume = .009,
+  start = 820,
+  end = 430,
+  duration = .05,
+  volume = .006,
   type = 'sine',
-  filterStart = 2400,
-  filterEnd = 900
+  filterStart = 1700,
+  filterEnd = 620
 } = {}) {
   if (!typingSoundEnabled || !audioContext || audioContext.state !== 'running') return;
   const now = audioContext.currentTime;
@@ -221,53 +232,71 @@ function playHudTone({
   osc.type = type;
   osc.frequency.setValueAtTime(start, now);
   osc.frequency.exponentialRampToValueAtTime(Math.max(40,end), now + duration);
-  filter.type = 'bandpass';
-  filter.Q.value = 1.2;
+  filter.type = 'lowpass';
+  filter.Q.value = .7;
   filter.frequency.setValueAtTime(filterStart, now);
   filter.frequency.exponentialRampToValueAtTime(filterEnd, now + duration);
   gain.gain.setValueAtTime(.0001, now);
-  gain.gain.exponentialRampToValueAtTime(volume, now + .004);
+  gain.gain.linearRampToValueAtTime(volume, now + .008);
   gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
   osc.connect(filter).connect(gain).connect(audioContext.destination);
   osc.start(now);
-  osc.stop(now + duration + .005);
+  osc.stop(now + duration + .01);
+}
+
+function playDataAirPulse(duration = .045, volume = .0045) {
+  if (!typingSoundEnabled || !audioContext || audioContext.state !== 'running') return;
+  const now = audioContext.currentTime;
+  const length = Math.max(1, Math.floor(audioContext.sampleRate * duration));
+  const buffer = audioContext.createBuffer(1,length,audioContext.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i=0;i<length;i++) data[i]=(Math.random()*2-1)*(1-i/length);
+  const source = audioContext.createBufferSource();
+  const filter = audioContext.createBiquadFilter();
+  const gain = audioContext.createGain();
+  filter.type='bandpass';
+  filter.frequency.value=1350 + Math.random()*450;
+  filter.Q.value=1.8;
+  gain.gain.setValueAtTime(volume,now);
+  gain.gain.exponentialRampToValueAtTime(.0001,now+duration);
+  source.buffer=buffer;
+  source.connect(filter).connect(gain).connect(audioContext.destination);
+  source.start(now);
 }
 
 function typingTick(char = '') {
   if (!typingSoundEnabled || !audioContext || audioContext.state !== 'running') return;
+  typingSoundCounter += 1;
   if (char === '\n') {
-    playHudTone({start:1180,end:260,duration:.075,volume:.011,type:'sine',filterStart:1800,filterEnd:480});
+    playHudTone({start:540,end:105,duration:.13,volume:.006,type:'sine',filterStart:1100,filterEnd:180});
     return;
   }
-  if (!char.trim() || Math.random() > .42) return;
-  const variance = Math.random() * 180;
-  playHudTone({
-    start:980 + variance,
-    end:690 + variance * .18,
-    duration:.024 + Math.random() * .012,
-    volume:.0065 + Math.random() * .0025,
-    type:Math.random() > .72 ? 'triangle' : 'sine',
-    filterStart:2100 + variance,
-    filterEnd:900
-  });
+  if (!char.trim()) return;
+  // Sparse data-stream pulses rather than one game-like beep per character.
+  if (typingSoundCounter % 7 === 0 || Math.random() < .055) {
+    playDataAirPulse(.028 + Math.random()*.025,.0033 + Math.random()*.0018);
+  }
+  if (/[。！？—…]/.test(char)) {
+    playHudTone({start:680,end:270,duration:.075,volume:.0055,type:'sine'});
+  }
 }
 
 function playLockTone() {
   if (!audioContext || audioContext.state !== 'running') return;
-  playHudTone({start:520,end:860,duration:.055,volume:.014,type:'sine',filterStart:1500,filterEnd:2400});
-  setTimeout(()=>playHudTone({start:920,end:700,duration:.045,volume:.01,type:'triangle'}),55);
+  playHudTone({start:240,end:690,duration:.11,volume:.011,type:'sine',filterStart:1000,filterEnd:1800});
+  setTimeout(()=>playDataAirPulse(.06,.005),75);
 }
 
 function playObserveTone() {
   if (!audioContext || audioContext.state !== 'running') return;
-  playHudTone({start:170,end:740,duration:.16,volume:.018,type:'sine',filterStart:500,filterEnd:2100});
-  setTimeout(()=>playHudTone({start:1120,end:820,duration:.055,volume:.012,type:'sine'}),120);
+  playHudTone({start:105,end:520,duration:.22,volume:.014,type:'sine',filterStart:420,filterEnd:1600});
+  setTimeout(()=>playDataAirPulse(.09,.006),135);
 }
 
 function playSaveTone() {
   if (!audioContext || audioContext.state !== 'running') return;
-  playHudTone({start:360,end:920,duration:.12,volume:.016,type:'sine',filterStart:800,filterEnd:2200});
-  setTimeout(()=>playHudTone({start:1260,end:980,duration:.07,volume:.011,type:'sine'}),105);
+  playHudTone({start:190,end:720,duration:.18,volume:.012,type:'sine',filterStart:560,filterEnd:1900});
+  setTimeout(()=>playHudTone({start:920,end:610,duration:.09,volume:.007,type:'sine'}),140);
 }
 
 async function startPlayback() {
@@ -410,16 +439,18 @@ async function beginRecording() {
     mediaRecorder.onstop = () => {
       const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
       attachVoiceBlob(blob, 'RECORDED / READY');
+      autosaveDirty = true;
+      flushAutosave({cinematic:true});
       recordingStream?.getTracks().forEach(t => t.stop()); recordingStream = null;
     };
     mediaRecorder.start(); recordStartedAt = Date.now();
-    els.recordButton.classList.add('recording'); els.recordButton.textContent = '■ STOP REC'; els.recordOverlay.hidden = false;
+    els.recordButton.classList.remove('record-ready'); els.recordButton.classList.add('recording'); els.recordButton.textContent = '■ STOP REC'; els.recordOverlay.hidden = false;
     els.modeReadout.textContent = 'RECORDING'; setVoiceState('STREAM REC');
     recordTimerId = setInterval(updateRecordTimer,250); updateRecordTimer();
   } catch (err) { alert(`録音を開始できませんでした。\n${err.message || err}`); }
 }
 function updateRecordTimer(){ const sec=Math.floor((Date.now()-recordStartedAt)/1000); els.recordTimer.textContent=`${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`; }
-function stopRecording(){ if(mediaRecorder?.state==='recording') mediaRecorder.stop(); clearInterval(recordTimerId); recordTimerId=null; els.recordButton.classList.remove('recording'); els.recordButton.textContent='● RECORD'; els.recordOverlay.hidden=true; els.modeReadout.textContent=mode==='edit'?'EDITOR':'VIEWER'; }
+function stopRecording(){ if(mediaRecorder?.state==='recording') mediaRecorder.stop(); clearInterval(recordTimerId); recordTimerId=null; els.recordButton.classList.remove('recording'); els.recordButton.classList.add('record-ready'); els.recordButton.textContent='● RECORD'; els.recordOverlay.hidden=true; els.modeReadout.textContent=mode==='edit'?'EDITOR':'VIEWER'; }
 
 function openDB() {
   return new Promise((resolve,reject)=>{ const req=indexedDB.open('NyxObservationDB',1); req.onupgradeneeded=()=>{ if(!req.result.objectStoreNames.contains('audio')) req.result.createObjectStore('audio'); }; req.onsuccess=()=>resolve(req.result); req.onerror=()=>reject(req.error); });
@@ -429,16 +460,102 @@ async function getAudio(id){ const db=await openDB(); return new Promise((res,re
 async function deleteAudio(id){ if(!id)return; const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction('audio','readwrite'); tx.objectStore('audio').delete(id); tx.oncomplete=res; tx.onerror=()=>rej(tx.error); }); }
 async function restoreAudioForLog(audioId){ try{ const blob=await getAudio(audioId); if(blob) attachVoiceBlob(blob,'ARCHIVE READY'); else setVoiceState('AUDIO MISSING'); }catch{ setVoiceState('AUDIO ERROR'); } }
 
-async function saveCurrentLog() {
-  if (mode === 'edit') { currentLog.title = els.titleInput.value.trim() || 'UNTITLED OBSERVATION'; currentLog.body = els.bodyInput.value; }
-  if (!currentLog.body.trim()) { alert('本文が空です。'); return; }
-  if (editingOfficial) localStorage.setItem('nyxOfficialModificationPending', '1');
-  currentLog.official = false; editingOfficial = false; currentLog.updatedAt = new Date().toISOString(); currentLog.createdAt ||= currentLog.updatedAt; currentLog.id ||= uid(); currentLog.displayId ||= `#LOCAL-${String(Date.now()).slice(-4)}`;
-  if (recordedBlob) { currentLog.audioId = currentLog.audioId || `audio-${currentLog.id}`; await putAudio(currentLog.audioId, recordedBlob); }
-  const logs = loadStoredLogs(); const existing = logs.findIndex(l => l.id === currentLog.id);
-  const stored = { id:currentLog.id, displayId:currentLog.displayId, title:currentLog.title, body:currentLog.body, createdAt:currentLog.createdAt, updatedAt:currentLog.updatedAt, audioId:currentLog.audioId || null };
-  if (existing >= 0) logs[existing] = stored; else logs.unshift(stored); saveStoredLogs(logs);
-  await showSaveSequence(); try { await ensureAudioContext(); playSaveTone(); } catch {} setCurrentLog(stored,'archive'); els.saveLog.disabled=false;
+function hasMeaningfulDraft() {
+  const title = mode === 'edit' ? els.titleInput.value.trim() : (currentLog.title || '').trim();
+  const body = mode === 'edit' ? els.bodyInput.value.trim() : (currentLog.body || '').trim();
+  return Boolean(title || body || recordedBlob || currentLog.audioId);
+}
+
+function markAutosaveState(state) {
+  const label = state === 'syncing' ? 'SYNCING' : state === 'synced' ? 'SYNCED' : 'LOCAL OK';
+  els.cacheStatus.textContent = label;
+  els.memoryValue.textContent = state === 'syncing' ? 'SYNCING' : state === 'synced' ? 'SYNCED' : 'STABLE';
+  els.cacheStatus.classList.toggle('syncing',state==='syncing');
+  els.cacheStatus.classList.toggle('synced',state==='synced');
+  els.memoryValue.classList.toggle('syncing',state==='syncing');
+  els.memoryValue.classList.toggle('synced',state==='synced');
+}
+
+function scheduleAutosave({ cinematic = false, delay = 760 } = {}) {
+  autosaveDirty = true;
+  markAutosaveState('syncing');
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(() => autosaveCurrentLog({ cinematic }), delay);
+}
+
+async function autosaveCurrentLog({ cinematic = false, force = false } = {}) {
+  if (autosaveInFlight) return;
+  clearTimeout(autosaveTimer);
+  autosaveTimer = null;
+  if (!hasMeaningfulDraft()) {
+    autosaveDirty = false;
+    markAutosaveState('idle');
+    return;
+  }
+  if (!autosaveDirty && !force) return;
+  autosaveInFlight = true;
+  try {
+    if (mode === 'edit') {
+      currentLog.title = els.titleInput.value.trim() || 'UNTITLED OBSERVATION';
+      currentLog.body = els.bodyInput.value;
+    }
+    if (editingOfficial) {
+      localStorage.setItem('nyxOfficialModificationPending','1');
+      currentLog = {
+        ...currentLog,
+        id:uid(),
+        displayId:`#LOCAL-${String(Date.now()).slice(-4)}`,
+        official:false,
+        sourceOfficialId:currentLog.displayId || '#NXS-001',
+        createdAt:new Date().toISOString()
+      };
+      editingOfficial = false;
+    }
+    currentLog.official = false;
+    currentLog.updatedAt = new Date().toISOString();
+    currentLog.createdAt ||= currentLog.updatedAt;
+    currentLog.id ||= uid();
+    currentLog.displayId ||= `#LOCAL-${String(Date.now()).slice(-4)}`;
+
+    if (recordedBlob) {
+      currentLog.audioId = currentLog.audioId || `audio-${currentLog.id}`;
+      await putAudio(currentLog.audioId,recordedBlob);
+      recordedBlob = null;
+    }
+
+    const logs = loadStoredLogs();
+    const existing = logs.findIndex(l => l.id === currentLog.id);
+    const stored = {
+      id:currentLog.id,
+      displayId:currentLog.displayId,
+      title:currentLog.title,
+      body:currentLog.body,
+      createdAt:currentLog.createdAt,
+      updatedAt:currentLog.updatedAt,
+      audioId:currentLog.audioId || null,
+      sourceOfficialId:currentLog.sourceOfficialId || null
+    };
+    if (existing >= 0) logs[existing] = stored;
+    else logs.unshift(stored);
+    saveStoredLogs(logs);
+    currentLog = {...stored};
+    autosaveDirty = false;
+    markAutosaveState('synced');
+
+    const shouldShow = cinematic || !autosaveFirstCommitShown;
+    if (shouldShow) {
+      autosaveFirstCommitShown = true;
+      await showSaveSequence();
+      try { await ensureAudioContext(); playSaveTone(); } catch {}
+    }
+  } finally {
+    autosaveInFlight = false;
+  }
+}
+
+async function flushAutosave({ cinematic = false } = {}) {
+  clearTimeout(autosaveTimer);
+  if (autosaveDirty || recordedBlob) await autosaveCurrentLog({ cinematic, force:true });
 }
 function showSaveSequence(){ return new Promise(resolve=>{ els.writeMessage.textContent='WRITING LOG...'; els.writeDetail.textContent='VERIFYING DATA'; els.writeBar.style.width='0%'; els.saveDialog.showModal(); requestAnimationFrame(()=>els.writeBar.style.width='72%'); setTimeout(()=>{ els.writeMessage.textContent='LOG SAVED.'; els.writeDetail.textContent='NXS // LOCAL STORAGE'; els.writeBar.style.width='100%'; },620); setTimeout(()=>{ els.saveDialog.close(); resolve(); },1250); }); }
 
@@ -524,17 +641,36 @@ function denyHorizontalDuringObservation() {
   showGestureMessage('ACCESS DENIED', '観測中だ。', 620);
 }
 
+function requestDeleteLog(log) {
+  pendingDeleteLog = log;
+  els.deleteTargetTitle.textContent = log.title || 'UNTITLED OBSERVATION';
+  els.deleteDialog.showModal();
+}
+
+async function confirmPendingDelete() {
+  if (!pendingDeleteLog) return;
+  const log = pendingDeleteLog;
+  pendingDeleteLog = null;
+  await deleteAudio(log.audioId);
+  saveStoredLogs(loadStoredLogs().filter(x=>x.id!==log.id));
+  els.deleteDialog.close();
+  renderLogs();
+}
+
 function makeArchiveCard(log, { deletable = false, archiveType = null, archiveIndex = -1 } = {}) {
   const card = document.createElement('article');
-  card.className = 'log-card tappable-card';
+  card.className = `log-card tappable-card${deletable ? ' swipe-card' : ''}`;
   card.tabIndex = 0;
   card.setAttribute('role','button');
-  const info = document.createElement('div'); info.className = 'archive-card-info';
+
+  const content = document.createElement('div');
+  content.className = deletable ? 'swipe-card-content' : 'archive-card-info';
   const h = document.createElement('h3'); h.textContent = log.title;
   const p = document.createElement('p');
   const stamp = new Date(log.updatedAt || log.createdAt).toLocaleString('ja-JP');
   p.textContent = `${stamp} / ${log.audioId ? 'VOICE ATTACHED' : (log.official ? 'NXS OFFICIAL' : 'TEXT ONLY')}`;
-  info.append(h,p);
+  content.append(h,p);
+
   const openLog = () => {
     els.logsDialog.open && els.logsDialog.close();
     els.officialDialog.open && els.officialDialog.close();
@@ -543,19 +679,68 @@ function makeArchiveCard(log, { deletable = false, archiveType = null, archiveIn
     showGestureMessage('OBSERVATION TARGET LOCKED', log.displayId || 'LOCAL LOG', 640);
     ensureAudioContext().then(playLockTone).catch(()=>{});
   };
-  info.addEventListener('click', openLog);
-  card.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target === card) { e.preventDefault(); openLog(); } });
-  card.append(info);
-  if (deletable) {
-    const del = document.createElement('button'); del.type='button'; del.className='delete archive-delete'; del.textContent='DELETE';
-    del.onclick=async e=>{ e.stopPropagation(); if(!confirm(`「${log.title}」を削除しますか？`))return; await deleteAudio(log.audioId); saveStoredLogs(loadStoredLogs().filter(x=>x.id!==log.id)); renderLogs(); };
-    card.append(del);
-  } else {
-    const arrow = document.createElement('span'); arrow.className='archive-arrow'; arrow.textContent='OPEN  ›'; card.append(arrow);
+
+  if (!deletable) {
+    content.addEventListener('click',openLog);
+    card.append(content);
+    const arrow=document.createElement('span');
+    arrow.className='archive-arrow';
+    arrow.textContent='OPEN  ›';
+    card.append(arrow);
+    return card;
   }
+
+  const underlay=document.createElement('div');
+  underlay.className='swipe-delete-underlay';
+  underlay.textContent='DELETE';
+  card.append(underlay,content);
+
+  let touch=null;
+  content.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1)return;
+    const t=e.touches[0];
+    touch={x:t.clientX,y:t.clientY,dx:0,dy:0};
+    card.classList.add('swiping');
+  },{passive:true});
+  content.addEventListener('touchmove',e=>{
+    if(!touch||e.touches.length!==1)return;
+    const t=e.touches[0];
+    touch.dx=t.clientX-touch.x;
+    touch.dy=t.clientY-touch.y;
+    if(touch.dx<0 && Math.abs(touch.dx)>Math.abs(touch.dy)*1.2){
+      e.preventDefault();
+      const amount=Math.max(-112,Math.min(0,touch.dx));
+      content.style.transform=`translateX(${amount}px)`;
+      card.classList.toggle('delete-armed',amount<-82);
+    }
+  },{passive:false});
+  content.addEventListener('touchend',()=>{
+    if(!touch)return;
+    const {dx,dy}=touch;
+    touch=null;
+    card.classList.remove('swiping');
+    content.style.transform='';
+    card.classList.remove('delete-armed');
+    if(dx<-82 && Math.abs(dx)>Math.abs(dy)*1.2){
+      requestDeleteLog(log);
+    }else if(Math.abs(dx)<12 && Math.abs(dy)<12){
+      openLog();
+    }
+  },{passive:true});
+  content.addEventListener('touchcancel',()=>{
+    touch=null;
+    card.classList.remove('swiping','delete-armed');
+    content.style.transform='';
+  },{passive:true});
+  content.addEventListener('click',e=>{
+    if(!('ontouchstart' in window))openLog();
+  });
+  card.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();openLog();}
+    if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();requestDeleteLog(log);}
+  });
   return card;
 }
-
 function renderOfficialLogs() {
   els.officialList.innerHTML = '';
   OFFICIAL_LOGS.forEach((log,index) => els.officialList.append(makeArchiveCard(structuredClone(log),{archiveType:'official',archiveIndex:index})));
@@ -567,23 +752,31 @@ function renderLogs() {
   logs.forEach((log,index) => els.logsList.append(makeArchiveCard(log,{deletable:true,archiveType:'my',archiveIndex:index})));
 }
 
+els.deleteConfirm.addEventListener('click',e=>{e.preventDefault();confirmPendingDelete();});
+els.deleteCancel.addEventListener('click',()=>{pendingDeleteLog=null;});
+els.deleteDialog.addEventListener('close',()=>{if(els.deleteDialog.returnValue!=='default')pendingDeleteLog=null;});
+
 els.standbyTarget.addEventListener('click', startPlayback);
 els.endLayer.addEventListener('click', revealCompletedLog);
 els.endLayer.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); revealCompletedLog(); } });
 els.editorLayer.addEventListener('focusout', () => setTimeout(() => {
   if (!els.editorLayer.contains(document.activeElement)) restoreMobileViewport();
 }, 80));
-els.editToggle.addEventListener('click',()=> mode==='edit' ? exitEditToPreview() : enterEdit(false));
+els.editToggle.addEventListener('click',async()=>{
+  if(mode==='edit'){
+    await flushAutosave({cinematic:true});
+    exitEditToPreview();
+  }else enterEdit(false);
+});
 els.newLog.addEventListener('click',()=>enterEdit(true));
 els.officialLog.addEventListener('click',()=>{renderOfficialLogs();els.officialDialog.showModal();});
 els.myLogs.addEventListener('click',()=>{renderLogs();els.logsDialog.showModal();});
-els.saveLog.addEventListener('click',saveCurrentLog);
 els.recordButton.addEventListener('click',()=> mediaRecorder?.state==='recording' ? stopRecording() : beginRecording());
 els.typingSoundToggle.addEventListener('click',async()=>{ typingSoundEnabled=!typingSoundEnabled; els.typingSoundToggle.textContent=`TYPE SOUND ${typingSoundEnabled?'ON':'OFF'}`; els.typingSoundToggle.setAttribute('aria-pressed',String(typingSoundEnabled)); if(typingSoundEnabled)try{await ensureAudioContext()}catch{} });
-els.fileInput.addEventListener('change',async e=>{ const file=e.target.files?.[0]; if(!file)return; const body=await file.text(); setCurrentLog({id:uid(),displayId:'#LOCAL-FILE',title:file.name.replace(/\.(txt|md)$/i,''),body,createdAt:new Date().toISOString(),official:false},'file'); els.saveLog.disabled=false; e.target.value=''; });
-els.voiceInput.addEventListener('change',e=>{ const file=e.target.files?.[0]; if(!file)return; attachVoiceBlob(file,'LOCAL FILE READY'); els.saveLog.disabled=!!currentLog.official; e.target.value=''; });
-els.bodyInput.addEventListener('input',()=>{els.saveLog.disabled=false;});
-els.titleInput.addEventListener('input',()=>{els.saveLog.disabled=false;});
+els.fileInput.addEventListener('change',async e=>{ const file=e.target.files?.[0]; if(!file)return; const body=await file.text(); setCurrentLog({id:uid(),displayId:'#LOCAL-FILE',title:file.name.replace(/\.(txt|md)$/i,''),body,createdAt:new Date().toISOString(),official:false},'file');  e.target.value=''; });
+els.voiceInput.addEventListener('change',e=>{ const file=e.target.files?.[0]; if(!file)return; attachVoiceBlob(file,'LOCAL FILE READY');  e.target.value=''; });
+els.bodyInput.addEventListener('input',()=>scheduleAutosave({delay:850}));
+els.titleInput.addEventListener('input',()=>scheduleAutosave({delay:850}));
 
 els.viewport.addEventListener('pointerdown', e => {
   if (mode !== 'view' || !els.endLayer.hidden || !els.editorLayer.hidden) return;
@@ -601,10 +794,21 @@ els.subjectRow.addEventListener('click', () => { if (reviewMode) resetToStandby(
 els.voicePlayer.addEventListener('ended',()=>setVoiceState('STREAM CLOSED'));
 
 ['dragenter','dragover'].forEach(type=>$('dropZone').addEventListener(type,e=>{e.preventDefault();e.dataTransfer.dropEffect='copy';}));
-$('dropZone').addEventListener('drop',async e=>{e.preventDefault();const file=e.dataTransfer.files?.[0];if(!file)return;if(file.type.startsWith('audio/'))attachVoiceBlob(file,'LOCAL FILE READY');else{const body=await file.text();setCurrentLog({id:uid(),displayId:'#LOCAL-FILE',title:file.name.replace(/\.[^.]+$/,''),body,createdAt:new Date().toISOString(),official:false},'file');els.saveLog.disabled=false;}});
+$('dropZone').addEventListener('drop',async e=>{
+  e.preventDefault();
+  const file=e.dataTransfer.files?.[0]; if(!file)return;
+  if(file.type.startsWith('audio/')){
+    attachVoiceBlob(file,'LOCAL FILE READY');
+  }else{
+    const body=await file.text();
+    setCurrentLog({id:uid(),displayId:'#LOCAL-FILE',title:file.name.replace(/\.[^.]+$/,''),body,createdAt:new Date().toISOString(),official:false},'file');
+  }
+  autosaveDirty=true;
+  await flushAutosave({cinematic:true});
+});
 
 
-/* v0.9 TARGET / PLAYBACK GESTURES */
+/* v1.0 TARGET / PLAYBACK GESTURES */
 function distanceBetweenTouches(touches) {
   const a = touches[0], b = touches[1];
   return Math.hypot(b.clientX-a.clientX,b.clientY-a.clientY);
@@ -673,7 +877,13 @@ els.viewport.addEventListener('touchcancel',()=>{
   els.standbyTarget.classList.remove('swipe-ready');
 },{passive:true});
 
-setInterval(()=>{els.packetValue.textContent=`${(Math.random()*.04).toFixed(2)}%`;els.syncValue.textContent=`${String(Math.floor(8+Math.random()*19)).padStart(3,'0')} ms`;els.memoryValue.textContent=Math.random()>.08?'STABLE':'SYNCING';},2400);
+setInterval(()=>{
+  els.packetValue.textContent=`${(Math.random()*.04).toFixed(2)}%`;
+  els.syncValue.textContent=`${String(Math.floor(8+Math.random()*19)).padStart(3,'0')} ms`;
+  if(!autosaveDirty && !autosaveInFlight && !els.memoryValue.classList.contains('synced')){
+    els.memoryValue.textContent=Math.random()>.08?'STABLE':'SYNCING';
+  }
+},2400);
 
 updateSavedCount();
 renderOfficialLogs();
@@ -711,7 +921,7 @@ function resolveHostDestination() {
 
 function navigateToHost() {
   const destination = resolveHostDestination();
-  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v0.9' }, '*'); } catch {}
+  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v1.0' }, '*'); } catch {}
   if (destination) { location.href = destination; return; }
   if (history.length > 1) { history.back(); return; }
   // Standalone preview fallback: return to idle terminal instead of trapping the user.
@@ -723,11 +933,12 @@ function navigateToHost() {
   setNoTarget();
 }
 
-function returnToHost(source = 'button') {
+async function returnToHost(source = 'button') {
   if (returningToHost) return;
   returningToHost = true;
   stopPlayback();
   if (mediaRecorder?.state === 'recording') stopRecording();
+  await flushAutosave({cinematic:false});
   els.status.textContent = 'ARCHIVING';
   els.footerState.textContent = source === 'gesture' ? 'GESTURE LINK / HOST' : 'HOST LINK / RETURN';
   els.hostTransitionText.textContent = source === 'gesture' ? 'HOST LINK RESTORED...' : 'RETURNING TO HOST...';

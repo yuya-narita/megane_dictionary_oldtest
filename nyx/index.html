@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#02070d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>NYX OBSERVATION TERMINAL v0.9</title>
+  <title>NYX OBSERVATION TERMINAL v1.0</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -22,7 +22,7 @@
         <p class="eyebrow">MEGANE DICTIONARY / NXS LOCAL OBSERVATION NODE</p>
         <h1>NYX OBSERVATION TERMINAL</h1>
         <div class="version-row">
-          <span>SYSTEM v0.9</span>
+          <span>SYSTEM v1.0</span>
           <span class="signal"><i></i><b id="headerState">CONNECTED</b></span>
         </div>
       </div>
@@ -146,8 +146,7 @@
 
     <section class="controls glass-panel" id="controls">
       <button id="editToggle">✎ EDIT</button>
-      <button id="recordButton">● RECORD</button>
-      <button id="saveLog" disabled>⌁ SAVE LOG</button>
+      <button id="recordButton" class="record-ready">● RECORD</button>
     </section>
 
     <section class="telemetry glass-panel" aria-hidden="true">
@@ -193,6 +192,19 @@
         <strong id="writeMessage">WRITING LOG...</strong>
         <div class="write-bar"><i id="writeBar"></i></div>
         <span id="writeDetail">VERIFYING DATA</span>
+      </div>
+    </form>
+  </dialog>
+
+
+  <dialog id="deleteDialog" class="delete-dialog">
+    <form method="dialog" class="delete-shell">
+      <small>NXS LOCAL ARCHIVE</small>
+      <h2>DELETE LOCAL LOG?</h2>
+      <p id="deleteTargetTitle">---</p>
+      <div class="delete-actions">
+        <button value="cancel" id="deleteCancel">CANCEL</button>
+        <button value="default" id="deleteConfirm" class="danger">DELETE</button>
       </div>
     </form>
   </dialog>
