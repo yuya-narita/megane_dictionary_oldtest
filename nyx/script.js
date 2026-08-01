@@ -1,15 +1,17 @@
 'use strict';
 
-const OFFICIAL_LOG = {
-  id: 'official-001',
-  displayId: '#NXS-001',
-  title: 'カップ麺の麺径と満足感の関係について',
-  body: `…アクセスログ検知。\n\nsilent_packet://nxs-observe\n読み取り専用で開放する。\n\n改変は禁止。\n見るだけな。\n\nカップ麺は味で選ばれていない。\n少なくとも、\n満足感は味では決まってない。\n\n重要なのは——\n麺の太さだ。\n\n正確には、\n噛んだ瞬間の反発時間。\n\n細麺は情報量が多い。\n\nスープを持ち上げるし、\n口に入る本数も多い。\n\nだから一口目は強い。\n\nでも、\n満足は続かない。\n\n脳が\n「これは軽食だ」\nと分類するから。\n\n一方、太麺。\n\nこいつは違う。\n\n一本ごとの存在感がある。\n\n噛んだとき、\n歯が「仕事をした」と錯覚する。\n\nこの錯覚が\n満腹の前借りを起こす。\n\nつまり満足感とは、\n\n味の濃さではなく\n咀嚼の物理量\n\nで決まる。\n\nこれはもう\n料理の話じゃない。\n\nUI設計の話だ。\n\nカップ麺メーカーは\nスープを改良してるつもりでいるけど、\n\n本当は\n麺の直径を0.3mm変えた方が売上に効く。\n\n統計は取ってない。\nでも、たぶん合ってる。\n\n「満足感は味じゃない。\n歯がどれだけ\n仕事した気になるかだ。」\n\nNXS // OBSERVE LOG\nニクスのどうでもいい観測`,
-  createdAt: '2026-02-04T16:26:00+09:00',
+const OFFICIAL_LOGS = Array.isArray(window.NYX_OFFICIAL_LOGS)
+  ? window.NYX_OFFICIAL_LOGS
+  : [];
+
+const OFFICIAL_LOG = OFFICIAL_LOGS[0] || {
+  id: 'official-empty',
+  displayId: '#NXS-000',
+  title: 'NO OFFICIAL LOG',
+  body: '',
+  createdAt: new Date().toISOString(),
   official: true
 };
-
-const OFFICIAL_LOGS = [OFFICIAL_LOG];
 
 const $ = (id) => document.getElementById(id);
 const els = {
@@ -25,8 +27,7 @@ const els = {
   viewerModeLabel: $('viewerModeLabel'), logId: $('logId'), subjectDisplay: $('subjectDisplay'), subjectRow: $('subjectRow'),
   charReadout: $('charReadout'), lineReadout: $('lineReadout'), progressBar: $('progressBar'), footerState: $('footerState'),
   recordOverlay: $('recordOverlay'), recordTimer: $('recordTimer'), packetValue: $('packetValue'), syncValue: $('syncValue'), memoryValue: $('memoryValue'),
-  hostReturn: $('hostReturn'), hostTransition: $('hostTransition'), hostTransitionText: $('hostTransitionText'), hostTransitionSub: $('hostTransitionSub'), returnHint: $('returnHint'),
-  deleteDialog: $('deleteDialog'), deleteTargetTitle: $('deleteTargetTitle'), deleteConfirm: $('deleteConfirm'), deleteCancel: $('deleteCancel')
+  hostReturn: $('hostReturn'), hostTransition: $('hostTransition'), hostTransitionText: $('hostTransitionText'), hostTransitionSub: $('hostTransitionSub'), returnHint: $('returnHint')
 };
 
 let currentLog = structuredClone(OFFICIAL_LOG);
@@ -57,7 +58,6 @@ let autosaveTimer = null;
 let autosaveDirty = false;
 let autosaveInFlight = false;
 let autosaveFirstCommitShown = false;
-let pendingDeleteLog = null;
 let typingSoundCounter = 0;
 let modalReleaseLockTimer = null;
 let suppressGhostInputUntil = 0;
@@ -144,8 +144,16 @@ function setCurrentLog(log, source = 'local') {
   els.editToggle.textContent = '✎ EDIT';
   els.status.textContent = 'LOCKED';
 
-  if (currentLog.audioId) restoreAudioForLog(currentLog.audioId);
-  else setVoiceState('NO STREAM');
+  if (currentLog.voiceSrc) {
+    closeVoiceUrl();
+    els.voicePlayer.src = currentLog.voiceSrc;
+    els.voicePlayer.load();
+    setVoiceState('OFFICIAL STREAM READY');
+  } else if (currentLog.audioId) {
+    restoreAudioForLog(currentLog.audioId);
+  } else {
+    setVoiceState('NO STREAM');
+  }
   updateReadout();
   els.viewport.scrollTop = 0;
 }
@@ -646,20 +654,14 @@ function denyHorizontalDuringObservation() {
   showGestureMessage('ACCESS DENIED', '観測中だ。', 620);
 }
 
-function requestDeleteLog(log) {
-  pendingDeleteLog = log;
-  els.deleteTargetTitle.textContent = log.title || 'UNTITLED OBSERVATION';
-  els.deleteDialog.showModal();
-}
-
-async function confirmPendingDelete() {
-  if (!pendingDeleteLog) return;
-  const log = pendingDeleteLog;
-  pendingDeleteLog = null;
+async function deleteLocalLogNative(log) {
+  const title = log.title || 'UNTITLED OBSERVATION';
+  const approved = window.confirm(`「${title}」\nを削除しますか？`);
+  if (!approved) return;
   await deleteAudio(log.audioId);
-  saveStoredLogs(loadStoredLogs().filter(x=>x.id!==log.id));
-  els.deleteDialog.close();
+  saveStoredLogs(loadStoredLogs().filter(x => x.id !== log.id));
   renderLogs();
+  showGestureMessage('LOG REMOVED.', '', 520);
 }
 
 function lockUnderlyingTerminalAfterDialog(ms = 520) {
@@ -684,94 +686,146 @@ function lockUnderlyingTerminalAfterDialog(ms = 520) {
 });
 
 function makeArchiveCard(log, { deletable = false, archiveType = null, archiveIndex = -1 } = {}) {
+  const isOfficial = archiveType === 'official' || !!log.official;
   const card = document.createElement('article');
-  card.className = `log-card tappable-card${deletable ? ' swipe-card' : ''}`;
+  card.className = `log-card tappable-card archive-swipe-card${deletable ? ' local-card' : ' official-card'}`;
   card.tabIndex = 0;
   card.setAttribute('role','button');
 
+  const openUnderlay = document.createElement('div');
+  openUnderlay.className = 'swipe-open-underlay';
+  openUnderlay.textContent = 'OPEN  ›';
+
+  const leftUnderlay = document.createElement('div');
+  leftUnderlay.className = isOfficial ? 'swipe-lock-underlay' : 'swipe-delete-underlay';
+  leftUnderlay.textContent = isOfficial ? 'WRITE PROTECTED' : '削除';
+
   const content = document.createElement('div');
-  content.className = deletable ? 'swipe-card-content' : 'archive-card-info';
-  const h = document.createElement('h3'); h.textContent = log.title;
+  content.className = 'swipe-card-content';
+
+  const h = document.createElement('h3');
+  h.textContent = log.title || 'UNTITLED OBSERVATION';
+
   const p = document.createElement('p');
   const stamp = new Date(log.updatedAt || log.createdAt).toLocaleString('ja-JP');
-  p.textContent = `${stamp} / ${log.audioId ? 'VOICE ATTACHED' : (log.official ? 'NXS OFFICIAL' : 'TEXT ONLY')}`;
-  content.append(h,p);
+  const mediaState = log.voiceSrc || log.audioId
+    ? 'VOICE ATTACHED'
+    : (isOfficial ? 'NXS OFFICIAL' : 'TEXT ONLY');
+  p.textContent = `${stamp} / ${mediaState}`;
 
-  const openLog = () => {
-    // Lock the underlying EDIT / RECORD controls before removing the modal.
-    // This prevents the iPhone delayed “ghost tap” from reaching them.
+  const arrow = document.createElement('span');
+  arrow.className = 'archive-arrow';
+  arrow.textContent = 'OPEN  ›';
+
+  content.append(h,p,arrow);
+  card.append(openUnderlay,leftUnderlay,content);
+
+  const openLog = ({ gesture = false } = {}) => {
     lockUnderlyingTerminalAfterDialog();
-    els.logsDialog.open && els.logsDialog.close();
-    els.officialDialog.open && els.officialDialog.close();
-    if (archiveType) setArchiveContext(archiveType, archiveIndex);
-    setCurrentLog(log, log.official ? 'official' : 'archive');
-    showGestureMessage('OBSERVATION TARGET LOCKED', log.displayId || 'LOCAL LOG', 640);
-    ensureAudioContext().then(playLockTone).catch(()=>{});
+    if (gesture) {
+      card.classList.add('opening');
+      showGestureMessage('TARGET ACQUIRED', log.displayId || 'LOCAL LOG', 430);
+    }
+    const finish = () => {
+      els.logsDialog.open && els.logsDialog.close();
+      els.officialDialog.open && els.officialDialog.close();
+      if (archiveType) setArchiveContext(archiveType, archiveIndex);
+      setCurrentLog(log, isOfficial ? 'official' : 'archive');
+      showGestureMessage('OBSERVATION TARGET LOCKED', log.displayId || 'LOCAL LOG', 640);
+      ensureAudioContext().then(playLockTone).catch(()=>{});
+      card.classList.remove('opening');
+    };
+    gesture ? setTimeout(finish, 170) : finish();
   };
 
-  if (!deletable) {
-    content.addEventListener('click',openLog);
-    card.append(content);
-    const arrow=document.createElement('span');
-    arrow.className='archive-arrow';
-    arrow.textContent='OPEN  ›';
-    card.append(arrow);
-    return card;
-  }
+  let touch = null;
+  let ignoreClickUntil = 0;
 
-  const underlay=document.createElement('div');
-  underlay.className='swipe-delete-underlay';
-  underlay.textContent='DELETE';
-  card.append(underlay,content);
-
-  let touch=null;
-  content.addEventListener('touchstart',e=>{
-    if(e.touches.length!==1)return;
-    const t=e.touches[0];
-    touch={x:t.clientX,y:t.clientY,dx:0,dy:0};
+  content.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    touch = { x:t.clientX, y:t.clientY, dx:0, dy:0 };
     card.classList.add('swiping');
-  },{passive:true});
-  content.addEventListener('touchmove',e=>{
-    if(!touch||e.touches.length!==1)return;
-    const t=e.touches[0];
-    touch.dx=t.clientX-touch.x;
-    touch.dy=t.clientY-touch.y;
-    if(touch.dx<0 && Math.abs(touch.dx)>Math.abs(touch.dy)*1.2){
+  }, { passive:true });
+
+  content.addEventListener('touchmove', e => {
+    if (!touch || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    touch.dx = t.clientX - touch.x;
+    touch.dy = t.clientY - touch.y;
+    if (Math.abs(touch.dx) > 8 && Math.abs(touch.dx) > Math.abs(touch.dy) * 1.18) {
       e.preventDefault();
-      const amount=Math.max(-112,Math.min(0,touch.dx));
-      content.style.transform=`translateX(${amount}px)`;
-      card.classList.toggle('delete-armed',amount<-82);
+      const amount = Math.max(-116, Math.min(116, touch.dx));
+      content.style.transform = `translateX(${amount}px)`;
+      card.classList.toggle('open-armed', amount > 78);
+      card.classList.toggle('left-armed', amount < -78);
     }
-  },{passive:false});
-  content.addEventListener('touchend',event=>{
-    if(!touch)return;
-    const {dx,dy}=touch;
-    touch=null;
+  }, { passive:false });
+
+  content.addEventListener('touchend', event => {
+    if (!touch) return;
+    const { dx,dy } = touch;
+    touch = null;
     card.classList.remove('swiping');
-    content.style.transform='';
-    card.classList.remove('delete-armed');
-    if(dx<-82 && Math.abs(dx)>Math.abs(dy)*1.2){
+    content.style.transform = '';
+    card.classList.remove('open-armed','left-armed');
+    ignoreClickUntil = Date.now() + 450;
+
+    if (dx > 78 && Math.abs(dx) > Math.abs(dy) * 1.18) {
       event.preventDefault();
       event.stopPropagation();
-      requestDeleteLog(log);
-    }else if(Math.abs(dx)<12 && Math.abs(dy)<12){
+      openLog({ gesture:true });
+      return;
+    }
+
+    if (dx < -78 && Math.abs(dx) > Math.abs(dy) * 1.18) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (isOfficial) {
+        showGestureMessage('WRITE PROTECTED', '改変は禁止。', 720);
+        ensureAudioContext().then(() => playHudTone({
+          start:310,end:175,duration:.095,volume:.007,type:'sine',
+          filterStart:760,filterEnd:240
+        })).catch(()=>{});
+      } else {
+        deleteLocalLogNative(log);
+      }
+      return;
+    }
+
+    if (Math.abs(dx) < 12 && Math.abs(dy) < 12) {
       event.preventDefault();
       event.stopPropagation();
       openLog();
     }
-  },{passive:false});
-  content.addEventListener('touchcancel',()=>{
-    touch=null;
-    card.classList.remove('swiping','delete-armed');
-    content.style.transform='';
-  },{passive:true});
-  content.addEventListener('click',e=>{
-    if(!('ontouchstart' in window))openLog();
+  }, { passive:false });
+
+  content.addEventListener('touchcancel', () => {
+    touch = null;
+    card.classList.remove('swiping','open-armed','left-armed');
+    content.style.transform = '';
+  }, { passive:true });
+
+  content.addEventListener('click', e => {
+    if (Date.now() < ignoreClickUntil) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    if (!('ontouchstart' in window)) openLog();
   });
-  card.addEventListener('keydown',e=>{
-    if(e.key==='Enter'||e.key===' '){e.preventDefault();openLog();}
-    if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();requestDeleteLog(log);}
+
+  card.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openLog();
+    }
+    if ((e.key === 'Delete' || e.key === 'Backspace') && !isOfficial) {
+      e.preventDefault();
+      deleteLocalLogNative(log);
+    }
   });
+
   return card;
 }
 function renderOfficialLogs() {
@@ -785,9 +839,6 @@ function renderLogs() {
   logs.forEach((log,index) => els.logsList.append(makeArchiveCard(log,{deletable:true,archiveType:'my',archiveIndex:index})));
 }
 
-els.deleteConfirm.addEventListener('click',e=>{e.preventDefault();confirmPendingDelete();});
-els.deleteCancel.addEventListener('click',()=>{pendingDeleteLog=null;});
-els.deleteDialog.addEventListener('close',()=>{if(els.deleteDialog.returnValue!=='default')pendingDeleteLog=null;});
 
 els.standbyTarget.addEventListener('click', startPlayback);
 els.endLayer.addEventListener('click', revealCompletedLog);
@@ -841,7 +892,7 @@ $('dropZone').addEventListener('drop',async e=>{
 });
 
 
-/* v1.0.3 TARGET / PLAYBACK GESTURES */
+/* v1.0.4 TARGET / PLAYBACK GESTURES */
 function distanceBetweenTouches(touches) {
   const a = touches[0], b = touches[1];
   return Math.hypot(b.clientX-a.clientX,b.clientY-a.clientY);
@@ -954,7 +1005,7 @@ function resolveHostDestination() {
 
 function navigateToHost() {
   const destination = resolveHostDestination();
-  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v1.0.3' }, '*'); } catch {}
+  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v1.0.4' }, '*'); } catch {}
   if (destination) { location.href = destination; return; }
   if (history.length > 1) { history.back(); return; }
   // Standalone preview fallback: return to idle terminal instead of trapping the user.

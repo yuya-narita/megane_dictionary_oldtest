@@ -388,3 +388,92 @@ body.modal-release-lock .terminal-shell{
 body.modal-release-lock{
   touch-action:none;
 }
+
+
+/* v1.0.4 — archive swipe language */
+.archive-swipe-card{
+  position:relative;
+  display:block;
+  padding:0!important;
+  overflow:hidden;
+  touch-action:pan-y;
+  min-height:86px;
+}
+.archive-swipe-card .swipe-card-content{
+  position:relative;
+  z-index:3;
+  min-height:86px;
+  padding:14px 76px 14px 16px;
+  background:rgba(1,13,23,.97);
+  border:1px solid rgba(73,183,222,.19);
+  transition:transform .2s cubic-bezier(.2,.8,.2,1),filter .16s ease;
+  will-change:transform;
+}
+.archive-swipe-card.swiping .swipe-card-content{
+  transition:none;
+}
+.archive-swipe-card .archive-arrow{
+  position:absolute;
+  right:16px;
+  top:50%;
+  transform:translateY(-50%);
+  color:#9edbec;
+  font-size:10px;
+  letter-spacing:.1em;
+  white-space:nowrap;
+}
+.swipe-open-underlay,
+.swipe-lock-underlay,
+.archive-swipe-card .swipe-delete-underlay{
+  position:absolute;
+  top:0;
+  bottom:0;
+  display:grid;
+  place-items:center;
+  font-size:9px;
+  letter-spacing:.11em;
+  z-index:1;
+}
+.swipe-open-underlay{
+  left:0;
+  width:116px;
+  color:#a9f7ff;
+  background:linear-gradient(90deg,rgba(4,68,86,.9),rgba(2,25,35,.3));
+  border-right:1px solid rgba(98,236,255,.28);
+}
+.swipe-lock-underlay,
+.archive-swipe-card .swipe-delete-underlay{
+  right:0;
+  width:116px;
+}
+.swipe-lock-underlay{
+  color:#ffd27d;
+  background:linear-gradient(90deg,rgba(38,23,2,.2),rgba(71,43,3,.92));
+  border-left:1px solid rgba(255,196,82,.34);
+}
+.archive-swipe-card .swipe-delete-underlay{
+  color:#fff;
+  background:linear-gradient(90deg,rgba(75,10,18,.25),rgba(221,45,67,.95));
+  border-left:1px solid rgba(255,112,128,.55);
+}
+.archive-swipe-card.open-armed .swipe-open-underlay{
+  color:#fff;
+  box-shadow:inset -18px 0 30px rgba(65,230,255,.14);
+}
+.archive-swipe-card.left-armed.official-card .swipe-lock-underlay{
+  color:#fff1c5;
+  box-shadow:inset 18px 0 30px rgba(255,180,54,.13);
+}
+.archive-swipe-card.left-armed.local-card .swipe-delete-underlay{
+  box-shadow:inset 18px 0 30px rgba(255,27,64,.24);
+}
+.archive-swipe-card.opening .swipe-card-content{
+  transform:translateX(24px) scale(.992);
+  filter:brightness(1.25);
+}
+.archive-swipe-card + .archive-swipe-card{
+  margin-top:8px;
+}
+
+/* Native iOS/browser confirm is used for local deletion in v1.0.4. */
+.delete-dialog{display:none!important;}
