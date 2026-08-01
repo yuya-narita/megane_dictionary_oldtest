@@ -20,6 +20,7 @@ let i=0;
 let auto=false;
 let timer=null;
 let busy=false;
+let queuedNext=false;
 let down=null;
 let scrollHintShown=false;
 let visibleItems=[];
@@ -44,6 +45,7 @@ function reset(){
   timer=null;
   i=0;
   busy=false;
+  queuedNext=false;
   lines.innerHTML="";
   visibleItems=[];
   prog();
@@ -67,6 +69,25 @@ function createLine(cut){
   // Force layout so the entering state is committed before movement.
   node.getBoundingClientRect();
   return node;
+}
+
+function updateLineAges(){
+  visibleItems.forEach((item,index)=>{
+    item.node.classList.remove("age-1","age-2","age-3","newest");
+    const distance=(visibleItems.length-1)-index;
+    if(distance===0)item.node.classList.add("newest");
+    else if(distance===1)item.node.classList.add("age-1");
+    else if(distance===2)item.node.classList.add("age-2");
+    else item.node.classList.add("age-3");
+  });
+}
+
+function tactilePulse(){
+  stage.classList.remove("scene-breathe");
+  void stage.offsetWidth;
+  stage.classList.add("scene-breathe");
+  setTimeout(()=>stage.classList.remove("scene-breathe"),450);
+  try{if(navigator.vibrate)navigator.vibrate(6)}catch{}
 }
 
 function measureLayout(){
@@ -102,6 +123,7 @@ function measureLayout(){
 }
 
 function applyLayout(newNode){
+  updateLineAges();
   const layout=measureLayout();
 
   layout.forEach(item=>{
@@ -129,7 +151,10 @@ function removeOldestIfNeeded(){
 }
 
 function next(){
-  if(busy)return;
+  if(busy){
+    queuedNext=true;
+    return;
+  }
 
   if(i>=S.length){
     clearTimeout(timer);
@@ -139,6 +164,9 @@ function next(){
   }
 
   busy=true;
+  queuedNext=false;
+  tactilePulse();
+
   const cut=S[i++];
   const node=createLine(cut);
 
@@ -149,8 +177,6 @@ function next(){
 
   removeOldestIfNeeded();
 
-  // Existing lines glide into their new positions first,
-  // then the new sentence settles at the focal point.
   requestAnimationFrame(()=>{
     applyLayout(node);
     prog();
@@ -158,11 +184,18 @@ function next(){
 
   setTimeout(()=>{
     busy=false;
+
+    if(queuedNext){
+      queuedNext=false;
+      next();
+      return;
+    }
+
     if(auto){
-      const wait=Math.max(1500,(cut.pause||1300)*AUTO_SLOW_FACTOR);
+      const wait=Math.max(1650,(cut.pause||1300)*AUTO_SLOW_FACTOR);
       timer=setTimeout(next,wait);
     }
-  },520);
+  },390);
 }
 
 async function start(){
@@ -212,6 +245,7 @@ modeBtn.addEventListener("click",toggleAuto);
 
 stage.addEventListener("pointerdown",e=>{
   down={x:e.clientX,y:e.clientY,t:Date.now()};
+  stage.classList.add("is-pressed");
 });
 
 stage.addEventListener("pointermove",e=>{
@@ -224,6 +258,7 @@ stage.addEventListener("pointermove",e=>{
 });
 
 stage.addEventListener("pointerup",e=>{
+  stage.classList.remove("is-pressed");
   if(!down)return;
   const dx=e.clientX-down.x;
   const dy=e.clientY-down.y;
@@ -237,6 +272,15 @@ stage.addEventListener("pointerup",e=>{
 stage.addEventListener("touchmove",e=>{
   e.preventDefault();
 },{passive:false});
+
+stage.addEventListener("pointercancel",()=>{
+  down=null;
+  stage.classList.remove("is-pressed");
+});
+
+stage.addEventListener("pointerleave",()=>{
+  stage.classList.remove("is-pressed");
+});
 
 window.addEventListener("resize",()=>{
   requestAnimationFrame(()=>applyLayout());

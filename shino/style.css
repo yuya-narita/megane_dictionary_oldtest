@@ -108,7 +108,22 @@ header strong{font-size:13px}
   touch-action:none;
   user-select:none;
   -webkit-user-select:none;
+  transform:translateZ(0);
+  transition:transform .11s ease,filter .16s ease;
 }
+#stage.is-pressed{
+  transform:translateY(1px) scale(.9985);
+  filter:brightness(.995);
+}
+#stage.scene-breathe{animation:sceneBreathe .42s cubic-bezier(.2,.7,.2,1)}
+#paperPulse{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:0;
+  background:radial-gradient(circle at 50% 48%,rgba(255,255,255,.58),transparent 34%);
+}
+#stage.scene-breathe #paperPulse{animation:paperPulse .42s ease}
 
 #focusGuide{
   position:absolute;
@@ -135,18 +150,25 @@ header strong{font-size:13px}
   white-space:pre-line;
   will-change:transform,opacity;
   transition:
-    transform .44s cubic-bezier(.22,.75,.18,1),
+    transform .5s cubic-bezier(.18,.78,.16,1),
     opacity .34s ease,
     filter .34s ease;
 }
 .line.entering{
   opacity:0;
-  transform:translateY(18px) scale(.995);
-  filter:blur(1.5px);
+  transform:translateY(22px) scale(.992);
+  filter:blur(1.8px);
 }
 .line.visible{
   opacity:1;
   filter:blur(0);
+}
+.line.age-1{opacity:.88}
+.line.age-2{opacity:.68}
+.line.age-3{opacity:.46}
+.line.newest{
+  opacity:1;
+  text-shadow:0 1px 0 rgba(255,255,255,.46);
 }
 .line.leaving{
   opacity:0;
@@ -254,4 +276,15 @@ footer{
   :root{--focus-y:46%}
   #stage{padding:0 20px}
   #lines{left:20px;right:20px}
+}
+
+@keyframes sceneBreathe{
+  0%{transform:translateY(1px) scale(.9985)}
+  42%{transform:translateY(-1px) scale(1.0015)}
+  100%{transform:translateY(0) scale(1)}
+}
+@keyframes paperPulse{
+  0%{opacity:0}
+  30%{opacity:.55}
+  100%{opacity:0}
 }
