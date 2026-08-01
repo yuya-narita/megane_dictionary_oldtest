@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#02070d">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>NYX OBSERVATION TERMINAL v1.0.5</title>
+  <title>NYX OBSERVATION TERMINAL v1.0.6</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -22,7 +22,7 @@
         <p class="eyebrow">MEGANE DICTIONARY / NXS LOCAL OBSERVATION NODE</p>
         <h1>NYX OBSERVATION TERMINAL</h1>
         <div class="version-row">
-          <span>SYSTEM v1.0.5</span>
+          <span>SYSTEM v1.0.6</span>
           <span class="signal"><i></i><b id="headerState">CONNECTED</b></span>
         </div>
       </div>
@@ -40,7 +40,7 @@
     </section>
 
     <section class="command-deck glass-panel">
-      <button id="officialLog" class="command active"><b>01</b><span>OFFICIAL ARCHIVE<small id="officialCount">1 LOG AVAILABLE</small></span></button>
+      <button id="officialLog" class="command active"><b>01</b><span>NXS ARCHIVES<small id="officialCount">1 LOG AVAILABLE</small></span></button>
       <button id="newLog" class="command"><b>02</b><span>NEW LOG<small>直接入力して作成</small></span></button>
       <label class="command file-command" for="fileInput"><b>03</b><span>SELECT LOCAL FILE<small>TXT / MD</small></span></label>
       <input id="fileInput" type="file" accept=".txt,.md,text/plain,text/markdown">
@@ -197,7 +197,7 @@
   </dialog>
 
   <audio id="voicePlayer" preload="metadata"></audio>
-  <script src="./data/nyx_official_logs.js?v=2"></script>
-  <script src="script.js?v=2"></script>
+  <script src="./data/nyx_official_logs.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

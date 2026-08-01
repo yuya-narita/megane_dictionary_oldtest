@@ -477,3 +477,57 @@ body.modal-release-lock{
 
 /* Native iOS/browser confirm is used for local deletion in v1.0.4. */
 .delete-dialog{display:none!important;}
+
+
+/* v1.0.6 — NXS archive folders */
+.archive-folder-card{
+  position:relative;
+  min-height:104px;
+  padding:16px 76px 16px 17px!important;
+  background:
+    linear-gradient(145deg,rgba(3,25,36,.96),rgba(1,12,20,.98))!important;
+  border-color:rgba(75,215,240,.32)!important;
+}
+.archive-folder-card::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:15px;
+  bottom:15px;
+  width:2px;
+  background:#62eaff;
+  box-shadow:0 0 10px rgba(55,226,255,.75);
+}
+.archive-folder-protocol{
+  display:block;
+  margin-bottom:8px;
+  color:#6fe5f4;
+  font-size:9px;
+  letter-spacing:.08em;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.archive-folder-card h3{
+  margin:0 0 8px;
+  color:#d4fbff;
+  font-size:15px;
+}
+.archive-folder-card p{
+  margin:0;
+  color:rgba(171,225,234,.56);
+  font-size:9px;
+  letter-spacing:.08em;
+}
+.archive-back{
+  width:100%;
+  min-height:40px;
+  margin:0 0 10px;
+  border:1px solid rgba(76,198,224,.24);
+  background:rgba(1,16,25,.74);
+  color:#9bddea;
+  text-align:left;
+  padding:0 13px;
+  font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing:.1em;
+}

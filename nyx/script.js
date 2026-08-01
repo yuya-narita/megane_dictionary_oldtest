@@ -1,8 +1,25 @@
 'use strict';
 
-const OFFICIAL_LOGS = Array.isArray(window.NYX_OFFICIAL_LOGS)
-  ? window.NYX_OFFICIAL_LOGS
+const NYX_ARCHIVES = Array.isArray(window.NYX_ARCHIVES)
+  ? window.NYX_ARCHIVES.map(archive => ({
+      id: String(archive.id || 'archive'),
+      protocol: String(archive.protocol || 'silent_packet://unknown'),
+      title: String(archive.title || 'UNTITLED ARCHIVE'),
+      description: String(archive.description || ''),
+      logs: Array.isArray(archive.logs) ? archive.logs : []
+    }))
   : [];
+
+const OFFICIAL_LOGS = NYX_ARCHIVES.length
+  ? NYX_ARCHIVES.flatMap(archive =>
+      archive.logs.map(log => ({
+        ...log,
+        archiveId: log.archiveId || archive.id,
+        archiveProtocol: archive.protocol,
+        archiveTitle: archive.title
+      }))
+    )
+  : (Array.isArray(window.NYX_OFFICIAL_LOGS) ? window.NYX_OFFICIAL_LOGS : []);
 
 const OFFICIAL_LOG = OFFICIAL_LOGS[0] || {
   id: 'official-empty',
@@ -40,7 +57,10 @@ const els = {
   editToggle: $('editToggle'),
   recordButton: $('recordButton'), speed: $('speed'), typingSoundToggle: $('typingSoundToggle'),
   fileInput: $('fileInput'), voiceInput: $('voiceInput'), voicePlayer: $('voicePlayer'),
-  officialLog: $('officialLog'), officialDialog: $('officialDialog'), officialList: $('officialList'), officialCount: $('officialCount'), newLog: $('newLog'), myLogs: $('myLogs'),
+  officialLog: $('officialLog'), officialDialog: $('officialDialog'), officialList: $('officialList'), officialCount: $('officialCount'),
+  archiveFolderList: $('archiveFolderList'), archiveBack: $('archiveBack'),
+  officialDialogProtocol: $('officialDialogProtocol'), officialDialogTitle: $('officialDialogTitle'),
+  newLog: $('newLog'), myLogs: $('myLogs'),
   logsDialog: $('logsDialog'), logsList: $('logsList'), emptyLogs: $('emptyLogs'), savedCount: $('savedCount'),
   saveDialog: $('saveDialog'), writeBar: $('writeBar'), writeMessage: $('writeMessage'), writeDetail: $('writeDetail'),
   status: $('headerState'), modeReadout: $('modeReadout'), fileName: $('fileName'), voiceStatus: $('voiceStatus'), cacheStatus: $('cacheStatus'),
@@ -70,6 +90,7 @@ let tapStart = null;
 let editingOfficial = false;
 let returningToHost = false;
 let activeArchiveType = null;
+let selectedOfficialArchiveId = null;
 let activeArchiveIndex = -1;
 let gestureMessageTimer = null;
 let pinchState = null;
@@ -661,6 +682,18 @@ function showSaveSequence(){ return new Promise(resolve=>{ els.writeMessage.text
 
 
 function getArchiveLogs(type = activeArchiveType) {
+  if (String(type || '').startsWith('official:')) {
+    const archiveId = String(type).split(':')[1];
+    const archive = getOfficialArchiveById(archiveId);
+    return archive
+      ? archive.logs.map(log => structuredClone(normalizeOfficialLog({
+          ...log,
+          archiveId: log.archiveId || archive.id,
+          archiveProtocol: archive.protocol,
+          archiveTitle: archive.title
+        })))
+      : [];
+  }
   if (type === 'official') return OFFICIAL_LOGS.map(log => structuredClone(log));
   if (type === 'my') return loadStoredLogs();
   return [];
@@ -915,10 +948,98 @@ function makeArchiveCard(log, { deletable = false, archiveType = null, archiveIn
 
   return card;
 }
-function renderOfficialLogs() {
+
+function getOfficialArchiveById(id) {
+  return NYX_ARCHIVES.find(archive => archive.id === id) || null;
+}
+
+function makeArchiveFolderCard(archive) {
+  const card = document.createElement('article');
+  card.className = 'log-card tappable-card archive-folder-card';
+  card.tabIndex = 0;
+  card.setAttribute('role','button');
+
+  const info = document.createElement('div');
+  info.className = 'archive-card-info';
+
+  const protocol = document.createElement('small');
+  protocol.className = 'archive-folder-protocol';
+  protocol.textContent = archive.protocol;
+
+  const title = document.createElement('h3');
+  title.textContent = archive.title;
+
+  const meta = document.createElement('p');
+  meta.textContent = `${String(archive.logs.length).padStart(2,'0')} LOGS / ${archive.description || 'NXS STORAGE'}`;
+
+  const arrow = document.createElement('span');
+  arrow.className = 'archive-arrow';
+  arrow.textContent = 'OPEN  ›';
+
+  info.append(protocol,title,meta);
+  card.append(info,arrow);
+
+  const openFolder = () => openOfficialArchive(archive.id);
+  card.addEventListener('click',openFolder);
+  card.addEventListener('keydown',event=>{
+    if(event.key==='Enter'||event.key===' '){
+      event.preventDefault();
+      openFolder();
+    }
+  });
+
+  return card;
+}
+
+function renderOfficialArchiveFolders() {
+  selectedOfficialArchiveId = null;
+  els.archiveFolderList.innerHTML = '';
+  els.archiveFolderList.hidden = false;
+  els.officialList.hidden = true;
+  els.archiveBack.hidden = true;
+  els.officialDialogProtocol.textContent = 'NXS ARCHIVE INDEX';
+  els.officialDialogTitle.textContent = 'ARCHIVES';
+
+  NYX_ARCHIVES.forEach(archive => {
+    els.archiveFolderList.append(makeArchiveFolderCard(archive));
+  });
+}
+
+function openOfficialArchive(archiveId) {
+  const archive = getOfficialArchiveById(archiveId);
+  if (!archive) return;
+
+  selectedOfficialArchiveId = archive.id;
+  els.archiveFolderList.hidden = true;
+  els.officialList.hidden = false;
+  els.archiveBack.hidden = false;
+  els.officialDialogProtocol.textContent = archive.protocol;
+  els.officialDialogTitle.textContent = archive.title;
+  renderOfficialLogs(archive.id);
+  showGestureMessage('ARCHIVE MOUNTED', archive.protocol, 560);
+}
+
+function renderOfficialLogs(archiveId = selectedOfficialArchiveId) {
   els.officialList.innerHTML = '';
-  OFFICIAL_LOGS.forEach((log,index) => els.officialList.append(makeArchiveCard(structuredClone(log),{archiveType:'official',archiveIndex:index})));
-  els.officialCount.textContent = `${OFFICIAL_LOGS.length} LOG${OFFICIAL_LOGS.length === 1 ? '' : 'S'} AVAILABLE`;
+
+  const archive = getOfficialArchiveById(archiveId);
+  const logs = archive
+    ? archive.logs.map(log => normalizeOfficialLog({
+        ...log,
+        archiveId: log.archiveId || archive.id,
+        archiveProtocol: archive.protocol,
+        archiveTitle: archive.title
+      }))
+    : OFFICIAL_LOGS;
+
+  logs.forEach((log,index) => {
+    els.officialList.append(
+      makeArchiveCard(log,{
+        archiveType:`official:${archive?.id || 'all'}`,
+        archiveIndex:index
+      })
+    );
+  });
 }
 
 function renderLogs() {
@@ -926,6 +1047,8 @@ function renderLogs() {
   logs.forEach((log,index) => els.logsList.append(makeArchiveCard(log,{deletable:true,archiveType:'my',archiveIndex:index})));
 }
 
+
+els.archiveBack.addEventListener('click',renderOfficialArchiveFolders);
 
 els.standbyTarget.addEventListener('click', startPlayback);
 els.endLayer.addEventListener('click', revealCompletedLog);
@@ -940,7 +1063,10 @@ els.editToggle.addEventListener('click',async()=>{
   }else enterEdit(false);
 });
 els.newLog.addEventListener('click',()=>enterEdit(true));
-els.officialLog.addEventListener('click',()=>{renderOfficialLogs();els.officialDialog.showModal();});
+els.officialLog.addEventListener('click',()=>{
+  renderOfficialArchiveFolders();
+  els.officialDialog.showModal();
+});
 els.myLogs.addEventListener('click',()=>{renderLogs();els.logsDialog.showModal();});
 els.recordButton.addEventListener('click',()=> mediaRecorder?.state==='recording' ? stopRecording() : beginRecording());
 els.typingSoundToggle.addEventListener('click',async()=>{ typingSoundEnabled=!typingSoundEnabled; els.typingSoundToggle.textContent=`TYPE SOUND ${typingSoundEnabled?'ON':'OFF'}`; els.typingSoundToggle.setAttribute('aria-pressed',String(typingSoundEnabled)); if(typingSoundEnabled)try{await ensureAudioContext()}catch{} });
@@ -987,7 +1113,7 @@ $('dropZone').addEventListener('drop',async e=>{
 });
 
 
-/* v1.0.5 TARGET / PLAYBACK GESTURES */
+/* v1.0.6 TARGET / PLAYBACK GESTURES */
 function distanceBetweenTouches(touches) {
   const a = touches[0], b = touches[1];
   return Math.hypot(b.clientX-a.clientX,b.clientY-a.clientY);
@@ -1100,7 +1226,7 @@ function resolveHostDestination() {
 
 function navigateToHost() {
   const destination = resolveHostDestination();
-  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v1.0.5' }, '*'); } catch {}
+  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v1.0.6' }, '*'); } catch {}
   if (destination) { location.href = destination; return; }
   if (history.length > 1) { history.back(); return; }
   // Standalone preview fallback: return to idle terminal instead of trapping the user.
