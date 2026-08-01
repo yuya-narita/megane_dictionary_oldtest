@@ -1,16 +1,24 @@
 /* NYX OFFICIAL ARCHIVES
    作品追加・編集は、このファイルだけで完結します。
 
-   archive:
-   - id       : 内部ID
-   - protocol : 端末上の保存領域
-   - title    : シリーズ名
-   - logs     : 作品一覧
+   window.NYX_ARCHIVES = [
+     {
+       id,
+       protocol,
+       title,
+       description,
+       logs:[ ... ]
+     }
+   ]
 
-   log:
-   - bodyは省略可能。segmentsのtextから自動生成
-   - voiceSrc + segmentsで音声同期
-   - voiceSrcなしで従来タイピング
+   logのbodyは省略可能。
+   segmentsのtextから自動生成されます。
+
+   voiceSrc + segments:
+   音声時間に合わせて段落表示。
+
+   voiceSrcなし:
+   従来のタイピング表示。
 */
 window.NYX_ARCHIVES = [
   {
@@ -60,7 +68,6 @@ window.NYX_ARCHIVES = [
       }
     ]
   },
-
   {
     id: "origin",
     protocol: "silent_packet://nxs-log",
@@ -87,7 +94,12 @@ window.NYX_ARCHIVES = [
   }
 ];
 
-/* v1.0.5以前の互換用。
-   プレイヤー本体ではNYX_ARCHIVESを優先します。 */
-window.NYX_OFFICIAL_LOGS = window.NYX_ARCHIVES
-  .flatMap(archive => archive.logs);
+/* v1.0.5互換用 */
+window.NYX_OFFICIAL_LOGS = window.NYX_ARCHIVES.flatMap(archive =>
+  archive.logs.map(log => ({
+    ...log,
+    archiveId: log.archiveId || archive.id,
+    archiveProtocol: archive.protocol,
+    archiveTitle: archive.title
+  }))
+);

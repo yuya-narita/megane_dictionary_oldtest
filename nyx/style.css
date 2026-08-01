@@ -479,55 +479,72 @@ body.modal-release-lock{
 .delete-dialog{display:none!important;}
 
 
-/* v1.0.6 — NXS archive folders */
-.archive-folder-card{
-  position:relative;
-  min-height:104px;
-  padding:16px 76px 16px 17px!important;
+/* v1.0.6.1 — stable accordion archives */
+.official-archive-group{
+  border:1px solid rgba(70,198,224,.22);
+  background:rgba(1,13,22,.72);
+}
+.official-archive-group + .official-archive-group{
+  margin-top:10px;
+}
+.official-archive-header{
+  width:100%;
+  min-height:78px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:13px 15px;
+  border:0;
   background:
-    linear-gradient(145deg,rgba(3,25,36,.96),rgba(1,12,20,.98))!important;
-  border-color:rgba(75,215,240,.32)!important;
+    linear-gradient(145deg,rgba(4,27,38,.96),rgba(1,13,21,.97));
+  color:#c8f8ff;
+  text-align:left;
 }
-.archive-folder-card::before{
-  content:"";
-  position:absolute;
-  left:0;
-  top:15px;
-  bottom:15px;
-  width:2px;
-  background:#62eaff;
-  box-shadow:0 0 10px rgba(55,226,255,.75);
+.official-archive-header-text{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
 }
-.archive-folder-protocol{
-  display:block;
-  margin-bottom:8px;
-  color:#6fe5f4;
-  font-size:9px;
-  letter-spacing:.08em;
+.official-archive-header small{
+  color:#63dce9;
+  font:600 9px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;
+  letter-spacing:.06em;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
 }
-.archive-folder-card h3{
-  margin:0 0 8px;
-  color:#d4fbff;
-  font-size:15px;
+.official-archive-header strong{
+  color:#dcfbff;
+  font-size:14px;
+  line-height:1.35;
 }
-.archive-folder-card p{
-  margin:0;
-  color:rgba(171,225,234,.56);
-  font-size:9px;
+.official-archive-header em{
+  color:rgba(166,222,232,.52);
+  font:500 8px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;
   letter-spacing:.08em;
+  font-style:normal;
 }
-.archive-back{
-  width:100%;
-  min-height:40px;
-  margin:0 0 10px;
-  border:1px solid rgba(76,198,224,.24);
-  background:rgba(1,16,25,.74);
-  color:#9bddea;
-  text-align:left;
-  padding:0 13px;
-  font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
-  letter-spacing:.1em;
+.official-archive-chevron{
+  flex:0 0 auto;
+  width:30px;
+  height:30px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(85,224,244,.36);
+  color:#82eff8;
+  font:400 20px/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+  box-shadow:inset 0 0 14px rgba(62,219,243,.05);
+}
+.official-archive-body{
+  padding:10px;
+  border-top:1px solid rgba(69,196,220,.16);
+}
+.official-archive-body[hidden]{
+  display:none!important;
+}
+.official-archive-body .archive-swipe-card + .archive-swipe-card,
+.official-archive-body .log-card + .log-card{
+  margin-top:8px;
 }
