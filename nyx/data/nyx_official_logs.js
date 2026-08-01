@@ -1,14 +1,51 @@
-/* NYX official works
-   Add or edit official logs in this file only.
-   Optional voiceSrc example: './audio/nxs_001.mp3'
+/* NYX OFFICIAL LOGS
+作品追加はこのファイルだけ編集します。
+body省略時はsegmentsから自動生成。
+voiceSrc + segmentsで音声同期、voiceSrcなしで従来タイピング。
 */
-window.NYX_OFFICIAL_LOGS = [
-  {
-  id: 'official-001',
-  displayId: '#NXS-001',
-  title: 'カップ麺の麺径と満足感の関係について',
-  body: `…アクセスログ検知。\n\nsilent_packet://nxs-observe\n読み取り専用で開放する。\n\n改変は禁止。\n見るだけな。\n\nカップ麺は味で選ばれていない。\n少なくとも、\n満足感は味では決まってない。\n\n重要なのは——\n麺の太さだ。\n\n正確には、\n噛んだ瞬間の反発時間。\n\n細麺は情報量が多い。\n\nスープを持ち上げるし、\n口に入る本数も多い。\n\nだから一口目は強い。\n\nでも、\n満足は続かない。\n\n脳が\n「これは軽食だ」\nと分類するから。\n\n一方、太麺。\n\nこいつは違う。\n\n一本ごとの存在感がある。\n\n噛んだとき、\n歯が「仕事をした」と錯覚する。\n\nこの錯覚が\n満腹の前借りを起こす。\n\nつまり満足感とは、\n\n味の濃さではなく\n咀嚼の物理量\n\nで決まる。\n\nこれはもう\n料理の話じゃない。\n\nUI設計の話だ。\n\nカップ麺メーカーは\nスープを改良してるつもりでいるけど、\n\n本当は\n麺の直径を0.3mm変えた方が売上に効く。\n\n統計は取ってない。\nでも、たぶん合ってる。\n\n「満足感は味じゃない。\n歯がどれだけ\n仕事した気になるかだ。」\n\nNXS // OBSERVE LOG\nニクスのどうでもいい観測`,
-  createdAt: '2026-02-04T16:26:00+09:00',
-  official: true
+window.NYX_OFFICIAL_LOGS=[
+{
+ id:"official-001",displayId:"#NXS-001",
+ title:"カップ麺の麺径と満足感の関係について",
+ createdAt:"2026-02-04T16:26:00+09:00",official:true,
+ // voiceSrc:"./audio/nxs_001.mp3",
+ segments:[
+  {time:0.0,text:"…アクセスログ検知。"},
+  {time:2.8,text:"silent_packet://nxs-observe"},
+  {time:5.4,text:"読み取り専用で開放する。"},
+  {time:8.5,text:"改変は禁止。"},
+  {time:10.3,text:"見るだけな。"},
+  {time:13.8,text:"カップ麺は味で選ばれていない。"},
+  {time:18.2,text:"少なくとも、"},
+  {time:20.4,text:"満足感は味では決まってない。"},
+  {time:25.0,text:"重要なのは——"},
+  {time:27.8,text:"麺の太さだ。"},
+  {time:31.5,text:"正確には、"},
+  {time:33.4,text:"噛んだ瞬間の反発時間。"}
+ ]
+},
+{
+ id:"official-002",displayId:"#NXS-002",
+ title:"RPGの宿屋にワクワクしなくなった理由",
+ createdAt:"2026-02-08T23:47:00+09:00",official:true,
+ // voiceSrc:"./audio/nxs_002.mp3",
+ segments:[
+  {time:0.0,text:"アクセスを確認。"},
+  {time:2.4,text:"今回の対象はRPGだ。"},
+  {time:5.8,text:"宿屋ではない。"},
+  {time:8.2,text:"安心の構造を見る。"},
+  {time:12.6,text:"観測開始。"}
+ ]
+},
+{
+ id:"official-003",displayId:"#NXS-003",
+ title:"グミの弾力とストレス耐性の相関",
+ createdAt:"2026-02-15T23:47:00+09:00",official:true,
+ // voiceSrc:"./audio/nxs_003.mp3",
+ segments:[
+  {time:0.0,text:"ログを開放する。"},
+  {time:2.1,text:"今回は食品ではない。"},
+  {time:5.5,text:"情報圧縮について話す。"}
+ ]
 }
 ];

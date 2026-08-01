@@ -12,6 +12,26 @@ const OFFICIAL_LOG = OFFICIAL_LOGS[0] || {
   createdAt: new Date().toISOString(),
   official: true
 };
+function normalizeOfficialLog(log){
+ const normalized={...log};
+ if(Array.isArray(normalized.segments)&&normalized.segments.length){
+  normalized.segments=normalized.segments.map(segment=>({
+   time:Number(segment.time)||0,
+   text:String(segment.text??'')
+  })).sort((a,b)=>a.time-b.time);
+  if(!String(normalized.body||'').trim()){
+   normalized.body=normalized.segments.map(segment=>segment.text).join('\n\n');
+  }
+ }else{
+  normalized.segments=[];
+  normalized.body=String(normalized.body||'');
+ }
+ normalized.official=normalized.official!==false;
+ normalized.createdAt||=new Date().toISOString();
+ return normalized;
+}
+for(let i=0;i<OFFICIAL_LOGS.length;i++)OFFICIAL_LOGS[i]=normalizeOfficialLog(OFFICIAL_LOGS[i]);
+
 
 const $ = (id) => document.getElementById(id);
 const els = {
@@ -59,6 +79,9 @@ let autosaveDirty = false;
 let autosaveInFlight = false;
 let autosaveFirstCommitShown = false;
 let typingSoundCounter = 0;
+let syncMode=false;
+let lastSyncedSegmentIndex=-1;
+let voiceTimeHandler=null;
 let modalReleaseLockTimer = null;
 let suppressGhostInputUntil = 0;
 
@@ -310,37 +333,89 @@ function playSaveTone() {
   setTimeout(()=>playHudTone({start:920,end:610,duration:.09,volume:.007,type:'sine'}),140);
 }
 
-async function startPlayback() {
-  if (mode !== 'view' || !currentLog.body || playing) return;
-  els.endLayer.hidden = true;
-  if (charIndex >= currentLog.body.length) resetToStandby(false);
-  playing = true;
-  els.status.textContent = 'LINKING'; els.footerState.textContent = 'OPENING OBSERVATION SPACE';
-  els.standbyLayer.hidden = true;
-  els.readingLayer.hidden = true;
-  els.cinematicSequence.hidden = false;
-  document.querySelector('.terminal-shell')?.classList.add('cinematic-active');
-  try { await ensureAudioContext(); playObserveTone(); } catch {}
-  if (els.voicePlayer.src) {
-    try { if (els.voicePlayer.ended) els.voicePlayer.currentTime = 0; await els.voicePlayer.play(); setVoiceState('STREAM ACTIVE'); }
-    catch { setVoiceState('TAP REQUIRED'); }
-  }
-  const steps = ['ESTABLISHING DATA LINK','VOICE CHANNEL VERIFIED','問題ない。','EXPANDING OBSERVATION FIELD'];
-  let step = 0;
-  els.sequenceText.textContent = steps[0];
-  clearInterval(sequenceTimer);
-  sequenceTimer = setInterval(() => {
-    step += 1;
-    if (step < steps.length) els.sequenceText.textContent = steps[step];
-  }, 230);
-  setTimeout(() => {
-    clearInterval(sequenceTimer); sequenceTimer = null;
-    if (!playing) return;
-    els.cinematicSequence.hidden = true;
-    els.readingLayer.hidden = false;
-    els.status.textContent = 'OBSERVING'; els.footerState.textContent = 'LIVE OBSERVATION'; els.cursor.hidden = false;
-    typeNext();
-  }, 760);
+
+function detachVoiceSync(){
+ if(voiceTimeHandler){
+  els.voicePlayer.removeEventListener('timeupdate',voiceTimeHandler);
+  els.voicePlayer.removeEventListener('seeked',voiceTimeHandler);
+  voiceTimeHandler=null;
+ }
+ syncMode=false;
+ lastSyncedSegmentIndex=-1;
+}
+function getVisibleSegmentIndex(time){
+ const segments=currentLog.segments||[];
+ let index=-1;
+ for(let i=0;i<segments.length;i++){
+  if(segments[i].time<=time+0.04)index=i;
+  else break;
+ }
+ return index;
+}
+function renderSyncedSegments(force=false){
+ if(!syncMode||!Array.isArray(currentLog.segments))return;
+ const nextIndex=getVisibleSegmentIndex(els.voicePlayer.currentTime||0);
+ if(!force&&nextIndex===lastSyncedSegmentIndex)return;
+ lastSyncedSegmentIndex=nextIndex;
+ const visible=nextIndex>=0
+  ?currentLog.segments.slice(0,nextIndex+1).map(segment=>segment.text).join('\n\n')
+  :'';
+ els.screen.textContent=visible;
+ charIndex=visible.length;
+ els.cursor.hidden=false;
+ updateReadout();
+ els.viewport.scrollTop=els.viewport.scrollHeight;
+}
+function enableVoiceSegmentSync(){
+ detachVoiceSync();
+ if(!currentLog.voiceSrc||!Array.isArray(currentLog.segments)||!currentLog.segments.length)return false;
+ syncMode=true;
+ voiceTimeHandler=()=>renderSyncedSegments();
+ els.voicePlayer.addEventListener('timeupdate',voiceTimeHandler);
+ els.voicePlayer.addEventListener('seeked',voiceTimeHandler);
+ els.screen.textContent='';
+ charIndex=0;
+ renderSyncedSegments(true);
+ return true;
+}
+async function startPlayback(){
+ if(mode!=='view'||!currentLog.body||playing)return;
+ els.endLayer.hidden=true;
+ if(charIndex>=currentLog.body.length)resetToStandby(false);
+ playing=true;
+ els.status.textContent='LINKING';
+ els.footerState.textContent='OPENING OBSERVATION SPACE';
+ els.standbyLayer.hidden=true;
+ els.readingLayer.hidden=true;
+ els.cinematicSequence.hidden=false;
+ document.querySelector('.terminal-shell')?.classList.add('cinematic-active');
+ try{await ensureAudioContext();playObserveTone();}catch{}
+ const hasVoiceSync=enableVoiceSegmentSync();
+ if(els.voicePlayer.src){
+  try{
+   if(els.voicePlayer.ended)els.voicePlayer.currentTime=0;
+   await els.voicePlayer.play();
+   setVoiceState('STREAM ACTIVE');
+  }catch{setVoiceState('TAP REQUIRED');}
+ }
+ const steps=['ESTABLISHING DATA LINK','VOICE CHANNEL VERIFIED','問題ない。','EXPANDING OBSERVATION FIELD'];
+ let step=0;
+ els.sequenceText.textContent=steps[0];
+ clearInterval(sequenceTimer);
+ sequenceTimer=setInterval(()=>{
+  step+=1;
+  if(step<steps.length)els.sequenceText.textContent=steps[step];
+ },230);
+ setTimeout(()=>{
+  clearInterval(sequenceTimer);sequenceTimer=null;
+  if(!playing)return;
+  els.cinematicSequence.hidden=true;
+  els.readingLayer.hidden=false;
+  els.status.textContent='OBSERVING';
+  els.footerState.textContent=hasVoiceSync?'VOICE SYNCHRONIZED':'LIVE OBSERVATION';
+  els.cursor.hidden=false;
+  if(!hasVoiceSync)typeNext();
+ },760);
 }
 function typeNext() {
   if (!playing) return;
@@ -353,25 +428,35 @@ function typeNext() {
   els.viewport.scrollTop = els.viewport.scrollHeight;
   typingTimer = setTimeout(typeNext, delayForChar(char));
 }
-function pausePlayback() {
-  playing = false; clearTimeout(typingTimer); typingTimer = null; clearInterval(sequenceTimer); sequenceTimer = null;
-  els.status.textContent = 'PAUSED'; els.footerState.textContent = 'TOUCH FIELD TO RESUME'; els.cursor.hidden = true;
-  if (!els.voicePlayer.paused) els.voicePlayer.pause();
+function pausePlayback(){
+ playing=false;
+ clearTimeout(typingTimer);typingTimer=null;
+ clearInterval(sequenceTimer);sequenceTimer=null;
+ els.status.textContent='PAUSED';
+ els.footerState.textContent=syncMode?'VOICE SYNCHRONIZED / PAUSED':'TOUCH FIELD TO RESUME';
+ els.cursor.hidden=true;
+ if(!els.voicePlayer.paused)els.voicePlayer.pause();
 }
-async function resumePlayback() {
-  if (mode !== 'view' || playing || charIndex <= 0 || charIndex >= (currentLog.body?.length || 0)) return;
-  playing = true;
-  els.status.textContent = 'OBSERVING';
-  els.footerState.textContent = 'LIVE OBSERVATION';
-  els.cursor.hidden = false;
-  try { await ensureAudioContext(); } catch {}
-  if (els.voicePlayer.src) {
-    try { await els.voicePlayer.play(); setVoiceState('STREAM ACTIVE'); }
-    catch { setVoiceState('TAP REQUIRED'); }
-  }
-  typeNext();
+async function resumePlayback(){
+ if(mode!=='view'||playing||charIndex<0||charIndex>=(currentLog.body?.length||0))return;
+ playing=true;
+ els.status.textContent='OBSERVING';
+ els.footerState.textContent=syncMode?'VOICE SYNCHRONIZED':'LIVE OBSERVATION';
+ els.cursor.hidden=false;
+ try{await ensureAudioContext();}catch{}
+ if(els.voicePlayer.src){
+  try{await els.voicePlayer.play();setVoiceState('STREAM ACTIVE');}
+  catch{setVoiceState('TAP REQUIRED');}
+ }
+ if(!syncMode)typeNext();
 }
-function stopPlayback() { playing = false; clearTimeout(typingTimer); typingTimer = null; clearInterval(sequenceTimer); sequenceTimer = null; els.voicePlayer.pause(); }
+function stopPlayback(){
+ playing=false;
+ clearTimeout(typingTimer);typingTimer=null;
+ clearInterval(sequenceTimer);sequenceTimer=null;
+ try{els.voicePlayer.pause();}catch{}
+ detachVoiceSync();
+}
 function resetToStandby(animate = true) {
   stopPlayback();
   reviewMode = false;
@@ -514,6 +599,8 @@ async function autosaveCurrentLog({ cinematic = false, force = false } = {}) {
       localStorage.setItem('nyxOfficialModificationPending','1');
       currentLog = {
         ...currentLog,
+        segments: [],
+        voiceSrc: null,
         id:uid(),
         displayId:`#LOCAL-${String(Date.now()).slice(-4)}`,
         official:false,
@@ -875,7 +962,15 @@ els.viewport.addEventListener('pointerup', e => {
   if (playing) pausePlayback(); else if (charIndex > 0 && charIndex < (currentLog.body?.length || 0)) resumePlayback();
 });
 els.subjectRow.addEventListener('click', () => { if (reviewMode) resetToStandby(true); });
-els.voicePlayer.addEventListener('ended',()=>setVoiceState('STREAM CLOSED'));
+els.voicePlayer.addEventListener('ended',()=>{
+ if(syncMode&&currentLog.segments?.length){
+  els.screen.textContent=currentLog.segments.map(segment=>segment.text).join('\n\n');
+  charIndex=els.screen.textContent.length;
+  updateReadout();
+ }
+ setVoiceState('STREAM CLOSED');
+ if(playing)finishPlayback();
+});
 
 ['dragenter','dragover'].forEach(type=>$('dropZone').addEventListener(type,e=>{e.preventDefault();e.dataTransfer.dropEffect='copy';}));
 $('dropZone').addEventListener('drop',async e=>{
@@ -892,7 +987,7 @@ $('dropZone').addEventListener('drop',async e=>{
 });
 
 
-/* v1.0.4 TARGET / PLAYBACK GESTURES */
+/* v1.0.5 TARGET / PLAYBACK GESTURES */
 function distanceBetweenTouches(touches) {
   const a = touches[0], b = touches[1];
   return Math.hypot(b.clientX-a.clientX,b.clientY-a.clientY);
@@ -1005,7 +1100,7 @@ function resolveHostDestination() {
 
 function navigateToHost() {
   const destination = resolveHostDestination();
-  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v1.0.4' }, '*'); } catch {}
+  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v1.0.5' }, '*'); } catch {}
   if (destination) { location.href = destination; return; }
   if (history.length > 1) { history.back(); return; }
   // Standalone preview fallback: return to idle terminal instead of trapping the user.
