@@ -379,3 +379,12 @@ dialog[open]::backdrop{animation:backdropIn .3s ease}@keyframes backdropIn{from{
     min-height:72svh!important;
   }
 }
+
+
+/* v1.0.3 — Prevent iOS ghost taps after archive dialog closes */
+body.modal-release-lock .terminal-shell{
+  pointer-events:none!important;
+}
+body.modal-release-lock{
+  touch-action:none;
+}

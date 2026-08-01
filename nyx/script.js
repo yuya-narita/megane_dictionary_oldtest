@@ -59,6 +59,8 @@ let autosaveInFlight = false;
 let autosaveFirstCommitShown = false;
 let pendingDeleteLog = null;
 let typingSoundCounter = 0;
+let modalReleaseLockTimer = null;
+let suppressGhostInputUntil = 0;
 
 const LOGS_KEY = 'nyxObservationLogsV05';
 
@@ -660,6 +662,27 @@ async function confirmPendingDelete() {
   renderLogs();
 }
 
+function lockUnderlyingTerminalAfterDialog(ms = 520) {
+  suppressGhostInputUntil = Date.now() + ms;
+  document.body.classList.add('modal-release-lock');
+  clearTimeout(modalReleaseLockTimer);
+  modalReleaseLockTimer = setTimeout(() => {
+    document.body.classList.remove('modal-release-lock');
+  }, ms);
+}
+
+// iOS may dispatch a delayed synthetic click at the position where a modal card
+// was tapped, after the dialog has already disappeared. Capture and discard it.
+['click','pointerup','touchend'].forEach(type => {
+  document.addEventListener(type, event => {
+    if (Date.now() >= suppressGhostInputUntil) return;
+    const dialog = event.target.closest?.('dialog');
+    if (dialog?.open) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, { capture:true, passive:false });
+});
+
 function makeArchiveCard(log, { deletable = false, archiveType = null, archiveIndex = -1 } = {}) {
   const card = document.createElement('article');
   card.className = `log-card tappable-card${deletable ? ' swipe-card' : ''}`;
@@ -675,6 +698,9 @@ function makeArchiveCard(log, { deletable = false, archiveType = null, archiveIn
   content.append(h,p);
 
   const openLog = () => {
+    // Lock the underlying EDIT / RECORD controls before removing the modal.
+    // This prevents the iPhone delayed “ghost tap” from reaching them.
+    lockUnderlyingTerminalAfterDialog();
     els.logsDialog.open && els.logsDialog.close();
     els.officialDialog.open && els.officialDialog.close();
     if (archiveType) setArchiveContext(archiveType, archiveIndex);
@@ -717,7 +743,7 @@ function makeArchiveCard(log, { deletable = false, archiveType = null, archiveIn
       card.classList.toggle('delete-armed',amount<-82);
     }
   },{passive:false});
-  content.addEventListener('touchend',()=>{
+  content.addEventListener('touchend',event=>{
     if(!touch)return;
     const {dx,dy}=touch;
     touch=null;
@@ -725,11 +751,15 @@ function makeArchiveCard(log, { deletable = false, archiveType = null, archiveIn
     content.style.transform='';
     card.classList.remove('delete-armed');
     if(dx<-82 && Math.abs(dx)>Math.abs(dy)*1.2){
+      event.preventDefault();
+      event.stopPropagation();
       requestDeleteLog(log);
     }else if(Math.abs(dx)<12 && Math.abs(dy)<12){
+      event.preventDefault();
+      event.stopPropagation();
       openLog();
     }
-  },{passive:true});
+  },{passive:false});
   content.addEventListener('touchcancel',()=>{
     touch=null;
     card.classList.remove('swiping','delete-armed');
@@ -811,7 +841,7 @@ $('dropZone').addEventListener('drop',async e=>{
 });
 
 
-/* v1.0.2 TARGET / PLAYBACK GESTURES */
+/* v1.0.3 TARGET / PLAYBACK GESTURES */
 function distanceBetweenTouches(touches) {
   const a = touches[0], b = touches[1];
   return Math.hypot(b.clientX-a.clientX,b.clientY-a.clientY);
@@ -924,7 +954,7 @@ function resolveHostDestination() {
 
 function navigateToHost() {
   const destination = resolveHostDestination();
-  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v1.0.2' }, '*'); } catch {}
+  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v1.0.3' }, '*'); } catch {}
   if (destination) { location.href = destination; return; }
   if (history.length > 1) { history.back(); return; }
   // Standalone preview fallback: return to idle terminal instead of trapping the user.
