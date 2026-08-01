@@ -34,7 +34,7 @@ window.NYX_ARCHIVES = [
         createdAt: "2026-02-04T16:26:00+09:00",
         official: true,
         archiveId: "observe",
-        // voiceSrc: "./audio/nxs_001.mp3",
+        voiceSrc: "./audio/nxs_001.mp3",
         segments: [
           { time: 0.0, text: "…アクセスログ検知。" },
           { time: 2.8, text: "silent_packet://nxs-observe" },
