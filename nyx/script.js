@@ -47,6 +47,11 @@ let reviewMode = false;
 let tapStart = null;
 let editingOfficial = false;
 let returningToHost = false;
+let activeArchiveType = null;
+let activeArchiveIndex = -1;
+let gestureMessageTimer = null;
+let pinchState = null;
+let horizontalTouch = null;
 
 const LOGS_KEY = 'nyxObservationLogsV05';
 
@@ -68,6 +73,8 @@ function setNoTarget() {
   reviewMode = false;
   charIndex = 0;
   editingOfficial = false;
+  activeArchiveType = null;
+  activeArchiveIndex = -1;
   els.noTargetLayer.hidden = false;
   els.standbyLayer.hidden = true;
   els.cinematicSequence.hidden = true;
@@ -197,15 +204,70 @@ async function ensureAudioContext() {
   if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
   if (audioContext.state === 'suspended') await audioContext.resume();
 }
-function typingTick() {
+function playHudTone({
+  start = 1050,
+  end = 720,
+  duration = .032,
+  volume = .009,
+  type = 'sine',
+  filterStart = 2400,
+  filterEnd = 900
+} = {}) {
   if (!typingSoundEnabled || !audioContext || audioContext.state !== 'running') return;
-  if (Math.random() > .55) return;
+  const now = audioContext.currentTime;
   const osc = audioContext.createOscillator();
   const gain = audioContext.createGain();
-  osc.type = 'square'; osc.frequency.value = 145 + Math.random() * 55;
-  gain.gain.setValueAtTime(.012, audioContext.currentTime);
-  gain.gain.exponentialRampToValueAtTime(.0001, audioContext.currentTime + .025);
-  osc.connect(gain).connect(audioContext.destination); osc.start(); osc.stop(audioContext.currentTime + .028);
+  const filter = audioContext.createBiquadFilter();
+  osc.type = type;
+  osc.frequency.setValueAtTime(start, now);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(40,end), now + duration);
+  filter.type = 'bandpass';
+  filter.Q.value = 1.2;
+  filter.frequency.setValueAtTime(filterStart, now);
+  filter.frequency.exponentialRampToValueAtTime(filterEnd, now + duration);
+  gain.gain.setValueAtTime(.0001, now);
+  gain.gain.exponentialRampToValueAtTime(volume, now + .004);
+  gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
+  osc.connect(filter).connect(gain).connect(audioContext.destination);
+  osc.start(now);
+  osc.stop(now + duration + .005);
+}
+
+function typingTick(char = '') {
+  if (!typingSoundEnabled || !audioContext || audioContext.state !== 'running') return;
+  if (char === '\n') {
+    playHudTone({start:1180,end:260,duration:.075,volume:.011,type:'sine',filterStart:1800,filterEnd:480});
+    return;
+  }
+  if (!char.trim() || Math.random() > .42) return;
+  const variance = Math.random() * 180;
+  playHudTone({
+    start:980 + variance,
+    end:690 + variance * .18,
+    duration:.024 + Math.random() * .012,
+    volume:.0065 + Math.random() * .0025,
+    type:Math.random() > .72 ? 'triangle' : 'sine',
+    filterStart:2100 + variance,
+    filterEnd:900
+  });
+}
+
+function playLockTone() {
+  if (!audioContext || audioContext.state !== 'running') return;
+  playHudTone({start:520,end:860,duration:.055,volume:.014,type:'sine',filterStart:1500,filterEnd:2400});
+  setTimeout(()=>playHudTone({start:920,end:700,duration:.045,volume:.01,type:'triangle'}),55);
+}
+
+function playObserveTone() {
+  if (!audioContext || audioContext.state !== 'running') return;
+  playHudTone({start:170,end:740,duration:.16,volume:.018,type:'sine',filterStart:500,filterEnd:2100});
+  setTimeout(()=>playHudTone({start:1120,end:820,duration:.055,volume:.012,type:'sine'}),120);
+}
+
+function playSaveTone() {
+  if (!audioContext || audioContext.state !== 'running') return;
+  playHudTone({start:360,end:920,duration:.12,volume:.016,type:'sine',filterStart:800,filterEnd:2200});
+  setTimeout(()=>playHudTone({start:1260,end:980,duration:.07,volume:.011,type:'sine'}),105);
 }
 
 async function startPlayback() {
@@ -218,7 +280,7 @@ async function startPlayback() {
   els.readingLayer.hidden = true;
   els.cinematicSequence.hidden = false;
   document.querySelector('.terminal-shell')?.classList.add('cinematic-active');
-  try { await ensureAudioContext(); } catch {}
+  try { await ensureAudioContext(); playObserveTone(); } catch {}
   if (els.voicePlayer.src) {
     try { if (els.voicePlayer.ended) els.voicePlayer.currentTime = 0; await els.voicePlayer.play(); setVoiceState('STREAM ACTIVE'); }
     catch { setVoiceState('TAP REQUIRED'); }
@@ -246,7 +308,7 @@ function typeNext() {
   if (charIndex >= body.length) { finishPlayback(); return; }
   const char = body[charIndex++];
   els.screen.textContent += char;
-  if (char.trim()) typingTick();
+  typingTick(char);
   updateReadout();
   els.viewport.scrollTop = els.viewport.scrollHeight;
   typingTimer = setTimeout(typeNext, delayForChar(char));
@@ -376,11 +438,93 @@ async function saveCurrentLog() {
   const logs = loadStoredLogs(); const existing = logs.findIndex(l => l.id === currentLog.id);
   const stored = { id:currentLog.id, displayId:currentLog.displayId, title:currentLog.title, body:currentLog.body, createdAt:currentLog.createdAt, updatedAt:currentLog.updatedAt, audioId:currentLog.audioId || null };
   if (existing >= 0) logs[existing] = stored; else logs.unshift(stored); saveStoredLogs(logs);
-  await showSaveSequence(); setCurrentLog(stored,'archive'); els.saveLog.disabled=false;
+  await showSaveSequence(); try { await ensureAudioContext(); playSaveTone(); } catch {} setCurrentLog(stored,'archive'); els.saveLog.disabled=false;
 }
 function showSaveSequence(){ return new Promise(resolve=>{ els.writeMessage.textContent='WRITING LOG...'; els.writeDetail.textContent='VERIFYING DATA'; els.writeBar.style.width='0%'; els.saveDialog.showModal(); requestAnimationFrame(()=>els.writeBar.style.width='72%'); setTimeout(()=>{ els.writeMessage.textContent='LOG SAVED.'; els.writeDetail.textContent='NXS // LOCAL STORAGE'; els.writeBar.style.width='100%'; },620); setTimeout(()=>{ els.saveDialog.close(); resolve(); },1250); }); }
 
-function makeArchiveCard(log, { deletable = false } = {}) {
+
+function getArchiveLogs(type = activeArchiveType) {
+  if (type === 'official') return OFFICIAL_LOGS.map(log => structuredClone(log));
+  if (type === 'my') return loadStoredLogs();
+  return [];
+}
+
+function setArchiveContext(type, index) {
+  activeArchiveType = type;
+  activeArchiveIndex = index;
+}
+
+function showGestureMessage(title, detail = '', duration = 720) {
+  let node = document.getElementById('gestureMessage');
+  if (!node) {
+    node = document.createElement('div');
+    node.id = 'gestureMessage';
+    node.className = 'gesture-message';
+    node.innerHTML = '<strong></strong><small></small>';
+    document.querySelector('.terminal-shell')?.append(node);
+  }
+  node.querySelector('strong').textContent = title;
+  node.querySelector('small').textContent = detail;
+  node.querySelector('small').hidden = !detail;
+  clearTimeout(gestureMessageTimer);
+  requestAnimationFrame(() => node.classList.add('visible'));
+  gestureMessageTimer = setTimeout(() => node.classList.remove('visible'), duration);
+}
+
+async function retargetLog(direction) {
+  if (els.standbyLayer.hidden || mode !== 'view') return false;
+  const logs = getArchiveLogs();
+  if (!logs.length || activeArchiveIndex < 0) return false;
+  if (logs.length === 1) {
+    showGestureMessage('NO ADJACENT TARGET', 'このアーカイブには1件だけだ。');
+    return true;
+  }
+  activeArchiveIndex = (activeArchiveIndex + direction + logs.length) % logs.length;
+  const nextLog = logs[activeArchiveIndex];
+  const shell = document.querySelector('.terminal-shell');
+  shell?.style.setProperty('--retarget-shift', `${direction > 0 ? 24 : -24}px`);
+  shell?.classList.remove('retargeting');
+  void shell?.offsetWidth;
+  shell?.classList.add('retargeting');
+  try { await ensureAudioContext(); playLockTone(); } catch {}
+  setCurrentLog(nextLog, nextLog.official ? 'official' : 'archive');
+  setTimeout(() => shell?.classList.remove('retargeting'), 460);
+  showGestureMessage('TARGET UPDATED', nextLog.displayId || 'LOCAL ARCHIVE', 560);
+  return true;
+}
+
+function expandCompleteLogByGesture() {
+  if (!currentLog.body || mode !== 'view') return;
+  stopPlayback();
+  els.endLayer.hidden = true;
+  els.cinematicSequence.hidden = true;
+  els.standbyLayer.hidden = true;
+  els.readingLayer.hidden = false;
+  els.screen.textContent = currentLog.body;
+  charIndex = currentLog.body.length;
+  reviewMode = true;
+  updateReadout();
+  els.cursor.hidden = true;
+  els.status.textContent = 'ARCHIVE VIEW';
+  els.footerState.textContent = 'PINCH IN / COLLAPSE TARGET';
+  els.viewport.scrollTop = 0;
+  const shell = document.querySelector('.terminal-shell');
+  shell?.classList.add('full-log-mode');
+  setTimeout(()=>shell?.classList.remove('full-log-mode'),380);
+  showGestureMessage('COMPLETE LOG EXPANDED', '全文表示。縦スクロール可能。', 820);
+}
+
+function collapseToTargetByGesture() {
+  if (!currentLog.body || mode !== 'view' || !els.standbyLayer.hidden) return;
+  resetToStandby(true);
+  showGestureMessage('OBSERVATION FIELD COLLAPSED', 'TARGET LOCKED', 700);
+}
+
+function denyHorizontalDuringObservation() {
+  showGestureMessage('ACCESS DENIED', '観測中だ。', 620);
+}
+
+function makeArchiveCard(log, { deletable = false, archiveType = null, archiveIndex = -1 } = {}) {
   const card = document.createElement('article');
   card.className = 'log-card tappable-card';
   card.tabIndex = 0;
@@ -394,7 +538,10 @@ function makeArchiveCard(log, { deletable = false } = {}) {
   const openLog = () => {
     els.logsDialog.open && els.logsDialog.close();
     els.officialDialog.open && els.officialDialog.close();
+    if (archiveType) setArchiveContext(archiveType, archiveIndex);
     setCurrentLog(log, log.official ? 'official' : 'archive');
+    showGestureMessage('OBSERVATION TARGET LOCKED', log.displayId || 'LOCAL LOG', 640);
+    ensureAudioContext().then(playLockTone).catch(()=>{});
   };
   info.addEventListener('click', openLog);
   card.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target === card) { e.preventDefault(); openLog(); } });
@@ -411,13 +558,13 @@ function makeArchiveCard(log, { deletable = false } = {}) {
 
 function renderOfficialLogs() {
   els.officialList.innerHTML = '';
-  OFFICIAL_LOGS.forEach(log => els.officialList.append(makeArchiveCard(structuredClone(log))));
+  OFFICIAL_LOGS.forEach((log,index) => els.officialList.append(makeArchiveCard(structuredClone(log),{archiveType:'official',archiveIndex:index})));
   els.officialCount.textContent = `${OFFICIAL_LOGS.length} LOG${OFFICIAL_LOGS.length === 1 ? '' : 'S'} AVAILABLE`;
 }
 
 function renderLogs() {
   const logs = loadStoredLogs(); els.logsList.innerHTML=''; els.emptyLogs.hidden = logs.length>0;
-  logs.forEach(log => els.logsList.append(makeArchiveCard(log,{deletable:true})));
+  logs.forEach((log,index) => els.logsList.append(makeArchiveCard(log,{deletable:true,archiveType:'my',archiveIndex:index})));
 }
 
 els.standbyTarget.addEventListener('click', startPlayback);
@@ -455,6 +602,76 @@ els.voicePlayer.addEventListener('ended',()=>setVoiceState('STREAM CLOSED'));
 
 ['dragenter','dragover'].forEach(type=>$('dropZone').addEventListener(type,e=>{e.preventDefault();e.dataTransfer.dropEffect='copy';}));
 $('dropZone').addEventListener('drop',async e=>{e.preventDefault();const file=e.dataTransfer.files?.[0];if(!file)return;if(file.type.startsWith('audio/'))attachVoiceBlob(file,'LOCAL FILE READY');else{const body=await file.text();setCurrentLog({id:uid(),displayId:'#LOCAL-FILE',title:file.name.replace(/\.[^.]+$/,''),body,createdAt:new Date().toISOString(),official:false},'file');els.saveLog.disabled=false;}});
+
+
+/* v0.9 TARGET / PLAYBACK GESTURES */
+function distanceBetweenTouches(touches) {
+  const a = touches[0], b = touches[1];
+  return Math.hypot(b.clientX-a.clientX,b.clientY-a.clientY);
+}
+
+els.viewport.addEventListener('touchstart', e => {
+  if (mode !== 'view' || document.querySelector('dialog[open]')) return;
+  if (e.touches.length === 2) {
+    pinchState = {
+      start:distanceBetweenTouches(e.touches),
+      last:distanceBetweenTouches(e.touches)
+    };
+    horizontalTouch = null;
+    return;
+  }
+  if (e.touches.length !== 1) return;
+  const t=e.touches[0];
+  horizontalTouch={x:t.clientX,y:t.clientY,dx:0,dy:0};
+},{passive:true});
+
+els.viewport.addEventListener('touchmove', e => {
+  if (pinchState && e.touches.length === 2) {
+    pinchState.last=distanceBetweenTouches(e.touches);
+    if (Math.abs(pinchState.last-pinchState.start)>12) e.preventDefault();
+    return;
+  }
+  if (!horizontalTouch || e.touches.length !== 1) return;
+  const t=e.touches[0];
+  horizontalTouch.dx=t.clientX-horizontalTouch.x;
+  horizontalTouch.dy=t.clientY-horizontalTouch.y;
+  if (Math.abs(horizontalTouch.dx)>18 && Math.abs(horizontalTouch.dx)>Math.abs(horizontalTouch.dy)*1.25) {
+    e.preventDefault();
+    if (!els.standbyLayer.hidden) {
+      els.standbyTarget.classList.add('swipe-ready');
+      const shell=document.querySelector('.terminal-shell');
+      shell?.style.setProperty('--retarget-shift',`${horizontalTouch.dx*.08}px`);
+    }
+  }
+},{passive:false});
+
+els.viewport.addEventListener('touchend', async e => {
+  if (pinchState && e.touches.length < 2) {
+    const ratio=pinchState.start ? pinchState.last/pinchState.start : 1;
+    pinchState=null;
+    if (ratio>1.18) expandCompleteLogByGesture();
+    else if (ratio<.82) collapseToTargetByGesture();
+    return;
+  }
+  if (!horizontalTouch) return;
+  const {dx,dy}=horizontalTouch;
+  horizontalTouch=null;
+  els.standbyTarget.classList.remove('swipe-ready');
+  if (Math.abs(dx)<68 || Math.abs(dx)<Math.abs(dy)*1.25) return;
+  if (!els.standbyLayer.hidden) {
+    await retargetLog(dx<0 ? 1 : -1);
+    return;
+  }
+  if (playing || (!els.readingLayer.hidden && !reviewMode)) {
+    denyHorizontalDuringObservation();
+  }
+},{passive:true});
+
+els.viewport.addEventListener('touchcancel',()=>{
+  pinchState=null;
+  horizontalTouch=null;
+  els.standbyTarget.classList.remove('swipe-ready');
+},{passive:true});
 
 setInterval(()=>{els.packetValue.textContent=`${(Math.random()*.04).toFixed(2)}%`;els.syncValue.textContent=`${String(Math.floor(8+Math.random()*19)).padStart(3,'0')} ms`;els.memoryValue.textContent=Math.random()>.08?'STABLE':'SYNCING';},2400);
 
@@ -494,7 +711,7 @@ function resolveHostDestination() {
 
 function navigateToHost() {
   const destination = resolveHostDestination();
-  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v0.8' }, '*'); } catch {}
+  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v0.9' }, '*'); } catch {}
   if (destination) { location.href = destination; return; }
   if (history.length > 1) { history.back(); return; }
   // Standalone preview fallback: return to idle terminal instead of trapping the user.

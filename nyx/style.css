@@ -101,3 +101,70 @@ dialog[open]::backdrop{animation:backdropIn .3s ease}@keyframes backdropIn{from{
 .editor-layer{grid-template-rows:auto minmax(280px,1fr) auto}.body-editor textarea{min-height:280px}
 @media(max-width:720px){.host-return{font-size:9px;padding-bottom:5px}.host-core{font-size:15px}.editor-layer{grid-template-rows:auto minmax(44vh,1fr) auto}.body-editor textarea{min-height:44vh}.host-transition{padding-bottom:10vh}}
 @media(prefers-reduced-motion:reduce){.terminal-shell.host-returning{animation:hostStoreReduced .18s ease forwards}.host-transition-core{animation:none}@keyframes hostStoreReduced{to{opacity:0}}}
+
+
+/* v0.9 Gesture / Retarget / HUD feedback */
+.gesture-message{
+  position:absolute;
+  z-index:80;
+  left:50%;
+  top:50%;
+  width:min(82%,420px);
+  transform:translate(-50%,-50%) scale(.96);
+  padding:18px 20px;
+  border:1px solid rgba(92,240,255,.78);
+  background:linear-gradient(145deg,rgba(3,24,32,.94),rgba(1,10,15,.88));
+  box-shadow:
+    0 0 0 1px rgba(140,250,255,.08) inset,
+    0 0 32px rgba(32,237,255,.22);
+  color:#b8fbff;
+  text-align:center;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .18s ease,transform .18s ease;
+  backdrop-filter:blur(12px);
+}
+.gesture-message.visible{
+  opacity:1;
+  transform:translate(-50%,-50%) scale(1);
+}
+.gesture-message strong{
+  display:block;
+  font-size:13px;
+  letter-spacing:.12em;
+  color:#73f7ff;
+  text-shadow:0 0 10px rgba(32,237,255,.5);
+}
+.gesture-message small{
+  display:block;
+  margin-top:8px;
+  color:rgba(190,250,252,.72);
+  font-size:11px;
+  letter-spacing:.06em;
+}
+.terminal-shell.retargeting .standby-layer{
+  animation:nyxRetarget .42s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes nyxRetarget{
+  0%{opacity:.25;filter:blur(5px);transform:translateX(var(--retarget-shift,16px)) scale(.985)}
+  55%{opacity:1;filter:blur(0);transform:translateX(0) scale(1.012)}
+  100%{transform:translateX(0) scale(1)}
+}
+.terminal-shell.full-log-mode .reading-layer{
+  animation:nyxExpandLog .32s ease both;
+}
+@keyframes nyxExpandLog{
+  from{opacity:.35;transform:scale(.985);filter:blur(3px)}
+  to{opacity:1;transform:scale(1);filter:blur(0)}
+}
+.standby-orbit.swipe-ready{
+  filter:brightness(1.35);
+  transform:scale(1.035);
+}
+@media(max-width:680px){
+  .gesture-message{
+    position:fixed;
+    top:46%;
+    width:calc(100% - 44px);
+  }
+}
