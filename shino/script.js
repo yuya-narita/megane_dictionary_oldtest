@@ -1,1 +1,255 @@
-(()=>{"use strict";const S=window.SHINO_STORY||[],g=id=>document.getElementById(id),cover=g("cover"),player=g("player"),ending=g("ending"),lines=g("lines"),count=g("count"),bar=g("bar"),theme=g("theme"),modeBtn=g("mode"),modeLabel=g("modeLabel");let i=0,auto=false,timer=null,busy=false,down=null;function show(x){[cover,player,ending].forEach(n=>n.hidden=n!==x)}function prog(){count.textContent=`${Math.min(i,S.length)} / ${S.length}`;bar.style.width=`${S.length?i/S.length*100:0}%`}function reset(){clearTimeout(timer);i=0;busy=false;lines.innerHTML="";prog()}function trim(){const a=[...lines.children];while(a.length>4){const n=a.shift();n.classList.add("out");setTimeout(()=>n.remove(),330)}}function next(){if(busy)return;if(i>=S.length){clearTimeout(timer);show(ending);theme.volume=Math.min(1,(theme.volume||.28)+.18);return}busy=true;const c=S[i++],n=document.createElement("div");n.className=`line ${c.type==="ending"?"endingtype":c.type}${c.effect?" "+c.effect:""}`;n.textContent=c.text;lines.appendChild(n);trim();prog();setTimeout(()=>{busy=false;if(auto)timer=setTimeout(next,Math.max(700,c.pause||1300))},460)}async function start(){reset();show(player);try{theme.volume=.28;await theme.play()}catch{}setTimeout(next,700)}function back(){clearTimeout(timer);theme.pause();theme.currentTime=0;show(cover);reset()}g("start").onclick=start;g("replay").onclick=start;g("back").onclick=back;modeBtn.onclick=e=>{e.stopPropagation();auto=!auto;modeBtn.textContent=auto?"MAN":"AUTO";modeLabel.textContent=auto?"AUTO":"MANUAL";clearTimeout(timer);if(auto&&i>0)timer=setTimeout(next,700)};g("stage").onpointerdown=e=>down={x:e.clientX,y:e.clientY,t:Date.now()};g("stage").onpointerup=e=>{if(!down)return;const d=Math.hypot(e.clientX-down.x,e.clientY-down.y),t=Date.now()-down.t;down=null;if(d<18&&t<700)next()};addEventListener("keydown",e=>{if(player.hidden)return;if([" ","ArrowRight","Enter"].includes(e.key)){e.preventDefault();next()}if(e.key==="Escape")back()});prog()})();
+(()=>{
+"use strict";
+
+const S=window.SHINO_STORY||[];
+const g=id=>document.getElementById(id);
+
+const cover=g("cover");
+const player=g("player");
+const ending=g("ending");
+const lines=g("lines");
+const count=g("count");
+const bar=g("bar");
+const theme=g("theme");
+const modeBtn=g("mode");
+const modeLabel=g("modeLabel");
+const stage=g("stage");
+const gestureHint=g("gestureHint");
+
+let i=0;
+let auto=false;
+let timer=null;
+let busy=false;
+let down=null;
+let scrollHintShown=false;
+let visibleItems=[];
+
+const MAX_VISIBLE=4;
+const AUTO_SLOW_FACTOR=1.65;
+const BASE_GAP=34;
+const LARGE_GAP=62;
+const SOUND_GAP=72;
+
+function show(x){
+  [cover,player,ending].forEach(n=>n.hidden=n!==x);
+}
+
+function prog(){
+  count.textContent=`${Math.min(i,S.length)} / ${S.length}`;
+  bar.style.width=`${S.length?i/S.length*100:0}%`;
+}
+
+function reset(){
+  clearTimeout(timer);
+  timer=null;
+  i=0;
+  busy=false;
+  lines.innerHTML="";
+  visibleItems=[];
+  prog();
+}
+
+function getGap(prevType,nextType){
+  if(prevType==="sound"||nextType==="sound") return SOUND_GAP;
+  if(prevType!==nextType) return LARGE_GAP;
+  if(prevType==="dialogue") return 52;
+  return BASE_GAP;
+}
+
+function createLine(cut){
+  const node=document.createElement("div");
+  const typeClass=cut.type==="ending"?"endingtype":cut.type;
+  node.className=`line ${typeClass}${cut.effect?" "+cut.effect:""} entering`;
+  node.textContent=cut.text;
+  node.dataset.type=cut.type||"narration";
+  lines.appendChild(node);
+
+  // Force layout so the entering state is committed before movement.
+  node.getBoundingClientRect();
+  return node;
+}
+
+function measureLayout(){
+  const stageHeight=stage.clientHeight;
+  const focusY=stageHeight*(window.innerWidth<=600?0.46:0.48);
+  const items=visibleItems.map(item=>({
+    ...item,
+    height:item.node.getBoundingClientRect().height
+  }));
+
+  if(!items.length) return [];
+
+  // Newest text sits at the visual focus, slightly above center.
+  const newest=items[items.length-1];
+  let newestTop=focusY-(newest.height/2);
+
+  // Long dialogue is placed a little higher so the thumb never covers it.
+  if(newest.type==="dialogue"||newest.type==="ending"){
+    newestTop-=12;
+  }
+
+  const positions=new Array(items.length);
+  positions[items.length-1]=newestTop;
+
+  for(let idx=items.length-2;idx>=0;idx--){
+    const current=items[idx];
+    const next=items[idx+1];
+    const gap=getGap(current.type,next.type);
+    positions[idx]=positions[idx+1]-gap-current.height;
+  }
+
+  return items.map((item,idx)=>({...item,y:positions[idx]}));
+}
+
+function applyLayout(newNode){
+  const layout=measureLayout();
+
+  layout.forEach(item=>{
+    item.node.style.transform=`translate3d(0,${Math.round(item.y)}px,0)`;
+    item.node.classList.remove("entering");
+    item.node.classList.add("visible");
+  });
+
+  if(newNode){
+    // A tiny delayed reveal prevents the perceived "snap".
+    requestAnimationFrame(()=>{
+      newNode.classList.remove("entering");
+      newNode.classList.add("visible");
+    });
+  }
+}
+
+function removeOldestIfNeeded(){
+  while(visibleItems.length>MAX_VISIBLE){
+    const old=visibleItems.shift();
+    old.node.classList.add("leaving");
+    old.node.style.transform=`${old.node.style.transform} translateY(-10px)`;
+    setTimeout(()=>old.node.remove(),360);
+  }
+}
+
+function next(){
+  if(busy)return;
+
+  if(i>=S.length){
+    clearTimeout(timer);
+    show(ending);
+    theme.volume=Math.min(1,(theme.volume||.28)+.18);
+    return;
+  }
+
+  busy=true;
+  const cut=S[i++];
+  const node=createLine(cut);
+
+  visibleItems.push({
+    node,
+    type:cut.type||"narration"
+  });
+
+  removeOldestIfNeeded();
+
+  // Existing lines glide into their new positions first,
+  // then the new sentence settles at the focal point.
+  requestAnimationFrame(()=>{
+    applyLayout(node);
+    prog();
+  });
+
+  setTimeout(()=>{
+    busy=false;
+    if(auto){
+      const wait=Math.max(1500,(cut.pause||1300)*AUTO_SLOW_FACTOR);
+      timer=setTimeout(next,wait);
+    }
+  },520);
+}
+
+async function start(){
+  reset();
+  show(player);
+
+  try{
+    theme.volume=.28;
+    await theme.play();
+  }catch{}
+
+  setTimeout(next,650);
+}
+
+function back(){
+  clearTimeout(timer);
+  timer=null;
+  theme.pause();
+  theme.currentTime=0;
+  show(cover);
+  reset();
+}
+
+function toggleAuto(event){
+  event.stopPropagation();
+  auto=!auto;
+  modeBtn.textContent=auto?"MAN":"AUTO";
+  modeLabel.textContent=auto?"AUTO":"MANUAL";
+  clearTimeout(timer);
+
+  if(auto&&i>0){
+    timer=setTimeout(next,1500);
+  }
+}
+
+function showScrollHint(){
+  if(scrollHintShown)return;
+  scrollHintShown=true;
+  gestureHint.hidden=false;
+  setTimeout(()=>gestureHint.hidden=true,1650);
+}
+
+g("start").addEventListener("click",start);
+g("replay").addEventListener("click",start);
+g("back").addEventListener("click",back);
+modeBtn.addEventListener("click",toggleAuto);
+
+stage.addEventListener("pointerdown",e=>{
+  down={x:e.clientX,y:e.clientY,t:Date.now()};
+});
+
+stage.addEventListener("pointermove",e=>{
+  if(!down)return;
+  const dy=e.clientY-down.y;
+  const dx=e.clientX-down.x;
+  if(Math.abs(dy)>18&&Math.abs(dy)>Math.abs(dx)){
+    showScrollHint();
+  }
+});
+
+stage.addEventListener("pointerup",e=>{
+  if(!down)return;
+  const dx=e.clientX-down.x;
+  const dy=e.clientY-down.y;
+  const distance=Math.hypot(dx,dy);
+  const elapsed=Date.now()-down.t;
+  down=null;
+
+  if(distance<18&&elapsed<700) next();
+});
+
+stage.addEventListener("touchmove",e=>{
+  e.preventDefault();
+},{passive:false});
+
+window.addEventListener("resize",()=>{
+  requestAnimationFrame(()=>applyLayout());
+});
+
+addEventListener("keydown",e=>{
+  if(player.hidden)return;
+  if([" ","ArrowRight","Enter"].includes(e.key)){
+    e.preventDefault();
+    next();
+  }
+  if(e.key==="Escape")back();
+});
+
+prog();
+})();
