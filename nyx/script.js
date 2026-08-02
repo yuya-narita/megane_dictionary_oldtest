@@ -86,6 +86,8 @@ let typingSoundCounter = 0;
 let syncMode=false;
 let lastSyncedSegmentIndex=-1;
 let voiceTimeHandler=null;
+let voiceSyncFrame=null;
+let lastVoiceRenderedText='';
 let modalReleaseLockTimer = null;
 let suppressGhostInputUntil = 0;
 
@@ -339,48 +341,101 @@ function playSaveTone() {
 
 
 function detachVoiceSync(){
- if(voiceTimeHandler){
-  els.voicePlayer.removeEventListener('timeupdate',voiceTimeHandler);
-  els.voicePlayer.removeEventListener('seeked',voiceTimeHandler);
-  voiceTimeHandler=null;
- }
- syncMode=false;
- lastSyncedSegmentIndex=-1;
+  if(voiceTimeHandler){
+    els.voicePlayer.removeEventListener('timeupdate',voiceTimeHandler);
+    els.voicePlayer.removeEventListener('seeked',voiceTimeHandler);
+    voiceTimeHandler=null;
+  }
+  if(voiceSyncFrame){
+    cancelAnimationFrame(voiceSyncFrame);
+    voiceSyncFrame=null;
+  }
+  syncMode=false;
+  lastSyncedSegmentIndex=-1;
+  lastVoiceRenderedText='';
 }
 function getVisibleSegmentIndex(time){
- const segments=currentLog.segments||[];
- let index=-1;
- for(let i=0;i<segments.length;i++){
-  if(segments[i].time<=time+0.04)index=i;
-  else break;
- }
- return index;
+  const segments=currentLog.segments||[];
+  let index=-1;
+  for(let i=0;i<segments.length;i++){
+    if(segments[i].time<=time+0.04)index=i;
+    else break;
+  }
+  return index;
 }
-function renderSyncedSegments(force=false){
- if(!syncMode||!Array.isArray(currentLog.segments))return;
- const nextIndex=getVisibleSegmentIndex(els.voicePlayer.currentTime||0);
- if(!force&&nextIndex===lastSyncedSegmentIndex)return;
- lastSyncedSegmentIndex=nextIndex;
- const visible=nextIndex>=0
-  ?currentLog.segments.slice(0,nextIndex+1).map(segment=>segment.text).join('\n\n')
-  :'';
- els.screen.textContent=visible;
- charIndex=visible.length;
- els.cursor.hidden=false;
- updateReadout();
- els.viewport.scrollTop=els.viewport.scrollHeight;
+function getSegmentEndTime(index){
+  const segments=currentLog.segments||[];
+  const next=segments[index+1];
+  if(next)return Math.max(segments[index].time+.1,next.time);
+  const duration=Number(els.voicePlayer.duration);
+  if(Number.isFinite(duration)&&duration>segments[index].time)return duration;
+  const text=String(segments[index].text||'');
+  return segments[index].time+Math.max(1.5,text.length*.075);
+}
+function buildVoiceTypedText(time){
+  const segments=currentLog.segments||[];
+  const activeIndex=getVisibleSegmentIndex(time);
+  if(activeIndex<0)return '';
+  const completed=segments.slice(0,activeIndex).map(segment=>String(segment.text||''));
+  const active=segments[activeIndex];
+  const activeText=String(active.text||'');
+  const startTime=Number(active.time)||0;
+  const endTime=getSegmentEndTime(activeIndex);
+  const available=Math.max(.15,endTime-startTime);
+  const naturalTypingSeconds=Math.max(.45,activeText.length*.055);
+  const typingSeconds=Math.min(available*.82,naturalTypingSeconds);
+  const elapsed=Math.max(0,time-startTime);
+  const progress=Math.min(1,elapsed/Math.max(.12,typingSeconds));
+  const visibleChars=Math.min(activeText.length,Math.floor(activeText.length*progress));
+  const partial=activeText.slice(0,visibleChars);
+  return [...completed,partial].filter((text,index,array)=>text!==''||index<array.length-1).join('\n\n');
+}
+function renderSyncedTyping(force=false){
+  if(!syncMode||!Array.isArray(currentLog.segments))return;
+  const visible=buildVoiceTypedText(els.voicePlayer.currentTime||0);
+  if(!force&&visible===lastVoiceRenderedText)return;
+  if(visible.length>lastVoiceRenderedText.length){
+    const added=visible.slice(lastVoiceRenderedText.length);
+    const lastChar=added.at(-1)||'';
+    if(lastChar)typingTick(lastChar);
+  }
+  lastVoiceRenderedText=visible;
+  els.screen.textContent=visible;
+  charIndex=visible.length;
+  lastSyncedSegmentIndex=getVisibleSegmentIndex(els.voicePlayer.currentTime||0);
+  els.cursor.hidden=false;
+  updateReadout();
+  els.viewport.scrollTop=els.viewport.scrollHeight;
+}
+function voiceSyncLoop(){
+  if(!syncMode)return;
+  renderSyncedTyping();
+  if(playing&&!els.voicePlayer.paused&&!els.voicePlayer.ended){
+    voiceSyncFrame=requestAnimationFrame(voiceSyncLoop);
+  }else{
+    voiceSyncFrame=null;
+  }
+}
+function startVoiceSyncLoop(){
+  if(!syncMode)return;
+  if(voiceSyncFrame)cancelAnimationFrame(voiceSyncFrame);
+  voiceSyncFrame=requestAnimationFrame(voiceSyncLoop);
 }
 function enableVoiceSegmentSync(){
- detachVoiceSync();
- if(!currentLog.voiceSrc||!Array.isArray(currentLog.segments)||!currentLog.segments.length)return false;
- syncMode=true;
- voiceTimeHandler=()=>renderSyncedSegments();
- els.voicePlayer.addEventListener('timeupdate',voiceTimeHandler);
- els.voicePlayer.addEventListener('seeked',voiceTimeHandler);
- els.screen.textContent='';
- charIndex=0;
- renderSyncedSegments(true);
- return true;
+  detachVoiceSync();
+  if(!currentLog.voiceSrc||!Array.isArray(currentLog.segments)||!currentLog.segments.length)return false;
+  syncMode=true;
+  lastVoiceRenderedText='';
+  voiceTimeHandler=()=>{
+    renderSyncedTyping(true);
+    if(playing)startVoiceSyncLoop();
+  };
+  els.voicePlayer.addEventListener('timeupdate',voiceTimeHandler);
+  els.voicePlayer.addEventListener('seeked',voiceTimeHandler);
+  els.screen.textContent='';
+  charIndex=0;
+  renderSyncedTyping(true);
+  return true;
 }
 async function startPlayback(){
  if(mode!=='view'||!currentLog.body||playing)return;
@@ -440,6 +495,7 @@ function pausePlayback(){
  els.footerState.textContent=syncMode?'VOICE SYNCHRONIZED / PAUSED':'TOUCH FIELD TO RESUME';
  els.cursor.hidden=true;
  if(!els.voicePlayer.paused)els.voicePlayer.pause();
+ if(voiceSyncFrame){cancelAnimationFrame(voiceSyncFrame);voiceSyncFrame=null;}
 }
 async function resumePlayback(){
  if(mode!=='view'||playing||charIndex<0||charIndex>=(currentLog.body?.length||0))return;
@@ -1038,10 +1094,14 @@ els.viewport.addEventListener('pointerup', e => {
 els.subjectRow.addEventListener('click', () => { if (reviewMode) resetToStandby(true); });
 els.voicePlayer.addEventListener('ended',()=>{
  if(syncMode&&currentLog.segments?.length){
-  els.screen.textContent=currentLog.segments.map(segment=>segment.text).join('\n\n');
-  charIndex=els.screen.textContent.length;
+  const fullText=currentLog.segments.map(segment=>String(segment.text||'')).join('\n\n');
+  lastVoiceRenderedText=fullText;
+  els.screen.textContent=fullText;
+  charIndex=fullText.length;
   updateReadout();
+  els.viewport.scrollTop=els.viewport.scrollHeight;
  }
+ if(voiceSyncFrame){cancelAnimationFrame(voiceSyncFrame);voiceSyncFrame=null;}
  setVoiceState('STREAM CLOSED');
  if(playing)finishPlayback();
 });
@@ -1061,7 +1121,7 @@ $('dropZone').addEventListener('drop',async e=>{
 });
 
 
-/* v1.0.6.1 TARGET / PLAYBACK GESTURES */
+/* v1.0.6.2 TARGET / PLAYBACK GESTURES */
 function distanceBetweenTouches(touches) {
   const a = touches[0], b = touches[1];
   return Math.hypot(b.clientX-a.clientX,b.clientY-a.clientY);
@@ -1174,7 +1234,7 @@ function resolveHostDestination() {
 
 function navigateToHost() {
   const destination = resolveHostDestination();
-  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v1.0.6.1' }, '*'); } catch {}
+  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v1.0.6.2' }, '*'); } catch {}
   if (destination) { location.href = destination; return; }
   if (history.length > 1) { history.back(); return; }
   // Standalone preview fallback: return to idle terminal instead of trapping the user.
