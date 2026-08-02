@@ -36,7 +36,7 @@ window.NYX_ARCHIVES = [
         archiveId: "observe",
         voiceSrc: "./audio/nxs_001.mp3",
         segments: [
-          { time: 0.0, text: "…アクセスログ検知。" },
+          { time: 1.0, text: "…アクセスログ検知。" },
           { time: 2.8, text: "silent_packet://nxs-observe" },
           { time: 5.4, text: "読み取り専用で開放する。" },
           { time: 8.5, text: "改変は禁止。" },
