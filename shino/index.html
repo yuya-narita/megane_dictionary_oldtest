@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#f5f2ea">
-  <title>貧乏メガネのシノ — SCENE PLAYER v0.4.4</title>
+  <title>貧乏メガネのシノ — SCENE PLAYER v0.4.5</title>
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
@@ -19,7 +19,7 @@
   </section>
 
   <section id="cover" class="screen cover" hidden>
-    <button id="coverBack" class="corner-button" aria-label="話数一覧へ">‹</button>
+    <button id="coverBack" class="cover-back" aria-label="話数一覧へ"><span aria-hidden="true">←</span><span>話数一覧</span></button>
     <div class="eyebrow">SHINO SCENE PLAYER</div>
     <h1>貧乏メガネのシノ</h1>
     <p id="episodeNumber">第1話</p>
@@ -55,11 +55,29 @@
   </section>
 
   <section id="ending" class="screen ending" hidden>
-    <div id="endingText" class="ending-text"></div>
-    <h2>つづく</h2>
+    <div class="ending-card">
+      <h2>つづく</h2>
+    </div>
+
     <div id="endingActions" class="ending-actions" hidden>
-      <button id="replay" class="primary-button">もう一度</button>
-      <button id="episodes" class="secondary-button">話数一覧</button>
+      <div class="episode-nav">
+        <button id="previousEpisode" class="ending-nav-button" hidden>
+          <span class="nav-kicker">PREVIOUS</span>
+          <span class="nav-label">前の話</span>
+        </button>
+
+        <button id="episodes" class="ending-nav-button">
+          <span class="nav-kicker">EPISODES</span>
+          <span class="nav-label">話数一覧</span>
+        </button>
+
+        <button id="nextEpisode" class="ending-nav-button" hidden>
+          <span class="nav-kicker">NEXT</span>
+          <span class="nav-label">続き</span>
+        </button>
+      </div>
+
+      <button id="replay" class="replay-link">もう一度読む</button>
     </div>
   </section>
 </main>

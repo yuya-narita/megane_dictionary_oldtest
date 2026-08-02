@@ -9,7 +9,8 @@ const shelf=g("shelf"),cover=g("cover"),player=g("player"),ending=g("ending");
 const episodeList=g("episodeList"),continueButton=g("continueButton");
 const lines=g("lines"),stage=g("stage"),theme=g("theme"),ambience=g("ambience");
 const count=g("count"),bar=g("bar"),modeBtn=g("mode"),soundBtn=g("sound");
-const gestureHint=g("gestureHint"),endingText=g("endingText"),endingActions=g("endingActions");
+const gestureHint=g("gestureHint"),endingActions=g("endingActions");
+const previousEpisodeButton=g("previousEpisode"),nextEpisodeButton=g("nextEpisode");
 
 let episode=null;
 let story=[];
@@ -92,6 +93,26 @@ function renderShelf(){
   const saved=savedProgress();
   const resumable=saved&&SERIES.episodes.some(ep=>ep.id===saved.episodeId)&&saved.sceneIndex>0;
   continueButton.hidden=!resumable;
+}
+
+function episodeIndex(){
+  return SERIES.episodes.findIndex(ep=>ep.id===episode?.id);
+}
+
+function adjacentEpisode(offset){
+  const index=episodeIndex();
+  if(index<0)return null;
+  return SERIES.episodes[index+offset]||null;
+}
+
+function openAdjacentEpisode(offset){
+  const target=adjacentEpisode(offset);
+  if(!target)return;
+
+  clearTimers();
+  theme.pause();
+  stopAmbience(240);
+  openCover(target.id);
 }
 
 function openCover(id){
@@ -475,20 +496,37 @@ function finish(){
   clearTimers();
   localStorage.removeItem(SAVE_KEY);
 
-  const final=story.at(-1);
-  endingText.innerHTML="";
-  String(final?.text||"").split("\n").filter(Boolean).forEach((text,index)=>{
-    const p=document.createElement("p");
-    p.textContent=text;
-    if(index===String(final?.text||"").split("\n").filter(Boolean).length-1)p.className="strong";
-    endingText.appendChild(p);
-  });
+  const previous=adjacentEpisode(-1);
+  const nextEpisode=adjacentEpisode(1);
 
+  previousEpisodeButton.hidden=!previous;
+  nextEpisodeButton.hidden=!nextEpisode;
+
+  if(previous){
+    previousEpisodeButton.setAttribute(
+      "aria-label",
+      `前の話、第${previous.number}話「${previous.title}」`
+    );
+  }
+
+  if(nextEpisode){
+    nextEpisodeButton.setAttribute(
+      "aria-label",
+      `続き、第${nextEpisode.number}話「${nextEpisode.title}」`
+    );
+  }
+
+  endingActions.classList.remove("is-visible");
   endingActions.hidden=true;
   show(ending);
   stopAmbience(900);
   animateVolume(.42,1800);
-  endingTimer=setTimeout(()=>endingActions.hidden=false,4200);
+
+  // First leave only the centered end card and the theme.
+  endingTimer=setTimeout(()=>{
+    endingActions.hidden=false;
+    requestAnimationFrame(()=>endingActions.classList.add("is-visible"));
+  },3600);
 }
 
 function backToCover(){
@@ -599,6 +637,8 @@ g("resumeFromCover").addEventListener("click",async()=>{
 });
 g("back").addEventListener("click",backToCover);
 g("replay").addEventListener("click",()=>{openCover(episode.id);startEpisode(false)});
+previousEpisodeButton.addEventListener("click",()=>openAdjacentEpisode(-1));
+nextEpisodeButton.addEventListener("click",()=>openAdjacentEpisode(1));
 g("episodes").addEventListener("click",()=>{renderShelf();show(shelf)});
 continueButton.addEventListener("click",()=>{
   const saved=savedProgress();
