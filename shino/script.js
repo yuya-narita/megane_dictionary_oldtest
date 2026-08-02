@@ -35,6 +35,8 @@ let ambienceGain=null;
 let masterGain=null;
 let audioGraphReady=false;
 let ambienceStopTimer=null;
+let ambienceUnlocked=false;
+let ambiencePrimedSrc=null;
 
 const MAX_VISIBLE=4;
 const AUTO_SLOW_FACTOR=1.85;
@@ -237,6 +239,41 @@ async function ensureAudioGraph(){
   return true;
 }
 
+
+async function primeAmbienceTrack(src){
+  if(!src)return false;
+  if(!await ensureAudioGraph())return false;
+
+  const absolute=new URL(src,location.href).href;
+
+  if(ambience.src!==absolute){
+    ambience.src=src;
+    ambience.load();
+  }
+
+  ambiencePrimedSrc=src;
+
+  try{
+    ambienceGain.gain.cancelScheduledValues(audioContext.currentTime);
+    ambienceGain.gain.setValueAtTime(0,audioContext.currentTime);
+    await ambience.play();
+    ambienceUnlocked=true;
+    return true;
+  }catch{
+    ambienceUnlocked=false;
+    return false;
+  }
+}
+
+function firstAmbienceSrc(){
+  for(const ep of (SERIES.episodes||[])){
+    for(const cut of (ep.story||[])){
+      if(cut.ambience?.src)return cut.ambience.src;
+    }
+  }
+  return null;
+}
+
 function rampGain(node,target,duration=800){
   if(!node||!audioContext)return;
   const now=audioContext.currentTime;
@@ -258,42 +295,61 @@ function animateVolume(target,duration=800){
 
 async function playAmbience(direction){
   if(!direction?.src)return;
+
   clearTimeout(ambienceStopTimer);
+  ambienceStopTimer=null;
 
   if(!await ensureAudioGraph())return;
 
   const absolute=new URL(direction.src,location.href).href;
+
   if(ambience.src!==absolute){
-    ambience.src=direction.src;
-    try{ambience.currentTime=0}catch{}
+    const switched=await primeAmbienceTrack(direction.src);
+    if(!switched)return;
+  }else if(ambience.paused){
+    try{
+      await ambience.play();
+      ambienceUnlocked=true;
+    }catch{
+      return;
+    }
   }
 
-  try{await ambience.play()}catch{return}
-
-  ambienceGain.gain.setValueAtTime(.0001,audioContext.currentTime);
-  rampGain(ambienceGain,direction.volume??.5,direction.fadeIn??700);
+  rampGain(
+    ambienceGain,
+    direction.volume??.5,
+    direction.fadeIn??700
+  );
 
   if(direction.stopAfter){
     ambienceStopTimer=setTimeout(()=>{
       rampGain(ambienceGain,0,direction.fadeOut??1200);
-      setTimeout(()=>{
-        ambience.pause();
-        try{ambience.currentTime=0}catch{}
-      },(direction.fadeOut??1200)+80);
+
+      // Keep the track running silently on iPhone so later scenes
+      // do not need a new play() permission.
+      ambienceStopTimer=setTimeout(()=>{
+        if(ambienceGain&&audioContext){
+          ambienceGain.gain.cancelScheduledValues(audioContext.currentTime);
+          ambienceGain.gain.setValueAtTime(0,audioContext.currentTime);
+        }
+      },(direction.fadeOut??1200)+40);
     },direction.stopAfter);
   }
 }
 
 function stopAmbience(fade=900){
   if(!audioGraphReady){
-    ambience.pause();
     return;
   }
+
   rampGain(ambienceGain,0,fade);
+
   setTimeout(()=>{
-    ambience.pause();
-    try{ambience.currentTime=0}catch{}
-  },fade+80);
+    if(ambienceGain&&audioContext){
+      ambienceGain.gain.cancelScheduledValues(audioContext.currentTime);
+      ambienceGain.gain.setValueAtTime(0,audioContext.currentTime);
+    }
+  },fade+40);
 }
 
 function applyMusic(cut){
@@ -362,6 +418,11 @@ async function startEpisode(fromSaved=false){
 
   try{
     await ensureAudioGraph();
+
+    const ambienceSrc=firstAmbienceSrc();
+    if(ambienceSrc){
+      await primeAmbienceTrack(ambienceSrc);
+    }
 
     await new Promise(resolve=>{
       if(theme.readyState>=1)return resolve();
@@ -461,10 +522,18 @@ async function toggleSound(){
   }else{
     try{
       await theme.play();
-      if(ambience.src&&ambience.currentTime>0){
-        await ambience.play().catch(()=>{});
+
+      if(ambiencePrimedSrc){
+        if(ambience.src!==new URL(ambiencePrimedSrc,location.href).href){
+          ambience.src=ambiencePrimedSrc;
+          ambience.load();
+        }
+        ambienceGain.gain.setValueAtTime(0,audioContext.currentTime);
+        await ambience.play();
+        ambienceUnlocked=true;
       }
     }catch{}
+
     rampGain(themeGain,resumeVolume||SERIES.defaultVolume||.24,700);
   }
 
@@ -517,8 +586,16 @@ function showScrollHint(){
 }
 
 g("coverBack").addEventListener("click",()=>{renderShelf();show(shelf)});
-g("start").addEventListener("click",()=>startEpisode(false));
-g("resumeFromCover").addEventListener("click",()=>startEpisode(true));
+g("start").addEventListener("click",async()=>{
+  const src=firstAmbienceSrc();
+  if(src)await primeAmbienceTrack(src);
+  startEpisode(false);
+});
+g("resumeFromCover").addEventListener("click",async()=>{
+  const src=firstAmbienceSrc();
+  if(src)await primeAmbienceTrack(src);
+  startEpisode(true);
+});
 g("back").addEventListener("click",backToCover);
 g("replay").addEventListener("click",()=>{openCover(episode.id);startEpisode(false)});
 g("episodes").addEventListener("click",()=>{renderShelf();show(shelf)});
