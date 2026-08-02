@@ -1,21 +1,18 @@
 (()=>{
 "use strict";
 
-const S=window.SHINO_STORY||[];
+const SERIES=window.SHINO_SERIES||{episodes:[]};
 const g=id=>document.getElementById(id);
 
-const cover=g("cover");
-const player=g("player");
-const ending=g("ending");
-const lines=g("lines");
-const count=g("count");
-const bar=g("bar");
-const theme=g("theme");
-const modeBtn=g("mode");
-const modeLabel=g("modeLabel");
-const stage=g("stage");
-const gestureHint=g("gestureHint");
+const screens=[g("shelf"),g("cover"),g("player"),g("ending")];
+const shelf=g("shelf"),cover=g("cover"),player=g("player"),ending=g("ending");
+const episodeList=g("episodeList"),continueButton=g("continueButton");
+const lines=g("lines"),stage=g("stage"),theme=g("theme");
+const count=g("count"),bar=g("bar"),modeBtn=g("mode"),soundBtn=g("sound");
+const gestureHint=g("gestureHint"),endingText=g("endingText"),endingActions=g("endingActions");
 
+let episode=null;
+let story=[];
 let i=0;
 let auto=false;
 let timer=null;
@@ -24,37 +21,92 @@ let queuedNext=false;
 let down=null;
 let scrollHintShown=false;
 let visibleItems=[];
+let musicMuted=false;
+let volumeAnimation=null;
+let endingTimer=null;
 
 const MAX_VISIBLE=4;
-const AUTO_SLOW_FACTOR=1.65;
-const BASE_GAP=34;
-const LARGE_GAP=62;
-const SOUND_GAP=72;
+const AUTO_SLOW_FACTOR=1.85;
+const BASE_GAP=36;
+const LARGE_GAP=68;
+const SOUND_GAP=80;
+const SAVE_KEY="shino_scene_player_progress_v04";
 
-function show(x){
-  [cover,player,ending].forEach(n=>n.hidden=n!==x);
+function show(target){
+  screens.forEach(node=>node.hidden=node!==target);
 }
 
-function prog(){
-  count.textContent=`${Math.min(i,S.length)} / ${S.length}`;
-  bar.style.width=`${S.length?i/S.length*100:0}%`;
+function savedProgress(){
+  try{return JSON.parse(localStorage.getItem(SAVE_KEY)||"null")}catch{return null}
 }
 
-function reset(){
+function saveProgress(){
+  if(!episode)return;
+  localStorage.setItem(SAVE_KEY,JSON.stringify({
+    episodeId:episode.id,
+    sceneIndex:i,
+    updatedAt:Date.now()
+  }));
+}
+
+function clearTimers(){
   clearTimeout(timer);
+  clearTimeout(endingTimer);
   timer=null;
-  i=0;
+  endingTimer=null;
+}
+
+function renderShelf(){
+  episodeList.innerHTML="";
+  SERIES.episodes.forEach(ep=>{
+    const button=document.createElement("button");
+    button.className="episode-card";
+    button.innerHTML=`
+      <span class="number">EP.${String(ep.number).padStart(2,"0")}</span>
+      <span><strong>${ep.title}</strong><small>${ep.description||""}</small></span>
+      <span class="arrow">›</span>`;
+    button.addEventListener("click",()=>openCover(ep.id));
+    episodeList.appendChild(button);
+  });
+
+  const saved=savedProgress();
+  const resumable=saved&&SERIES.episodes.some(ep=>ep.id===saved.episodeId)&&saved.sceneIndex>0;
+  continueButton.hidden=!resumable;
+}
+
+function openCover(id){
+  episode=SERIES.episodes.find(ep=>ep.id===id)||SERIES.episodes[0];
+  if(!episode)return;
+  story=episode.story||[];
+
+  g("episodeNumber").textContent=`第${episode.number}話`;
+  g("episodeTitle").textContent=`「${episode.title}」`;
+  g("playerEpisode").textContent=`第${episode.number}話「${episode.title}」`;
+
+  const saved=savedProgress();
+  g("resumeFromCover").hidden=!(saved&&saved.episodeId===episode.id&&saved.sceneIndex>0&&saved.sceneIndex<story.length);
+  show(cover);
+}
+
+function progress(){
+  count.textContent=`${Math.min(i,story.length)} / ${story.length}`;
+  bar.style.width=`${story.length?i/story.length*100:0}%`;
+}
+
+function resetScene(startIndex=0){
+  clearTimers();
+  i=Math.max(0,Math.min(startIndex,story.length));
   busy=false;
   queuedNext=false;
   lines.innerHTML="";
   visibleItems=[];
-  prog();
+  progress();
 }
 
 function getGap(prevType,nextType){
-  if(prevType==="sound"||nextType==="sound") return SOUND_GAP;
-  if(prevType!==nextType) return LARGE_GAP;
-  if(prevType==="dialogue") return 52;
+  if(prevType==="sound"||nextType==="sound")return SOUND_GAP;
+  if(prevType!==nextType)return LARGE_GAP;
+  if(prevType==="dialogue")return 56;
   return BASE_GAP;
 }
 
@@ -65,8 +117,6 @@ function createLine(cut){
   node.textContent=cut.text;
   node.dataset.type=cut.type||"narration";
   lines.appendChild(node);
-
-  // Force layout so the entering state is committed before movement.
   node.getBoundingClientRect();
   return node;
 }
@@ -74,160 +124,196 @@ function createLine(cut){
 function updateLineAges(){
   visibleItems.forEach((item,index)=>{
     item.node.classList.remove("age-1","age-2","age-3","newest");
-    const distance=(visibleItems.length-1)-index;
-    if(distance===0)item.node.classList.add("newest");
-    else if(distance===1)item.node.classList.add("age-1");
-    else if(distance===2)item.node.classList.add("age-2");
-    else item.node.classList.add("age-3");
+    const d=(visibleItems.length-1)-index;
+    item.node.classList.add(d===0?"newest":d===1?"age-1":d===2?"age-2":"age-3");
   });
 }
 
-function tactilePulse(){
-  stage.classList.remove("scene-breathe");
-  void stage.offsetWidth;
-  stage.classList.add("scene-breathe");
-  setTimeout(()=>stage.classList.remove("scene-breathe"),450);
-  try{if(navigator.vibrate)navigator.vibrate(6)}catch{}
-}
-
-function measureLayout(){
+function measureLayout(extraGap=0){
   const stageHeight=stage.clientHeight;
-  const focusY=stageHeight*(window.innerWidth<=600?0.46:0.48);
-  const items=visibleItems.map(item=>({
-    ...item,
-    height:item.node.getBoundingClientRect().height
-  }));
+  const focusY=stageHeight*(innerWidth<=600?.46:.48);
+  const items=visibleItems.map(item=>({...item,height:item.node.getBoundingClientRect().height}));
+  if(!items.length)return [];
 
-  if(!items.length) return [];
-
-  // Newest text sits at the visual focus, slightly above center.
-  const newest=items[items.length-1];
-  let newestTop=focusY-(newest.height/2);
-
-  // Long dialogue is placed a little higher so the thumb never covers it.
-  if(newest.type==="dialogue"||newest.type==="ending"){
-    newestTop-=12;
-  }
+  const newest=items.at(-1);
+  let newestTop=focusY-newest.height/2;
+  if(newest.type==="dialogue"||newest.type==="ending")newestTop-=12;
 
   const positions=new Array(items.length);
   positions[items.length-1]=newestTop;
 
   for(let idx=items.length-2;idx>=0;idx--){
-    const current=items[idx];
-    const next=items[idx+1];
-    const gap=getGap(current.type,next.type);
-    positions[idx]=positions[idx+1]-gap-current.height;
+    const current=items[idx],next=items[idx+1];
+    positions[idx]=positions[idx+1]-getGap(current.type,next.type)-extraGap-current.height;
   }
-
   return items.map((item,idx)=>({...item,y:positions[idx]}));
 }
 
-function applyLayout(newNode){
+function positionLines(extraGap=0){
   updateLineAges();
-  const layout=measureLayout();
-
-  layout.forEach(item=>{
+  measureLayout(extraGap).forEach(item=>{
     item.node.style.transform=`translate3d(0,${Math.round(item.y)}px,0)`;
-    item.node.classList.remove("entering");
-    item.node.classList.add("visible");
   });
-
-  if(newNode){
-    // A tiny delayed reveal prevents the perceived "snap".
-    requestAnimationFrame(()=>{
-      newNode.classList.remove("entering");
-      newNode.classList.add("visible");
-    });
-  }
 }
 
-function removeOldestIfNeeded(){
+function breatheWhitespace(newNode){
+  stage.classList.add("whitespace-inhale");
+  positionLines(9);
+
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      stage.classList.remove("whitespace-inhale");
+      stage.classList.add("whitespace-exhale");
+      positionLines(0);
+      newNode.classList.remove("entering");
+      newNode.classList.add("visible");
+      setTimeout(()=>stage.classList.remove("whitespace-exhale"),680);
+    });
+  });
+}
+
+function removeOld(){
   while(visibleItems.length>MAX_VISIBLE){
     const old=visibleItems.shift();
     old.node.classList.add("leaving");
-    old.node.style.transform=`${old.node.style.transform} translateY(-10px)`;
-    setTimeout(()=>old.node.remove(),360);
+    setTimeout(()=>old.node.remove(),390);
   }
+}
+
+function animateVolume(target,duration=800){
+  cancelAnimationFrame(volumeAnimation);
+  if(musicMuted)return;
+  const from=Number.isFinite(theme.volume)?theme.volume:0;
+  const to=Math.max(0,Math.min(1,target));
+  const start=performance.now();
+
+  const tick=now=>{
+    const p=Math.min(1,(now-start)/Math.max(1,duration));
+    const eased=1-Math.pow(1-p,3);
+    theme.volume=from+(to-from)*eased;
+    if(p<1)volumeAnimation=requestAnimationFrame(tick);
+  };
+  volumeAnimation=requestAnimationFrame(tick);
+}
+
+function applyMusic(cut){
+  const direction=cut.music;
+  if(!direction)return;
+  animateVolume(direction.volume??SERIES.defaultVolume??.24,direction.fade??800);
+}
+
+function tactileRelease(){
+  stage.classList.remove("release-spring");
+  void stage.offsetWidth;
+  stage.classList.add("release-spring");
+  setTimeout(()=>stage.classList.remove("release-spring"),380);
+  try{navigator.vibrate?.(6)}catch{}
 }
 
 function next(){
-  if(busy){
-    queuedNext=true;
-    return;
-  }
-
-  if(i>=S.length){
-    clearTimeout(timer);
-    show(ending);
-    theme.volume=Math.min(1,(theme.volume||.28)+.18);
-    return;
-  }
+  if(busy){queuedNext=true;return}
+  if(i>=story.length){finish();return}
 
   busy=true;
   queuedNext=false;
-  tactilePulse();
+  tactileRelease();
 
-  const cut=S[i++];
+  const cut=story[i++];
+  applyMusic(cut);
   const node=createLine(cut);
+  visibleItems.push({node,type:cut.type||"narration"});
+  removeOld();
+  progress();
+  saveProgress();
 
-  visibleItems.push({
-    node,
-    type:cut.type||"narration"
-  });
+  requestAnimationFrame(()=>breatheWhitespace(node));
 
-  removeOldestIfNeeded();
-
-  requestAnimationFrame(()=>{
-    applyLayout(node);
-    prog();
-  });
-
+  const hold=cut.music?.hold||0;
   setTimeout(()=>{
     busy=false;
-
-    if(queuedNext){
-      queuedNext=false;
-      next();
-      return;
-    }
-
+    if(queuedNext){queuedNext=false;next();return}
     if(auto){
-      const wait=Math.max(1650,(cut.pause||1300)*AUTO_SLOW_FACTOR);
+      const wait=Math.max(1800,(cut.pause||1300)*AUTO_SLOW_FACTOR+hold);
       timer=setTimeout(next,wait);
     }
-  },390);
+  },430+hold);
 }
 
-async function start(){
-  reset();
+async function startEpisode(fromSaved=false){
+  const saved=savedProgress();
+  const startAt=fromSaved&&saved?.episodeId===episode.id ? saved.sceneIndex : 0;
+  resetScene(startAt);
   show(player);
 
+  theme.src=SERIES.themeSrc||"./audio/shino_theme.mp3";
   try{
-    theme.volume=.28;
+    theme.volume=musicMuted?0:(SERIES.defaultVolume??.24);
     await theme.play();
   }catch{}
 
-  setTimeout(next,650);
+  if(startAt>0){
+    // Rebuild recent context without animation.
+    const begin=Math.max(0,startAt-MAX_VISIBLE);
+    visibleItems=[];
+    lines.innerHTML="";
+    for(let idx=begin;idx<startAt;idx++){
+      const cut=story[idx];
+      const node=createLine(cut);
+      node.classList.remove("entering");
+      node.classList.add("visible");
+      visibleItems.push({node,type:cut.type||"narration"});
+    }
+    positionLines(0);
+    progress();
+  }else{
+    setTimeout(next,650);
+  }
 }
 
-function back(){
-  clearTimeout(timer);
-  timer=null;
+function finish(){
+  clearTimers();
+  localStorage.removeItem(SAVE_KEY);
+
+  const final=story.at(-1);
+  endingText.innerHTML="";
+  String(final?.text||"").split("\n").filter(Boolean).forEach((text,index)=>{
+    const p=document.createElement("p");
+    p.textContent=text;
+    if(index===String(final?.text||"").split("\n").filter(Boolean).length-1)p.className="strong";
+    endingText.appendChild(p);
+  });
+
+  endingActions.hidden=true;
+  show(ending);
+  animateVolume(.42,1800);
+  endingTimer=setTimeout(()=>endingActions.hidden=false,4200);
+}
+
+function backToCover(){
+  clearTimers();
+  saveProgress();
   theme.pause();
-  theme.currentTime=0;
   show(cover);
-  reset();
 }
 
-function toggleAuto(event){
-  event.stopPropagation();
+function toggleAuto(){
   auto=!auto;
   modeBtn.textContent=auto?"MAN":"AUTO";
-  modeLabel.textContent=auto?"AUTO":"MANUAL";
   clearTimeout(timer);
+  if(auto&&i>0)timer=setTimeout(next,1700);
+}
 
-  if(auto&&i>0){
-    timer=setTimeout(next,1500);
+function toggleSound(){
+  musicMuted=!musicMuted;
+  soundBtn.classList.toggle("muted",musicMuted);
+  soundBtn.textContent=musicMuted?"♪×":"♪";
+  if(musicMuted){
+    cancelAnimationFrame(volumeAnimation);
+    theme.volume=0;
+  }else{
+    theme.volume=0;
+    theme.play().catch(()=>{});
+    animateVolume(SERIES.defaultVolume??.24,700);
   }
 }
 
@@ -238,62 +324,45 @@ function showScrollHint(){
   setTimeout(()=>gestureHint.hidden=true,1650);
 }
 
-g("start").addEventListener("click",start);
-g("replay").addEventListener("click",start);
-g("back").addEventListener("click",back);
+g("coverBack").addEventListener("click",()=>{renderShelf();show(shelf)});
+g("start").addEventListener("click",()=>startEpisode(false));
+g("resumeFromCover").addEventListener("click",()=>startEpisode(true));
+g("back").addEventListener("click",backToCover);
+g("replay").addEventListener("click",()=>{openCover(episode.id);startEpisode(false)});
+g("episodes").addEventListener("click",()=>{renderShelf();show(shelf)});
+continueButton.addEventListener("click",()=>{
+  const saved=savedProgress();
+  if(saved){openCover(saved.episodeId);startEpisode(true)}
+});
 modeBtn.addEventListener("click",toggleAuto);
+soundBtn.addEventListener("click",toggleSound);
 
 stage.addEventListener("pointerdown",e=>{
   down={x:e.clientX,y:e.clientY,t:Date.now()};
   stage.classList.add("is-pressed");
 });
-
 stage.addEventListener("pointermove",e=>{
   if(!down)return;
-  const dy=e.clientY-down.y;
-  const dx=e.clientX-down.x;
-  if(Math.abs(dy)>18&&Math.abs(dy)>Math.abs(dx)){
-    showScrollHint();
-  }
+  const dx=e.clientX-down.x,dy=e.clientY-down.y;
+  if(Math.abs(dy)>18&&Math.abs(dy)>Math.abs(dx))showScrollHint();
 });
-
 stage.addEventListener("pointerup",e=>{
   stage.classList.remove("is-pressed");
   if(!down)return;
-  const dx=e.clientX-down.x;
-  const dy=e.clientY-down.y;
-  const distance=Math.hypot(dx,dy);
+  const distance=Math.hypot(e.clientX-down.x,e.clientY-down.y);
   const elapsed=Date.now()-down.t;
   down=null;
-
-  if(distance<18&&elapsed<700) next();
+  if(distance<18&&elapsed<700)next();
 });
-
-stage.addEventListener("touchmove",e=>{
-  e.preventDefault();
-},{passive:false});
-
-stage.addEventListener("pointercancel",()=>{
-  down=null;
-  stage.classList.remove("is-pressed");
-});
-
-stage.addEventListener("pointerleave",()=>{
-  stage.classList.remove("is-pressed");
-});
-
-window.addEventListener("resize",()=>{
-  requestAnimationFrame(()=>applyLayout());
-});
-
+stage.addEventListener("pointercancel",()=>{down=null;stage.classList.remove("is-pressed")});
+stage.addEventListener("touchmove",e=>e.preventDefault(),{passive:false});
+addEventListener("resize",()=>requestAnimationFrame(()=>positionLines(0)));
 addEventListener("keydown",e=>{
   if(player.hidden)return;
-  if([" ","ArrowRight","Enter"].includes(e.key)){
-    e.preventDefault();
-    next();
-  }
-  if(e.key==="Escape")back();
+  if([" ","ArrowRight","Enter"].includes(e.key)){e.preventDefault();next()}
+  if(e.key==="Escape")backToCover();
 });
 
-prog();
+renderShelf();
+show(shelf);
 })();

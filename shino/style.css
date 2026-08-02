@@ -27,7 +27,7 @@ body{
 button{font:inherit}
 .screen{position:fixed;inset:0}
 
-.cover,.ending{
+.shelf,.cover,.ending{
   display:grid;
   place-content:center;
   justify-items:center;
@@ -288,3 +288,127 @@ footer{
   30%{opacity:.55}
   100%{opacity:0}
 }
+
+
+/* v0.4 — shelf / episode architecture */
+.shelf{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:calc(54px + env(safe-area-inset-top)) 24px calc(28px + env(safe-area-inset-bottom));
+  overflow:auto;
+  touch-action:pan-y;
+  background:
+    radial-gradient(circle at 50% 20%,rgba(255,255,255,.95),transparent 36%),
+    linear-gradient(#f8f6ef,#ebe3d5);
+}
+.shelf h1{margin-bottom:4px}
+.shelf-copy{color:var(--muted);letter-spacing:.08em}
+.episode-list{
+  width:min(620px,100%);
+  margin:34px 0 18px;
+  display:grid;
+  gap:10px;
+}
+.episode-card{
+  width:100%;
+  display:grid;
+  grid-template-columns:54px 1fr auto;
+  align-items:center;
+  gap:14px;
+  padding:16px;
+  border:1px solid rgba(93,83,67,.22);
+  background:rgba(255,255,255,.46);
+  text-align:left;
+  color:var(--ink);
+}
+.episode-card .number{
+  font:11px/1 ui-monospace,monospace;
+  color:var(--muted);
+}
+.episode-card strong{display:block;font-size:16px;margin-bottom:6px}
+.episode-card small{color:var(--muted);line-height:1.55}
+.episode-card .arrow{font-size:20px;color:var(--muted)}
+
+.primary-button,.secondary-button{
+  min-width:180px;
+  min-height:50px;
+  padding:0 22px;
+  border-radius:999px;
+  letter-spacing:.12em;
+}
+.primary-button{
+  border:1px solid #918a7c;
+  background:#ffffff73;
+  color:var(--ink);
+}
+.secondary-button{
+  margin-top:10px;
+  border:0;
+  background:transparent;
+  color:var(--muted);
+}
+.corner-button{
+  position:absolute;
+  left:18px;
+  top:max(16px,env(safe-area-inset-top));
+  width:42px;height:42px;
+  border:0;background:transparent;
+  font-size:26px;color:var(--ink);
+}
+
+/* v0.4 — whitespace breathing */
+#lines{
+  --space-breath:0px;
+}
+.line{
+  transition:
+    transform .58s cubic-bezier(.16,.82,.18,1),
+    opacity .38s ease,
+    filter .38s ease;
+}
+#stage.whitespace-inhale .line{
+  transition-duration:.24s;
+}
+#stage.whitespace-exhale .line{
+  transition-duration:.62s;
+}
+#stage.is-pressed{
+  transform:translateY(1px) scale(.9984);
+}
+#stage.release-spring{
+  animation:releaseSpring .36s cubic-bezier(.18,.82,.18,1);
+}
+@keyframes releaseSpring{
+  0%{transform:translateY(1px) scale(.9984)}
+  48%{transform:translateY(-.8px) scale(1.0012)}
+  100%{transform:translateY(0) scale(1)}
+}
+
+/* BGM controls remain almost invisible */
+header #sound{
+  font:15px/1 ui-monospace,monospace;
+  color:var(--muted);
+  transition:opacity .2s ease,transform .2s ease;
+}
+header #sound.muted{opacity:.34;text-decoration:line-through}
+header #sound:active{transform:scale(.9)}
+footer #mode{
+  border:0;background:transparent;
+  font:10px/1 ui-monospace,monospace;
+  color:var(--muted);
+}
+
+/* Ending leaves space before controls appear */
+.ending-text p{
+  font-size:clamp(26px,7vw,48px);
+  margin:0 0 12px;
+  line-height:1.7;
+}
+.ending-actions{
+  margin-top:44px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+.ending-actions[hidden]{display:none!important}
