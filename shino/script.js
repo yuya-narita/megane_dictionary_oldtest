@@ -22,8 +22,11 @@ let down=null;
 let scrollHintShown=false;
 let visibleItems=[];
 let musicMuted=false;
+let resumeVolume=SERIES.defaultVolume??.24;
 let volumeAnimation=null;
 let endingTimer=null;
+let saveAudioTimer=null;
+let lastViewport={w:innerWidth,h:innerHeight};
 
 const MAX_VISIBLE=4;
 const AUTO_SLOW_FACTOR=1.85;
@@ -45,6 +48,9 @@ function saveProgress(){
   localStorage.setItem(SAVE_KEY,JSON.stringify({
     episodeId:episode.id,
     sceneIndex:i,
+    musicTime:Number.isFinite(theme.currentTime)?theme.currentTime:0,
+    musicVolume:musicMuted?0:(Number.isFinite(theme.volume)?theme.volume:(SERIES.defaultVolume??.24)),
+    musicMuted,
     updatedAt:Date.now()
   }));
 }
@@ -52,8 +58,10 @@ function saveProgress(){
 function clearTimers(){
   clearTimeout(timer);
   clearTimeout(endingTimer);
+  clearInterval(saveAudioTimer);
   timer=null;
   endingTimer=null;
+  saveAudioTimer=null;
 }
 
 function renderShelf(){
@@ -167,7 +175,7 @@ function breatheWhitespace(newNode){
       positionLines(0);
       newNode.classList.remove("entering");
       newNode.classList.add("visible");
-      setTimeout(()=>stage.classList.remove("whitespace-exhale"),680);
+      setTimeout(()=>stage.classList.remove("whitespace-exhale"),820);
     });
   });
 }
@@ -185,6 +193,7 @@ function animateVolume(target,duration=800){
   if(musicMuted)return;
   const from=Number.isFinite(theme.volume)?theme.volume:0;
   const to=Math.max(0,Math.min(1,target));
+  resumeVolume=to;
   const start=performance.now();
 
   const tick=now=>{
@@ -236,7 +245,7 @@ function next(){
       const wait=Math.max(1800,(cut.pause||1300)*AUTO_SLOW_FACTOR+hold);
       timer=setTimeout(next,wait);
     }
-  },430+hold);
+  },560+hold);
 }
 
 async function startEpisode(fromSaved=false){
@@ -246,10 +255,44 @@ async function startEpisode(fromSaved=false){
   show(player);
 
   theme.src=SERIES.themeSrc||"./audio/shino_theme.mp3";
+
+  if(fromSaved&&saved?.episodeId===episode.id){
+    musicMuted=Boolean(saved.musicMuted);
+    resumeVolume=Math.max(0,Math.min(1,saved.musicVolume??(SERIES.defaultVolume??.24)));
+  }else{
+    musicMuted=false;
+    resumeVolume=SERIES.defaultVolume??.24;
+  }
+
+  soundBtn.classList.toggle("muted",musicMuted);
+  soundBtn.textContent=musicMuted?"♪×":"♪";
+
   try{
-    theme.volume=musicMuted?0:(SERIES.defaultVolume??.24);
-    await theme.play();
+    await new Promise(resolve=>{
+      if(theme.readyState>=1)return resolve();
+      theme.addEventListener("loadedmetadata",resolve,{once:true});
+      setTimeout(resolve,1200);
+    });
+
+    if(fromSaved&&saved?.episodeId===episode.id&&Number.isFinite(saved.musicTime)){
+      const safeTime=Math.max(
+        0,
+        Math.min(
+          saved.musicTime,
+          Number.isFinite(theme.duration)?theme.duration:saved.musicTime
+        )
+      );
+      try{theme.currentTime=safeTime}catch{}
+    }
+
+    theme.volume=musicMuted?0:resumeVolume;
+
+    if(!musicMuted){
+      await theme.play();
+    }
   }catch{}
+
+  saveAudioTimer=setInterval(saveProgress,1000);
 
   if(startAt>0){
     // Rebuild recent context without animation.
@@ -290,8 +333,8 @@ function finish(){
 }
 
 function backToCover(){
-  clearTimers();
   saveProgress();
+  clearTimers();
   theme.pause();
   show(cover);
 }
@@ -307,13 +350,59 @@ function toggleSound(){
   musicMuted=!musicMuted;
   soundBtn.classList.toggle("muted",musicMuted);
   soundBtn.textContent=musicMuted?"♪×":"♪";
+
+  cancelAnimationFrame(volumeAnimation);
+
   if(musicMuted){
-    cancelAnimationFrame(volumeAnimation);
-    theme.volume=0;
+    resumeVolume=Number.isFinite(theme.volume)&&theme.volume>0
+      ? theme.volume
+      : (resumeVolume||SERIES.defaultVolume||.24);
+    theme.pause();
   }else{
     theme.volume=0;
-    theme.play().catch(()=>{});
-    animateVolume(SERIES.defaultVolume??.24,700);
+    theme.play().then(()=>{
+      animateVolume(resumeVolume||SERIES.defaultVolume||.24,850);
+    }).catch(()=>{});
+  }
+
+  saveProgress();
+}
+
+function rebuildVisibleContext(){
+  if(!episode||player.hidden)return;
+
+  const start=Math.max(0,i-MAX_VISIBLE);
+  visibleItems=[];
+  lines.innerHTML="";
+
+  for(let idx=start;idx<i;idx++){
+    const cut=story[idx];
+    const node=createLine(cut);
+    node.classList.remove("entering");
+    node.classList.add("visible");
+    node.style.fontSize="";
+    node.style.lineHeight="";
+    visibleItems.push({node,type:cut.type||"narration"});
+  }
+
+  void document.documentElement.offsetWidth;
+  requestAnimationFrame(()=>positionLines(0));
+}
+
+function handleViewportChange(){
+  const changedOrientation=
+    Math.abs(innerWidth-lastViewport.w)>80 ||
+    Math.abs(innerHeight-lastViewport.h)>80;
+
+  lastViewport={w:innerWidth,h:innerHeight};
+
+  if(changedOrientation){
+    document.documentElement.style.webkitTextSizeAdjust="100%";
+    document.body.style.webkitTextSizeAdjust="100%";
+    setTimeout(rebuildVisibleContext,120);
+    setTimeout(rebuildVisibleContext,360);
+  }else{
+    requestAnimationFrame(()=>positionLines(0));
   }
 }
 
@@ -356,7 +445,25 @@ stage.addEventListener("pointerup",e=>{
 });
 stage.addEventListener("pointercancel",()=>{down=null;stage.classList.remove("is-pressed")});
 stage.addEventListener("touchmove",e=>e.preventDefault(),{passive:false});
-addEventListener("resize",()=>requestAnimationFrame(()=>positionLines(0)));
+
+let lastTouchEnd=0;
+document.addEventListener("touchend",e=>{
+  const now=Date.now();
+  if(now-lastTouchEnd<=320){
+    e.preventDefault();
+  }
+  lastTouchEnd=now;
+},{passive:false});
+
+document.addEventListener("gesturestart",e=>e.preventDefault(),{passive:false});
+document.addEventListener("gesturechange",e=>e.preventDefault(),{passive:false});
+document.addEventListener("gestureend",e=>e.preventDefault(),{passive:false});
+document.addEventListener("dblclick",e=>e.preventDefault(),{passive:false});
+addEventListener("resize",handleViewportChange);
+addEventListener("orientationchange",()=>{
+  setTimeout(handleViewportChange,180);
+  setTimeout(handleViewportChange,520);
+});
 addEventListener("keydown",e=>{
   if(player.hidden)return;
   if([" ","ArrowRight","Enter"].includes(e.key)){e.preventDefault();next()}

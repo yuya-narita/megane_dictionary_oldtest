@@ -412,3 +412,33 @@ footer #mode{
   align-items:center;
 }
 .ending-actions[hidden]{display:none!important}
+
+
+/* v0.4.1 — iOS / touch stability */
+html,body{
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+html,body,main,.screen,header,footer{
+  touch-action:manipulation;
+}
+#stage{
+  touch-action:none;
+}
+header,header *,footer,footer *,.cover,.cover *,.shelf,.shelf *{
+  -webkit-user-select:none;
+  user-select:none;
+}
+.line{
+  transition:
+    transform .68s cubic-bezier(.16,.82,.18,1),
+    opacity .5s ease,
+    filter .5s ease;
+}
+.line.entering{
+  opacity:0;
+  transform:translateY(26px) scale(.99);
+  filter:blur(2.2px);
+}
+#stage.whitespace-inhale .line{transition-duration:.3s}
+#stage.whitespace-exhale .line{transition-duration:.76s}
