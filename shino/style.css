@@ -571,14 +571,18 @@ header,header *,footer,footer *,.cover,.cover *,.shelf,.shelf *{
 }
 
 
-/* v0.5 — final reader polish */
+/* v0.5.1 — stable completed edition */
 
-/* Keep "つづく" absolutely fixed while controls fade in below */
+/* Keep the ending screen isolated and respect the hidden attribute. */
 .ending{
   position:relative;
-  display:block!important;
   overflow:hidden;
 }
+.ending[hidden]{
+  display:none!important;
+}
+
+/* Fix only the end word, without changing the screen's display mode. */
 .ending-card{
   position:absolute;
   inset:0;
@@ -594,25 +598,21 @@ header,header *,footer,footer *,.cover,.cover *,.shelf,.shelf *{
   transform:translate(-50%,-50%);
   white-space:nowrap;
 }
+
+/* Controls appear independently below; the end word never moves. */
 .ending-actions{
   position:absolute;
   left:50%;
   bottom:calc(34px + env(safe-area-inset-bottom));
+  width:min(620px,calc(100% - 44px));
+  margin:0;
+  padding-top:0;
   transform:translate(-50%,10px);
 }
 .ending-actions.is-visible{
   transform:translate(-50%,0);
 }
 
-/* A little more breathing room on small iPhones */
-@media(max-width:460px){
-  .ending-actions{
-    width:calc(100% - 44px);
-    bottom:calc(28px + env(safe-area-inset-bottom));
-  }
-}
-
-/* Reduce accidental text selection and keep the finished app feeling clean */
 button,.episode-card,.ending-nav-button,.replay-link,.cover-back{
   -webkit-tap-highlight-color:transparent;
 }
