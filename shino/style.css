@@ -569,3 +569,50 @@ header,header *,footer,footer *,.cover,.cover *,.shelf,.shelf *{
   .ending-nav-button{min-height:58px!important}
   .nav-label{font-size:13px}
 }
+
+
+/* v0.5 — final reader polish */
+
+/* Keep "つづく" absolutely fixed while controls fade in below */
+.ending{
+  position:relative;
+  display:block!important;
+  overflow:hidden;
+}
+.ending-card{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  pointer-events:none;
+}
+.ending-card h2{
+  position:absolute;
+  left:50%;
+  top:50%;
+  margin:0;
+  transform:translate(-50%,-50%);
+  white-space:nowrap;
+}
+.ending-actions{
+  position:absolute;
+  left:50%;
+  bottom:calc(34px + env(safe-area-inset-bottom));
+  transform:translate(-50%,10px);
+}
+.ending-actions.is-visible{
+  transform:translate(-50%,0);
+}
+
+/* A little more breathing room on small iPhones */
+@media(max-width:460px){
+  .ending-actions{
+    width:calc(100% - 44px);
+    bottom:calc(28px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Reduce accidental text selection and keep the finished app feeling clean */
+button,.episode-card,.ending-nav-button,.replay-link,.cover-back{
+  -webkit-tap-highlight-color:transparent;
+}
