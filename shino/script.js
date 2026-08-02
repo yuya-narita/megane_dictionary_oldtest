@@ -295,6 +295,7 @@ function animateVolume(target,duration=800){
 
 async function playAmbience(direction){
   if(!direction?.src)return;
+  console.info("[Scene Player] ambience requested:", direction.src);
 
   clearTimeout(ambienceStopTimer);
   ambienceStopTimer=null;

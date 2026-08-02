@@ -233,9 +233,16 @@ window.SHINO_SERIES = {
     "text": "ブゥン……",
     "pause": 1800,
     "music": {
-      "volume": 0.0,
-      "fade": 420,
-      "hold": 780
+      "volume": 0.06,
+      "fade": 1800,
+      "hold": 700
+    },
+    "ambience": {
+      "src": "./audio/fridge_hum.mp3",
+      "volume": 0.55,
+      "fadeIn": 900,
+      "fadeOut": 1700,
+      "stopAfter": 2600
     }
   },
   {
@@ -245,7 +252,7 @@ window.SHINO_SERIES = {
     "pause": 1800,
     "music": {
       "volume": 0.18,
-      "fade": 1200
+      "fade": 2200
     }
   },
   {
