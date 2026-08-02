@@ -616,3 +616,68 @@ header,header *,footer,footer *,.cover,.cover *,.shelf,.shelf *{
 button,.episode-card,.ending-nav-button,.replay-link,.cover-back{
   -webkit-tap-highlight-color:transparent;
 }
+
+
+/* v0.5.2 — ending viewport fix */
+
+/*
+  .screen already provides position:fixed; inset:0.
+  Do not overwrite it with position:relative, or the ending screen
+  collapses to the height of its contents.
+*/
+.ending{
+  position:fixed!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:100dvh!important;
+  overflow:hidden;
+}
+.ending[hidden]{
+  display:none!important;
+}
+
+.ending-card{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:block;
+  pointer-events:none;
+}
+
+.ending-card h2{
+  position:absolute;
+  left:50%;
+  top:50%;
+  margin:0;
+  transform:translate(-50%,-50%) translateX(.16em);
+  white-space:nowrap;
+  animation:endWordCentered 1.15s cubic-bezier(.18,.8,.18,1) both;
+}
+
+@keyframes endWordCentered{
+  0%{
+    opacity:0;
+    filter:blur(4px);
+    transform:translate(-50%,calc(-50% + 10px)) translateX(.16em);
+  }
+  100%{
+    opacity:1;
+    filter:blur(0);
+    transform:translate(-50%,-50%) translateX(.16em);
+  }
+}
+
+.ending-actions{
+  position:absolute;
+  left:50%;
+  bottom:calc(34px + env(safe-area-inset-bottom));
+  width:min(620px,calc(100% - 44px));
+  margin:0;
+  padding:0;
+  transform:translate(-50%,10px);
+}
+.ending-actions.is-visible{
+  transform:translate(-50%,0);
+}
