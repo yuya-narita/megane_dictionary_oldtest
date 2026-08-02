@@ -86,8 +86,8 @@ let typingSoundCounter = 0;
 let syncMode=false;
 let lastSyncedSegmentIndex=-1;
 let voiceTimeHandler=null;
-let voiceSyncFrame=null;
-let lastVoiceRenderedText='';
+let voiceTypingTimer=null;
+let lastVoiceTypedText='';
 let modalReleaseLockTimer = null;
 let suppressGhostInputUntil = 0;
 
@@ -341,102 +341,120 @@ function playSaveTone() {
 
 
 function detachVoiceSync(){
-  if(voiceTimeHandler){
-    els.voicePlayer.removeEventListener('timeupdate',voiceTimeHandler);
-    els.voicePlayer.removeEventListener('seeked',voiceTimeHandler);
-    voiceTimeHandler=null;
-  }
-  if(voiceSyncFrame){
-    cancelAnimationFrame(voiceSyncFrame);
-    voiceSyncFrame=null;
-  }
-  syncMode=false;
-  lastSyncedSegmentIndex=-1;
-  lastVoiceRenderedText='';
+ if(voiceTimeHandler){
+  els.voicePlayer.removeEventListener('timeupdate',voiceTimeHandler);
+  els.voicePlayer.removeEventListener('seeked',voiceTimeHandler);
+  voiceTimeHandler=null;
+ }
+ if(voiceTypingTimer){
+  clearInterval(voiceTypingTimer);
+  voiceTypingTimer=null;
+ }
+ syncMode=false;
+ lastSyncedSegmentIndex=-1;
+ lastVoiceTypedText='';
 }
+
 function getVisibleSegmentIndex(time){
-  const segments=currentLog.segments||[];
-  let index=-1;
-  for(let i=0;i<segments.length;i++){
-    if(segments[i].time<=time+0.04)index=i;
-    else break;
-  }
-  return index;
+ const segments=currentLog.segments||[];
+ let index=-1;
+ for(let i=0;i<segments.length;i++){
+  if(segments[i].time<=time+0.04)index=i;
+  else break;
+ }
+ return index;
 }
-function getSegmentEndTime(index){
-  const segments=currentLog.segments||[];
-  const next=segments[index+1];
-  if(next)return Math.max(segments[index].time+.1,next.time);
-  const duration=Number(els.voicePlayer.duration);
-  if(Number.isFinite(duration)&&duration>segments[index].time)return duration;
-  const text=String(segments[index].text||'');
-  return segments[index].time+Math.max(1.5,text.length*.075);
+
+function getVoiceSegmentEnd(index){
+ const segments=currentLog.segments||[];
+ if(segments[index+1])return Number(segments[index+1].time)||0;
+
+ const duration=Number(els.voicePlayer.duration);
+ if(Number.isFinite(duration)&&duration>Number(segments[index].time||0)){
+  return duration;
+ }
+
+ const text=String(segments[index].text||'');
+ return Number(segments[index].time||0)+Math.max(1.4,text.length*.07);
 }
+
 function buildVoiceTypedText(time){
-  const segments=currentLog.segments||[];
-  const activeIndex=getVisibleSegmentIndex(time);
-  if(activeIndex<0)return '';
-  const completed=segments.slice(0,activeIndex).map(segment=>String(segment.text||''));
-  const active=segments[activeIndex];
-  const activeText=String(active.text||'');
-  const startTime=Number(active.time)||0;
-  const endTime=getSegmentEndTime(activeIndex);
-  const available=Math.max(.15,endTime-startTime);
-  const naturalTypingSeconds=Math.max(.45,activeText.length*.055);
-  const typingSeconds=Math.min(available*.82,naturalTypingSeconds);
-  const elapsed=Math.max(0,time-startTime);
-  const progress=Math.min(1,elapsed/Math.max(.12,typingSeconds));
-  const visibleChars=Math.min(activeText.length,Math.floor(activeText.length*progress));
-  const partial=activeText.slice(0,visibleChars);
-  return [...completed,partial].filter((text,index,array)=>text!==''||index<array.length-1).join('\n\n');
+ const segments=currentLog.segments||[];
+ const activeIndex=getVisibleSegmentIndex(time);
+ if(activeIndex<0)return '';
+
+ const completed=segments
+  .slice(0,activeIndex)
+  .map(segment=>String(segment.text||''));
+
+ const active=segments[activeIndex];
+ const text=String(active.text||'');
+ const start=Number(active.time)||0;
+ const end=Math.max(start+.15,getVoiceSegmentEnd(activeIndex));
+ const available=Math.max(.15,end-start);
+
+ // Finish typing before the next spoken segment, preserving a short pause.
+ const natural=Math.max(.38,text.length*.052);
+ const typingDuration=Math.min(available*.82,natural);
+ const elapsed=Math.max(0,time-start);
+ const ratio=Math.min(1,elapsed/Math.max(.1,typingDuration));
+ const count=Math.min(text.length,Math.floor(text.length*ratio));
+
+ return [...completed,text.slice(0,count)].join('\n\n');
 }
+
 function renderSyncedTyping(force=false){
-  if(!syncMode||!Array.isArray(currentLog.segments))return;
-  const visible=buildVoiceTypedText(els.voicePlayer.currentTime||0);
-  if(!force&&visible===lastVoiceRenderedText)return;
-  if(visible.length>lastVoiceRenderedText.length){
-    const added=visible.slice(lastVoiceRenderedText.length);
-    const lastChar=added.at(-1)||'';
-    if(lastChar)typingTick(lastChar);
-  }
-  lastVoiceRenderedText=visible;
-  els.screen.textContent=visible;
-  charIndex=visible.length;
-  lastSyncedSegmentIndex=getVisibleSegmentIndex(els.voicePlayer.currentTime||0);
-  els.cursor.hidden=false;
-  updateReadout();
-  els.viewport.scrollTop=els.viewport.scrollHeight;
+ if(!syncMode||!Array.isArray(currentLog.segments))return;
+
+ const visible=buildVoiceTypedText(els.voicePlayer.currentTime||0);
+ if(!force&&visible===lastVoiceTypedText)return;
+
+ if(visible.length>lastVoiceTypedText.length){
+  const added=visible.slice(lastVoiceTypedText.length);
+  const lastChar=added.at(-1)||'';
+  if(lastChar)typingTick(lastChar);
+ }
+
+ lastVoiceTypedText=visible;
+ els.screen.textContent=visible;
+ charIndex=visible.length;
+ lastSyncedSegmentIndex=getVisibleSegmentIndex(els.voicePlayer.currentTime||0);
+ els.cursor.hidden=false;
+ updateReadout();
+ els.viewport.scrollTop=els.viewport.scrollHeight;
 }
-function voiceSyncLoop(){
-  if(!syncMode)return;
+
+function startVoiceTypingTimer(){
+ if(!syncMode)return;
+ if(voiceTypingTimer)clearInterval(voiceTypingTimer);
+
+ voiceTypingTimer=setInterval(()=>{
+  if(!playing||els.voicePlayer.paused||els.voicePlayer.ended)return;
   renderSyncedTyping();
-  if(playing&&!els.voicePlayer.paused&&!els.voicePlayer.ended){
-    voiceSyncFrame=requestAnimationFrame(voiceSyncLoop);
-  }else{
-    voiceSyncFrame=null;
-  }
+ },32);
 }
-function startVoiceSyncLoop(){
-  if(!syncMode)return;
-  if(voiceSyncFrame)cancelAnimationFrame(voiceSyncFrame);
-  voiceSyncFrame=requestAnimationFrame(voiceSyncLoop);
-}
+
 function enableVoiceSegmentSync(){
-  detachVoiceSync();
-  if(!currentLog.voiceSrc||!Array.isArray(currentLog.segments)||!currentLog.segments.length)return false;
-  syncMode=true;
-  lastVoiceRenderedText='';
-  voiceTimeHandler=()=>{
-    renderSyncedTyping(true);
-    if(playing)startVoiceSyncLoop();
-  };
-  els.voicePlayer.addEventListener('timeupdate',voiceTimeHandler);
-  els.voicePlayer.addEventListener('seeked',voiceTimeHandler);
-  els.screen.textContent='';
-  charIndex=0;
-  renderSyncedTyping(true);
-  return true;
+ detachVoiceSync();
+ if(
+  !currentLog.voiceSrc||
+  !Array.isArray(currentLog.segments)||
+  !currentLog.segments.length
+ )return false;
+
+ syncMode=true;
+ lastVoiceTypedText='';
+
+ voiceTimeHandler=()=>renderSyncedTyping(true);
+ els.voicePlayer.addEventListener('timeupdate',voiceTimeHandler);
+ els.voicePlayer.addEventListener('seeked',voiceTimeHandler);
+
+ els.screen.textContent='';
+ charIndex=0;
+ renderSyncedTyping(true);
+ return true;
 }
+
 async function startPlayback(){
  if(mode!=='view'||!currentLog.body||playing)return;
  els.endLayer.hidden=true;
@@ -455,6 +473,7 @@ async function startPlayback(){
    if(els.voicePlayer.ended)els.voicePlayer.currentTime=0;
    await els.voicePlayer.play();
    setVoiceState('STREAM ACTIVE');
+   if(hasVoiceSync)startVoiceTypingTimer();
   }catch{setVoiceState('TAP REQUIRED');}
  }
  const steps=['ESTABLISHING DATA LINK','VOICE CHANNEL VERIFIED','問題ない。','EXPANDING OBSERVATION FIELD'];
@@ -495,7 +514,10 @@ function pausePlayback(){
  els.footerState.textContent=syncMode?'VOICE SYNCHRONIZED / PAUSED':'TOUCH FIELD TO RESUME';
  els.cursor.hidden=true;
  if(!els.voicePlayer.paused)els.voicePlayer.pause();
- if(voiceSyncFrame){cancelAnimationFrame(voiceSyncFrame);voiceSyncFrame=null;}
+ if(voiceTypingTimer){
+  clearInterval(voiceTypingTimer);
+  voiceTypingTimer=null;
+ }
 }
 async function resumePlayback(){
  if(mode!=='view'||playing||charIndex<0||charIndex>=(currentLog.body?.length||0))return;
@@ -508,7 +530,12 @@ async function resumePlayback(){
   try{await els.voicePlayer.play();setVoiceState('STREAM ACTIVE');}
   catch{setVoiceState('TAP REQUIRED');}
  }
- if(!syncMode)typeNext();
+ if(syncMode){
+  renderSyncedTyping(true);
+  startVoiceTypingTimer();
+ }else{
+  typeNext();
+ }
 }
 function stopPlayback(){
  playing=false;
@@ -1093,15 +1120,23 @@ els.viewport.addEventListener('pointerup', e => {
 });
 els.subjectRow.addEventListener('click', () => { if (reviewMode) resetToStandby(true); });
 els.voicePlayer.addEventListener('ended',()=>{
+ if(voiceTypingTimer){
+  clearInterval(voiceTypingTimer);
+  voiceTypingTimer=null;
+ }
+
  if(syncMode&&currentLog.segments?.length){
-  const fullText=currentLog.segments.map(segment=>String(segment.text||'')).join('\n\n');
-  lastVoiceRenderedText=fullText;
+  const fullText=currentLog.segments
+   .map(segment=>String(segment.text||''))
+   .join('\n\n');
+
+  lastVoiceTypedText=fullText;
   els.screen.textContent=fullText;
   charIndex=fullText.length;
   updateReadout();
   els.viewport.scrollTop=els.viewport.scrollHeight;
  }
- if(voiceSyncFrame){cancelAnimationFrame(voiceSyncFrame);voiceSyncFrame=null;}
+
  setVoiceState('STREAM CLOSED');
  if(playing)finishPlayback();
 });
@@ -1121,7 +1156,7 @@ $('dropZone').addEventListener('drop',async e=>{
 });
 
 
-/* v1.0.6.2 TARGET / PLAYBACK GESTURES */
+/* v1.0.6.3 TARGET / PLAYBACK GESTURES */
 function distanceBetweenTouches(touches) {
   const a = touches[0], b = touches[1];
   return Math.hypot(b.clientX-a.clientX,b.clientY-a.clientY);
@@ -1234,7 +1269,7 @@ function resolveHostDestination() {
 
 function navigateToHost() {
   const destination = resolveHostDestination();
-  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v1.0.6.2' }, '*'); } catch {}
+  try { window.parent?.postMessage({ type:'NYX_RETURN_TO_HOST', source:'nyx-observation-terminal-v1.0.6.3' }, '*'); } catch {}
   if (destination) { location.href = destination; return; }
   if (history.length > 1) { history.back(); return; }
   // Standalone preview fallback: return to idle terminal instead of trapping the user.
