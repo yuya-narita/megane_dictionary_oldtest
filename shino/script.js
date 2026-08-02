@@ -7,7 +7,7 @@ const g=id=>document.getElementById(id);
 const screens=[g("shelf"),g("cover"),g("player"),g("ending")];
 const shelf=g("shelf"),cover=g("cover"),player=g("player"),ending=g("ending");
 const episodeList=g("episodeList"),continueButton=g("continueButton");
-const lines=g("lines"),stage=g("stage"),theme=g("theme");
+const lines=g("lines"),stage=g("stage"),theme=g("theme"),ambience=g("ambience");
 const count=g("count"),bar=g("bar"),modeBtn=g("mode"),soundBtn=g("sound");
 const gestureHint=g("gestureHint"),endingText=g("endingText"),endingActions=g("endingActions");
 
@@ -23,10 +23,18 @@ let scrollHintShown=false;
 let visibleItems=[];
 let musicMuted=false;
 let resumeVolume=SERIES.defaultVolume??.24;
-let volumeAnimation=null;
 let endingTimer=null;
 let saveAudioTimer=null;
 let lastViewport={w:innerWidth,h:innerHeight};
+
+let audioContext=null;
+let themeSourceNode=null;
+let ambienceSourceNode=null;
+let themeGain=null;
+let ambienceGain=null;
+let masterGain=null;
+let audioGraphReady=false;
+let ambienceStopTimer=null;
 
 const MAX_VISIBLE=4;
 const AUTO_SLOW_FACTOR=1.85;
@@ -49,7 +57,7 @@ function saveProgress(){
     episodeId:episode.id,
     sceneIndex:i,
     musicTime:Number.isFinite(theme.currentTime)?theme.currentTime:0,
-    musicVolume:musicMuted?0:(Number.isFinite(theme.volume)?theme.volume:(SERIES.defaultVolume??.24)),
+    musicVolume:musicMuted?0:resumeVolume,
     musicMuted,
     updatedAt:Date.now()
   }));
@@ -59,9 +67,11 @@ function clearTimers(){
   clearTimeout(timer);
   clearTimeout(endingTimer);
   clearInterval(saveAudioTimer);
+  clearTimeout(ambienceStopTimer);
   timer=null;
   endingTimer=null;
   saveAudioTimer=null;
+  ambienceStopTimer=null;
 }
 
 function renderShelf(){
@@ -188,27 +198,110 @@ function removeOld(){
   }
 }
 
-function animateVolume(target,duration=800){
-  cancelAnimationFrame(volumeAnimation);
-  if(musicMuted)return;
-  const from=Number.isFinite(theme.volume)?theme.volume:0;
-  const to=Math.max(0,Math.min(1,target));
-  resumeVolume=to;
-  const start=performance.now();
+async function ensureAudioGraph(){
+  if(audioGraphReady){
+    if(audioContext?.state==="suspended"){
+      try{await audioContext.resume()}catch{}
+    }
+    return true;
+  }
 
-  const tick=now=>{
-    const p=Math.min(1,(now-start)/Math.max(1,duration));
-    const eased=1-Math.pow(1-p,3);
-    theme.volume=from+(to-from)*eased;
-    if(p<1)volumeAnimation=requestAnimationFrame(tick);
-  };
-  volumeAnimation=requestAnimationFrame(tick);
+  const AudioCtx=window.AudioContext||window.webkitAudioContext;
+  if(!AudioCtx)return false;
+
+  audioContext=new AudioCtx();
+  themeGain=audioContext.createGain();
+  ambienceGain=audioContext.createGain();
+  masterGain=audioContext.createGain();
+
+  themeGain.gain.value=SERIES.defaultVolume??.24;
+  ambienceGain.gain.value=0;
+  masterGain.gain.value=1;
+
+  themeSourceNode=audioContext.createMediaElementSource(theme);
+  ambienceSourceNode=audioContext.createMediaElementSource(ambience);
+
+  themeSourceNode.connect(themeGain);
+  ambienceSourceNode.connect(ambienceGain);
+  themeGain.connect(masterGain);
+  ambienceGain.connect(masterGain);
+  masterGain.connect(audioContext.destination);
+
+  theme.volume=1;
+  ambience.volume=1;
+  audioGraphReady=true;
+
+  if(audioContext.state==="suspended"){
+    try{await audioContext.resume()}catch{}
+  }
+  return true;
+}
+
+function rampGain(node,target,duration=800){
+  if(!node||!audioContext)return;
+  const now=audioContext.currentTime;
+  const to=Math.max(0,Math.min(1,Number(target)||0));
+  const end=now+Math.max(.02,Number(duration||0)/1000);
+  const current=Math.max(.0001,node.gain.value||.0001);
+
+  node.gain.cancelScheduledValues(now);
+  node.gain.setValueAtTime(current,now);
+  node.gain.exponentialRampToValueAtTime(Math.max(.0001,to),end);
+  if(to===0)node.gain.setValueAtTime(0,end+.01);
+}
+
+function animateVolume(target,duration=800){
+  resumeVolume=Math.max(0,Math.min(1,target));
+  if(musicMuted)return;
+  rampGain(themeGain,resumeVolume,duration);
+}
+
+async function playAmbience(direction){
+  if(!direction?.src)return;
+  clearTimeout(ambienceStopTimer);
+
+  if(!await ensureAudioGraph())return;
+
+  const absolute=new URL(direction.src,location.href).href;
+  if(ambience.src!==absolute){
+    ambience.src=direction.src;
+    try{ambience.currentTime=0}catch{}
+  }
+
+  try{await ambience.play()}catch{return}
+
+  ambienceGain.gain.setValueAtTime(.0001,audioContext.currentTime);
+  rampGain(ambienceGain,direction.volume??.5,direction.fadeIn??700);
+
+  if(direction.stopAfter){
+    ambienceStopTimer=setTimeout(()=>{
+      rampGain(ambienceGain,0,direction.fadeOut??1200);
+      setTimeout(()=>{
+        ambience.pause();
+        try{ambience.currentTime=0}catch{}
+      },(direction.fadeOut??1200)+80);
+    },direction.stopAfter);
+  }
+}
+
+function stopAmbience(fade=900){
+  if(!audioGraphReady){
+    ambience.pause();
+    return;
+  }
+  rampGain(ambienceGain,0,fade);
+  setTimeout(()=>{
+    ambience.pause();
+    try{ambience.currentTime=0}catch{}
+  },fade+80);
 }
 
 function applyMusic(cut){
   const direction=cut.music;
-  if(!direction)return;
-  animateVolume(direction.volume??SERIES.defaultVolume??.24,direction.fade??800);
+  if(direction){
+    animateVolume(direction.volume??SERIES.defaultVolume??.24,direction.fade??800);
+  }
+  if(cut.ambience)playAmbience(cut.ambience);
 }
 
 function tactileRelease(){
@@ -268,6 +361,8 @@ async function startEpisode(fromSaved=false){
   soundBtn.textContent=musicMuted?"♪×":"♪";
 
   try{
+    await ensureAudioGraph();
+
     await new Promise(resolve=>{
       if(theme.readyState>=1)return resolve();
       theme.addEventListener("loadedmetadata",resolve,{once:true});
@@ -277,19 +372,20 @@ async function startEpisode(fromSaved=false){
     if(fromSaved&&saved?.episodeId===episode.id&&Number.isFinite(saved.musicTime)){
       const safeTime=Math.max(
         0,
-        Math.min(
-          saved.musicTime,
-          Number.isFinite(theme.duration)?theme.duration:saved.musicTime
-        )
+        Math.min(saved.musicTime,Number.isFinite(theme.duration)?theme.duration:saved.musicTime)
       );
       try{theme.currentTime=safeTime}catch{}
     }
 
-    theme.volume=musicMuted?0:resumeVolume;
-
-    if(!musicMuted){
-      await theme.play();
+    if(themeGain&&audioContext){
+      themeGain.gain.cancelScheduledValues(audioContext.currentTime);
+      themeGain.gain.setValueAtTime(
+        musicMuted?0:Math.max(.0001,resumeVolume),
+        audioContext.currentTime
+      );
     }
+
+    if(!musicMuted)await theme.play();
   }catch{}
 
   saveAudioTimer=setInterval(saveProgress,1000);
@@ -328,6 +424,7 @@ function finish(){
 
   endingActions.hidden=true;
   show(ending);
+  stopAmbience(900);
   animateVolume(.42,1800);
   endingTimer=setTimeout(()=>endingActions.hidden=false,4200);
 }
@@ -336,6 +433,7 @@ function backToCover(){
   saveProgress();
   clearTimers();
   theme.pause();
+  stopAmbience(280);
   show(cover);
 }
 
@@ -346,23 +444,28 @@ function toggleAuto(){
   if(auto&&i>0)timer=setTimeout(next,1700);
 }
 
-function toggleSound(){
+async function toggleSound(){
   musicMuted=!musicMuted;
   soundBtn.classList.toggle("muted",musicMuted);
   soundBtn.textContent=musicMuted?"♪×":"♪";
 
-  cancelAnimationFrame(volumeAnimation);
+  await ensureAudioGraph();
 
   if(musicMuted){
-    resumeVolume=Number.isFinite(theme.volume)&&theme.volume>0
-      ? theme.volume
-      : (resumeVolume||SERIES.defaultVolume||.24);
-    theme.pause();
+    rampGain(themeGain,0,260);
+    rampGain(ambienceGain,0,260);
+    setTimeout(()=>{
+      theme.pause();
+      ambience.pause();
+    },300);
   }else{
-    theme.volume=0;
-    theme.play().then(()=>{
-      animateVolume(resumeVolume||SERIES.defaultVolume||.24,850);
-    }).catch(()=>{});
+    try{
+      await theme.play();
+      if(ambience.src&&ambience.currentTime>0){
+        await ambience.play().catch(()=>{});
+      }
+    }catch{}
+    rampGain(themeGain,resumeVolume||SERIES.defaultVolume||.24,700);
   }
 
   saveProgress();
@@ -427,6 +530,7 @@ modeBtn.addEventListener("click",toggleAuto);
 soundBtn.addEventListener("click",toggleSound);
 
 stage.addEventListener("pointerdown",e=>{
+  ensureAudioGraph();
   down={x:e.clientX,y:e.clientY,t:Date.now()};
   stage.classList.add("is-pressed");
 });
