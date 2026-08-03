@@ -13,7 +13,7 @@ window.SHINO_EPISODES["ep002"] = {
     },
     {
       "type": "narration",
-      "text": "シノは路地裏で、\n拾ってきた折りたたみイスのネジを締めている。",
+      "text": "シノは路地裏で、拾ってきた折りたたみイスのネジを締めている。",
       "pause": 1300,
       "time": 8.241
     },
@@ -43,7 +43,7 @@ window.SHINO_EPISODES["ep002"] = {
     },
     {
       "type": "narration",
-      "text": "そこへ、小学生のユウが走ってくる。",
+      "text": "そこへ、\n小学生のユウが走ってくる。",
       "pause": 1300,
       "time": 24.258
     },
@@ -55,7 +55,7 @@ window.SHINO_EPISODES["ep002"] = {
     },
     {
       "type": "narration",
-      "text": "手に持っているのは、古いプロジェクター。",
+      "text": "手に持っているのは、\n古いプロジェクター。",
       "pause": 1300,
       "time": 29.129
     },
@@ -294,12 +294,6 @@ window.SHINO_EPISODES["ep002"] = {
       "text": "「すげー！映画館だ！」",
       "pause": 1300,
       "time": 148.877
-    },
-    {
-      "type": "narration",
-      "text": "シノ、小声で",
-      "pause": 1300,
-      "time": 152.5
     },
     {
       "type": "dialogue",
