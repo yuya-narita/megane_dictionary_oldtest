@@ -1,5 +1,5 @@
 window.SHINO_EPISODES = window.SHINO_EPISODES || {};
-window.SHINO_EPISODES["ep001"] = {
+window.SHINO_EPISODES["ep000"] = {
   "id": "ep000",
   "number": 1,
   "title": "跳ねのない街",
