@@ -39,6 +39,10 @@ let ambienceStopTimer=null;
 let ambienceUnlocked=false;
 let ambiencePrimedSrc=null;
 
+let playbackSession=0;
+let startingEpisode=false;
+const audioCleanupTimers=new Set();
+
 const MAX_VISIBLE=4;
 const AUTO_SLOW_FACTOR=1.85;
 const BASE_GAP=36;
@@ -66,11 +70,72 @@ function saveProgress(){
   }));
 }
 
+function managedTimeout(callback,delay){
+  const id=setTimeout(()=>{
+    audioCleanupTimers.delete(id);
+    callback();
+  },delay);
+  audioCleanupTimers.add(id);
+  return id;
+}
+
+function clearAudioCleanupTimers(){
+  for(const id of audioCleanupTimers)clearTimeout(id);
+  audioCleanupTimers.clear();
+}
+
+function cancelScheduledAudio(){
+  if(!audioContext)return;
+  const now=audioContext.currentTime;
+
+  for(const node of [themeGain,ambienceGain,masterGain]){
+    if(!node?.gain)continue;
+    const value=Math.max(0,Number(node.gain.value)||0);
+    node.gain.cancelScheduledValues(now);
+    node.gain.setValueAtTime(value,now);
+  }
+}
+
+function hardStopAudio({resetPosition=false,suspendContext=false}={}){
+  clearAudioCleanupTimers();
+  clearTimeout(ambienceStopTimer);
+  ambienceStopTimer=null;
+  cancelScheduledAudio();
+
+  try{theme.pause()}catch{}
+  try{ambience.pause()}catch{}
+
+  // Defensive reset in case a browser or prior state changed the rate.
+  theme.playbackRate=1;
+  theme.defaultPlaybackRate=1;
+  ambience.playbackRate=1;
+  ambience.defaultPlaybackRate=1;
+
+  if(themeGain&&audioContext){
+    themeGain.gain.cancelScheduledValues(audioContext.currentTime);
+    themeGain.gain.setValueAtTime(0,audioContext.currentTime);
+  }
+  if(ambienceGain&&audioContext){
+    ambienceGain.gain.cancelScheduledValues(audioContext.currentTime);
+    ambienceGain.gain.setValueAtTime(0,audioContext.currentTime);
+  }
+
+  if(resetPosition){
+    try{theme.currentTime=0}catch{}
+    try{ambience.currentTime=0}catch{}
+  }
+
+  if(suspendContext&&audioContext?.state==="running"){
+    audioContext.suspend().catch(()=>{});
+  }
+}
+
 function clearTimers(){
   clearTimeout(timer);
   clearTimeout(endingTimer);
   clearInterval(saveAudioTimer);
   clearTimeout(ambienceStopTimer);
+  clearAudioCleanupTimers();
   timer=null;
   endingTimer=null;
   saveAudioTimer=null;
@@ -109,9 +174,10 @@ function openAdjacentEpisode(offset){
   const target=adjacentEpisode(offset);
   if(!target)return;
 
+  playbackSession++;
+  startingEpisode=false;
   clearTimers();
-  theme.pause();
-  stopAmbience(240);
+  hardStopAudio({resetPosition:false,suspendContext:true});
   openCover(target.id);
 }
 
@@ -344,12 +410,12 @@ async function playAmbience(direction){
   );
 
   if(direction.stopAfter){
-    ambienceStopTimer=setTimeout(()=>{
+    ambienceStopTimer=managedTimeout(()=>{
       rampGain(ambienceGain,0,direction.fadeOut??1200);
 
       // Keep the track running silently on iPhone so later scenes
       // do not need a new play() permission.
-      ambienceStopTimer=setTimeout(()=>{
+      ambienceStopTimer=managedTimeout(()=>{
         if(ambienceGain&&audioContext){
           ambienceGain.gain.cancelScheduledValues(audioContext.currentTime);
           ambienceGain.gain.setValueAtTime(0,audioContext.currentTime);
@@ -366,7 +432,7 @@ function stopAmbience(fade=900){
 
   rampGain(ambienceGain,0,fade);
 
-  setTimeout(()=>{
+  managedTimeout(()=>{
     if(ambienceGain&&audioContext){
       ambienceGain.gain.cancelScheduledValues(audioContext.currentTime);
       ambienceGain.gain.setValueAtTime(0,audioContext.currentTime);
@@ -420,12 +486,22 @@ function next(){
 }
 
 async function startEpisode(fromSaved=false){
+  if(startingEpisode)return;
+
+  startingEpisode=true;
+  const session=++playbackSession;
   const saved=savedProgress();
   const startAt=fromSaved&&saved?.episodeId===episode.id ? saved.sceneIndex : 0;
+
   resetScene(startAt);
+  hardStopAudio({resetPosition:false,suspendContext:false});
   show(player);
 
   theme.src=SERIES.themeSrc||"./audio/shino_theme.mp3";
+  theme.playbackRate=1;
+  theme.defaultPlaybackRate=1;
+  ambience.playbackRate=1;
+  ambience.defaultPlaybackRate=1;
 
   if(fromSaved&&saved?.episodeId===episode.id){
     musicMuted=Boolean(saved.musicMuted);
@@ -433,6 +509,7 @@ async function startEpisode(fromSaved=false){
   }else{
     musicMuted=false;
     resumeVolume=SERIES.defaultVolume??.24;
+    try{theme.currentTime=0}catch{}
   }
 
   soundBtn.classList.toggle("muted",musicMuted);
@@ -440,10 +517,12 @@ async function startEpisode(fromSaved=false){
 
   try{
     await ensureAudioGraph();
+    if(session!==playbackSession)return;
 
     const ambienceSrc=firstAmbienceSrc();
     if(ambienceSrc){
       await primeAmbienceTrack(ambienceSrc);
+      if(session!==playbackSession)return;
     }
 
     await new Promise(resolve=>{
@@ -451,6 +530,7 @@ async function startEpisode(fromSaved=false){
       theme.addEventListener("loadedmetadata",resolve,{once:true});
       setTimeout(resolve,1200);
     });
+    if(session!==playbackSession)return;
 
     if(fromSaved&&saved?.episodeId===episode.id&&Number.isFinite(saved.musicTime)){
       const safeTime=Math.max(
@@ -468,13 +548,27 @@ async function startEpisode(fromSaved=false){
       );
     }
 
-    if(!musicMuted)await theme.play();
-  }catch{}
+    if(!musicMuted){
+      await theme.play();
+      if(session!==playbackSession){
+        theme.pause();
+        return;
+      }
+    }
+  }catch(error){
+    console.warn("[Scene Player] audio start failed",error);
+  }finally{
+    if(session===playbackSession)startingEpisode=false;
+  }
 
-  saveAudioTimer=setInterval(saveProgress,1000);
+  if(session!==playbackSession)return;
+
+  clearInterval(saveAudioTimer);
+  saveAudioTimer=setInterval(()=>{
+    if(session===playbackSession&&!player.hidden)saveProgress();
+  },1000);
 
   if(startAt>0){
-    // Rebuild recent context without animation.
     const begin=Math.max(0,startAt-MAX_VISIBLE);
     visibleItems=[];
     lines.innerHTML="";
@@ -488,11 +582,15 @@ async function startEpisode(fromSaved=false){
     positionLines(0);
     progress();
   }else{
-    setTimeout(next,650);
+    timer=setTimeout(()=>{
+      if(session===playbackSession&&!player.hidden)next();
+    },650);
   }
 }
 
 function finish(){
+  playbackSession++;
+  startingEpisode=false;
   clearTimers();
   localStorage.removeItem(SAVE_KEY);
 
@@ -531,9 +629,10 @@ function finish(){
 
 function backToCover(){
   saveProgress();
+  playbackSession++;
+  startingEpisode=false;
   clearTimers();
-  theme.pause();
-  stopAmbience(280);
+  hardStopAudio({resetPosition:false,suspendContext:true});
   show(cover);
 }
 
@@ -554,7 +653,9 @@ async function toggleSound(){
   if(musicMuted){
     rampGain(themeGain,0,260);
     rampGain(ambienceGain,0,260);
-    setTimeout(()=>{
+    const session=playbackSession;
+    managedTimeout(()=>{
+      if(session!==playbackSession)return;
       theme.pause();
       ambience.pause();
     },300);
@@ -625,16 +726,8 @@ function showScrollHint(){
 }
 
 g("coverBack").addEventListener("click",()=>{renderShelf();show(shelf)});
-g("start").addEventListener("click",async()=>{
-  const src=firstAmbienceSrc();
-  if(src)await primeAmbienceTrack(src);
-  startEpisode(false);
-});
-g("resumeFromCover").addEventListener("click",async()=>{
-  const src=firstAmbienceSrc();
-  if(src)await primeAmbienceTrack(src);
-  startEpisode(true);
-});
+g("start").addEventListener("click",()=>startEpisode(false));
+g("resumeFromCover").addEventListener("click",()=>startEpisode(true));
 g("back").addEventListener("click",backToCover);
 g("replay").addEventListener("click",()=>{openCover(episode.id);startEpisode(false)});
 previousEpisodeButton.addEventListener("click",()=>openAdjacentEpisode(-1));
@@ -686,6 +779,18 @@ addEventListener("orientationchange",()=>{
   setTimeout(handleViewportChange,180);
   setTimeout(handleViewportChange,520);
 });
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden&&player&&!player.hidden){
+    saveProgress();
+  }
+});
+
+addEventListener("pagehide",()=>{
+  playbackSession++;
+  clearTimers();
+  hardStopAudio({resetPosition:false,suspendContext:true});
+});
+
 addEventListener("keydown",e=>{
   if(player.hidden)return;
   if([" ","ArrowRight","Enter"].includes(e.key)){e.preventDefault();next()}
