@@ -1,12 +1,12 @@
 window.SHINO_EPISODES = window.SHINO_EPISODES || {};
-window.SHINO_EPISODES["ep000"] = {
-  "id": "ep000",
+window.SHINO_EPISODES["ep001"] = {
+  "id": "ep001",
   "number": 1,
   "title": "跳ねのない街",
   "description": "",
   "story": [
     {
-      "type": "narration",
+      "type": "dialogue",
       "text": "世界は、息を止めていた。",
       "pause": 1300,
       "effect": "blur",
@@ -15,13 +15,14 @@ window.SHINO_EPISODES["ep000"] = {
       "display": "solo"
     },
     {
-      "type": "narration",
+      "type": "sound",
       "text": "それなのに、音だけが鳴っている。",
       "pause": 1300,
       "effect": "blur",
       "view": "world",
       "clear": true,
-      "display": "solo"
+      "display": "solo",
+      "wrap": "nowrap"
     },
     {
       "type": "narration",
@@ -122,7 +123,9 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "199℃。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -134,7 +137,9 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "sound",
       "text": "……200℃。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -158,7 +163,9 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "公園のブランコ。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -182,7 +189,9 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "ベンチの老人が新聞をめくる。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -255,7 +264,7 @@ window.SHINO_EPISODES["ep000"] = {
     },
     {
       "type": "narration",
-      "text": "空の一角が、針の先ほどの微小な光で“瞬いた”。",
+      "text": "空の一角が、針の先ほどの微小な光で瞬いた。",
       "pause": 1300,
       "view": "world"
     },
@@ -287,13 +296,17 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "午後三時。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
-      "type": "narration",
+      "type": "sound",
       "text": "永遠の午後三時。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -314,7 +327,8 @@ window.SHINO_EPISODES["ep000"] = {
       "view": "console",
       "clear": true,
       "display": "solo",
-      "wrap": "nowrap"
+      "wrap": "nowrap",
+      "fontSize": "small"
     },
     {
       "type": "narration",
@@ -356,25 +370,33 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "完璧すぎる白。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
       "text": "完璧すぎる青。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
       "text": "完璧であることが、この世界の欠陥だ。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "dialogue",
       "text": "もう一歩。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "fontSize": "normal"
     },
     {
@@ -382,6 +404,8 @@ window.SHINO_EPISODES["ep000"] = {
       "text": "もう一歩。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "fontSize": "large"
     },
     {
@@ -427,7 +451,7 @@ window.SHINO_EPISODES["ep000"] = {
     },
     {
       "type": "narration",
-      "text": "通りの人影は、みな“こちらを見ないように”均等に配置されている。",
+      "text": "通りの人影は、みなこちらを見ないように均等に配置されている。",
       "pause": 1300,
       "view": "world"
     },
@@ -445,27 +469,33 @@ window.SHINO_EPISODES["ep000"] = {
     },
     {
       "type": "narration",
-      "text": "──名前が、思い出せない。",
+      "text": "名前が、思い出せない。",
       "pause": 1300,
       "view": "world"
     },
     {
-      "type": "narration",
+      "type": "dialogue",
       "text": "自分の。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
-      "type": "narration",
+      "type": "dialogue",
       "text": "誰かの。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
-      "type": "narration",
+      "type": "dialogue",
       "text": "何かの。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -501,10 +531,12 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "HINT: PRESS ANY KEY TO CONTINUE\n[λ]= 0.79 / [!]= 0.00 / [σ]= 0.00",
       "pause": 1300,
+      "effect": "whisper",
       "view": "console",
       "clear": true,
       "display": "solo",
-      "wrap": "nowrap"
+      "wrap": "nowrap",
+      "fontSize": "small"
     },
     {
       "type": "narration",
@@ -519,22 +551,28 @@ window.SHINO_EPISODES["ep000"] = {
       "view": "world"
     },
     {
-      "type": "narration",
+      "type": "dialogue",
       "text": "歩くのをやめる。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
-      "type": "narration",
+      "type": "dialogue",
       "text": "深呼吸。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
-      "type": "narration",
+      "type": "dialogue",
       "text": "耳を澄ます。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -561,8 +599,8 @@ window.SHINO_EPISODES["ep000"] = {
       "view": "world"
     },
     {
-      "type": "sound",
-      "text": "世界は、跳ね（!）を一度も起こさない。",
+      "type": "narration",
+      "text": "世界は、跳ね（！）を一度も起こさない。",
       "pause": 1300,
       "view": "world",
       "wrap": "nowrap"
