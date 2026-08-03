@@ -3,7 +3,7 @@ window.SHINO_EPISODES["ep001"] = {
   "id": "ep001",
   "number": 1,
   "title": "タダの冷蔵庫",
-  "description": "冷蔵庫を直して、おにぎりをもらう日。",
+  "description": "",
   "story": [
     {
       "type": "narration",
