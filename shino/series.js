@@ -96,8 +96,8 @@ window.SHINO_SERIES = {
     },
     "ambience": {
       "src": "./audio/knock.mp3",
-      "volume": 0.55,
-      "fadeIn": 30,
+      "volume": 0.80,
+      "fadeIn": 45,
       "fadeOut": 250,
       "stopAfter": 800
     }
