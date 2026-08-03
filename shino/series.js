@@ -87,7 +87,7 @@ window.SHINO_SERIES = {
   },
   {
     "type": "sound",
-    "effect": "null",
+    "effect": "knock",
     "text": "コン、\nコン。",
     "pause": 1200,
     "music": {
