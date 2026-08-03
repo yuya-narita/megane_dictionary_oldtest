@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#05050a">
+  <title>Syntax Frontier — Theme v0.1</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<main>
+  <section id="shelf" class="screen shelf">
+    <div class="eyebrow">SYNTAX FRONTIER</div>
+    <h1 id="seriesTitle">Syntax Frontier</h1>
+    <p class="shelf-copy">人工世界を、観測する。</p>
+    <div id="episodeList" class="episode-list"></div>
+    <button id="continueButton" class="primary-button" hidden>つづきから</button>
+    <small>PRESS ANY KEY TO CONTINUE</small>
+  </section>
+
+  <section id="cover" class="screen cover" hidden>
+    <button id="coverBack" class="cover-back" aria-label="話数一覧へ"><span aria-hidden="true">←</span><span>話数一覧</span></button>
+    <div class="eyebrow">SYNTAX FRONTIER</div>
+    <h1>Syntax Frontier</h1>
+    <p id="episodeNumber">第1話</p>
+    <h2 id="episodeTitle">「タダの冷蔵庫」</h2>
+    <button id="start" class="primary-button">はじめる</button>
+    <button id="resumeFromCover" class="secondary-button" hidden>途中から</button>
+    <small>人工世界を、観測する。</small>
+  </section>
+
+  <section id="player" class="screen player" hidden>
+    <header>
+      <button id="back" aria-label="表紙へ戻る">‹</button>
+      <div>
+        <small id="playerSeries">Syntax Frontier</small>
+        <strong id="playerEpisode">PROLOGUE「跳ねのない街」</strong>
+      </div>
+      <button id="sound" aria-label="BGM切替">♪</button>
+    </header>
+
+    <div id="stage">
+      <div id="sceneBackground" aria-hidden="true"></div><div id="scanlines" aria-hidden="true"></div>
+      <div id="focusGuide" aria-hidden="true"></div>
+      <div id="lines"></div>
+      <div id="hint">TAP</div>
+      <div id="gestureHint" hidden>スクロールではなく、タップで進みます。</div>
+    </div>
+
+    <footer>
+      <span id="count">0 / 0</span>
+      <div class="bar"><i id="bar"></i></div>
+      <button id="mode">AUTO</button>
+    </footer>
+  </section>
+
+  <section id="ending" class="screen ending" hidden>
+    <div class="ending-card">
+      <h2>CONTINUE</h2>
+    </div>
+
+    <div id="endingActions" class="ending-actions" hidden>
+      <div class="episode-nav">
+        <button id="previousEpisode" class="ending-nav-button" hidden>
+          <span class="nav-kicker">PREVIOUS</span>
+          <span class="nav-label">前の話</span>
+        </button>
+
+        <button id="episodes" class="ending-nav-button">
+          <span class="nav-kicker">EPISODES</span>
+          <span class="nav-label">話数一覧</span>
+        </button>
+
+        <button id="nextEpisode" class="ending-nav-button" hidden>
+          <span class="nav-kicker">NEXT</span>
+          <span class="nav-label">続き</span>
+        </button>
+      </div>
+
+      <button id="replay" class="replay-link">REBOOT</button>
+    </div>
+  </section>
+</main>
+
+<audio id="theme" loop preload="auto" playsinline></audio>
+<audio id="ambience" loop preload="auto" playsinline></audio>
+<audio id="effectAudio" preload="auto" playsinline></audio>
+<script src="./series.js"></script>
+<script>
+(async function bootScenePlayer(){
+  const manifest=window.SHINO_SERIES||{episodes:[]};
+  window.SHINO_EPISODES=window.SHINO_EPISODES||{};
+
+  function loadScript(src){
+    return new Promise((resolve,reject)=>{
+      const script=document.createElement("script");
+      script.src=src;
+      script.onload=resolve;
+      script.onerror=()=>reject(new Error("Episode load failed: "+src));
+      document.head.appendChild(script);
+    });
+  }
+
+  try{
+    for(const episode of manifest.episodes||[]){
+      await loadScript(episode.src);
+    }
+
+    const app=document.createElement("script");
+    app.src="./script.js";
+    document.body.appendChild(app);
+  }catch(error){
+    console.error(error);
+    document.body.innerHTML=
+      '<main style="padding:30px;font-family:sans-serif">Episode data could not be loaded.</main>';
+  }
+})();
+</script>
+</body>
+</html>
