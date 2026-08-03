@@ -206,13 +206,13 @@ window.SHINO_EPISODES["ep003"] = {
     },
     {
       "type": "dialogue",
-      "text": "「シノ、\n手伝ってくれ」",
+      "text": "「シノ、手伝ってくれ」",
       "pause": 1300,
       "time": 126.248
     },
     {
       "type": "dialogue",
-      "text": "「報酬、\n現物支給ならいけます」",
+      "text": "「報酬、現物支給ならいけます」",
       "pause": 1300,
       "time": 129.723
     },
@@ -266,7 +266,7 @@ window.SHINO_EPISODES["ep003"] = {
     },
     {
       "type": "dialogue",
-      "text": "「これ、\nあんたのじゃないかい？」",
+      "text": "「これ、あんたのじゃないかい？」",
       "pause": 1300,
       "time": 161.999
     },
