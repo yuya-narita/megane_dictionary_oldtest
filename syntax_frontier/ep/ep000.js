@@ -1,6 +1,6 @@
 window.SHINO_EPISODES = window.SHINO_EPISODES || {};
-window.SHINO_EPISODES["ep000"] = {
-  "id": "ep000",
+window.SHINO_EPISODES["ep001"] = {
+  "id": "ep001",
   "number": 1,
   "title": "跳ねのない街",
   "description": "",
@@ -73,6 +73,8 @@ window.SHINO_EPISODES["ep000"] = {
       "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "music": {
         "volume": 0.24,
         "fade": 900
@@ -87,7 +89,9 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "通りの端から端まで、",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -117,13 +121,15 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "パン屋の窯には赤い数字が灯る。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
       "text": "199℃。",
       "pause": 1300,
-      "view": "world",
+      "view": "warning",
       "clear": true,
       "display": "solo"
     },
@@ -131,13 +137,13 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "200℃。",
       "pause": 1300,
-      "view": "world"
+      "view": "warning"
     },
     {
       "type": "sound",
       "text": "……200℃。",
       "pause": 1300,
-      "view": "world",
+      "view": "warning",
       "clear": true,
       "display": "solo"
     },
@@ -145,7 +151,9 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "パンは膨らまず、焦げ目はつかない。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -169,7 +177,7 @@ window.SHINO_EPISODES["ep000"] = {
     },
     {
       "type": "narration",
-      "text": "鎖はきしまず、\n軋まず、歌わない。",
+      "text": "鎖はきしまず、軋まず、歌わない。",
       "pause": 1300,
       "view": "world"
     },
@@ -215,7 +223,9 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "石畳では靴音が規則正しく交差する。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -234,6 +244,8 @@ window.SHINO_EPISODES["ep000"] = {
       "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "music": {
         "volume": 0.24,
         "fade": 900
@@ -248,7 +260,9 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "胸の奥で、鼓動だけが場違いに跳ねる。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -304,6 +318,7 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "sound",
       "text": "永遠の午後三時。",
       "pause": 1300,
+      "effect": "blur",
       "view": "world",
       "clear": true,
       "display": "solo"
@@ -312,7 +327,9 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "通りの角に立つ看板に、ふと目が止まる。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -324,17 +341,21 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "HINT: PRESS ANY KEY TO CONTINUE",
       "pause": 1300,
+      "effect": "whisper",
       "view": "console",
       "clear": true,
       "display": "solo",
       "wrap": "nowrap",
-      "fontSize": "small"
+      "fontSize": "custom",
+      "fontPx": 10
     },
     {
       "type": "narration",
       "text": "まばたきした瞬間、刻印は消えている。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -412,7 +433,9 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "何歩でも、同じ距離感で同じ白線が連続する。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -431,6 +454,8 @@ window.SHINO_EPISODES["ep000"] = {
       "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "effectAudio": {
         "src": "./audio/aisathu.mp3",
         "volume": 0.8,
@@ -441,19 +466,25 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "背後から、同じ声。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
       "text": "振り返る。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
       "text": "通りの人影は、みなこちらを見ないように均等に配置されている。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -501,7 +532,9 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "音節が立ち上がる直前で、まるごと無音に吸い込まれる。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -535,14 +568,16 @@ window.SHINO_EPISODES["ep000"] = {
       "view": "console",
       "clear": true,
       "display": "solo",
-      "wrap": "nowrap",
-      "fontSize": "small"
+      "fontSize": "custom",
+      "fontPx": 14
     },
     {
       "type": "narration",
       "text": "見えてはいけないものを見た、という直感。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -578,7 +613,9 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "鐘の間隔は一定。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -603,21 +640,20 @@ window.SHINO_EPISODES["ep000"] = {
       "text": "世界は、跳ね（！）を一度も起こさない。",
       "pause": 1300,
       "view": "world",
-      "wrap": "nowrap"
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
       "text": "圧力（λ）は積もる。",
       "pause": 1300,
-      "view": "world",
-      "wrap": "nowrap"
+      "view": "world"
     },
     {
       "type": "narration",
       "text": "しかし、閾値は越えず、痕跡（σ）は刻まれない。",
       "pause": 1300,
-      "view": "world",
-      "wrap": "nowrap"
+      "view": "world"
     },
     {
       "type": "narration",
@@ -635,7 +671,9 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "それでも──どこかで、誰かが見ている。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -654,6 +692,8 @@ window.SHINO_EPISODES["ep000"] = {
       "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "effectAudio": {
         "src": "./audio/aisathu.mp3",
         "volume": 0.8,
@@ -664,7 +704,9 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "声が重なり、空気が薄く捻じれる。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "clear": true,
+      "display": "solo"
     },
     {
       "type": "narration",
@@ -707,6 +749,8 @@ window.SHINO_EPISODES["ep000"] = {
       "text": "午後三時の鐘が、一回ぶんだけ、遅れた。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "ambience": {
         "src": "./audio/kane.mp3",
         "volume": 0.8,
