@@ -2,7 +2,7 @@ window.SHINO_EPISODES = window.SHINO_EPISODES || {};
 window.SHINO_EPISODES["ep002"] = {
   "id": "ep002",
   "number": 2,
-  "title": "空き地の映画館",
+  "title": "「空き地の映画館」",
   "description": "",
   "story": [
     {
@@ -466,6 +466,12 @@ window.SHINO_EPISODES["ep002"] = {
       "text": "夜の路地に、シノの鼻歌が消えていく。",
       "pause": 1300,
       "time": 233.458
+    },
+    {
+      "type": "narration",
+      "text": "つづく…かな？",
+      "pause": 1300,
+      "time": 236.316
     }
   ]
 };

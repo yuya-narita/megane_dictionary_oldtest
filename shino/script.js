@@ -16,7 +16,7 @@ const g=id=>document.getElementById(id);
 const screens=[g("shelf"),g("cover"),g("player"),g("ending")];
 const shelf=g("shelf"),cover=g("cover"),player=g("player"),ending=g("ending");
 const episodeList=g("episodeList"),continueButton=g("continueButton");
-const lines=g("lines"),stage=g("stage"),theme=g("theme"),ambience=g("ambience");
+const lines=g("lines"),stage=g("stage"),theme=g("theme"),ambience=g("ambience"),effectAudio=g("effectAudio");
 const count=g("count"),bar=g("bar"),modeBtn=g("mode"),soundBtn=g("sound");
 const gestureHint=g("gestureHint"),endingActions=g("endingActions");
 const previousEpisodeButton=g("previousEpisode"),nextEpisodeButton=g("nextEpisode");
@@ -40,13 +40,16 @@ let lastViewport={w:innerWidth,h:innerHeight};
 let audioContext=null;
 let themeSourceNode=null;
 let ambienceSourceNode=null;
+let effectSourceNode=null;
 let themeGain=null;
 let ambienceGain=null;
+let effectGain=null;
 let masterGain=null;
 let audioGraphReady=false;
 let ambienceStopTimer=null;
 let ambienceUnlocked=false;
 let ambiencePrimedSrc=null;
+let effectPrimedSrc=null;
 
 let playbackSession=0;
 let startingEpisode=false;
@@ -97,7 +100,7 @@ function cancelScheduledAudio(){
   if(!audioContext)return;
   const now=audioContext.currentTime;
 
-  for(const node of [themeGain,ambienceGain,masterGain]){
+  for(const node of [themeGain,ambienceGain,effectGain,masterGain]){
     if(!node?.gain)continue;
     const value=Math.max(0,Number(node.gain.value)||0);
     node.gain.cancelScheduledValues(now);
@@ -134,11 +137,13 @@ async function softStopAudio({
 
   deClickGain(themeGain,0.0001,fadeMs);
   deClickGain(ambienceGain,0.0001,fadeMs);
+  deClickGain(effectGain,0.0001,Math.min(fadeMs,120));
 
   await new Promise(resolve=>setTimeout(resolve,fadeMs+18));
 
   try{theme.pause()}catch{}
   try{ambience.pause()}catch{}
+  try{effectAudio.pause()}catch{}
 
   theme.playbackRate=1;
   theme.defaultPlaybackRate=1;
@@ -148,6 +153,7 @@ async function softStopAudio({
   if(resetPosition){
     try{theme.currentTime=0}catch{}
     try{ambience.currentTime=0}catch{}
+    try{effectAudio.currentTime=0}catch{}
   }
 
   if(suspendContext&&audioContext?.state==="running"){
@@ -163,6 +169,7 @@ function hardStopAudio({resetPosition=false,suspendContext=false}={}){
 
   try{theme.pause()}catch{}
   try{ambience.pause()}catch{}
+  try{effectAudio.pause()}catch{}
 
   // Defensive reset in case a browser or prior state changed the rate.
   theme.playbackRate=1;
@@ -178,10 +185,15 @@ function hardStopAudio({resetPosition=false,suspendContext=false}={}){
     ambienceGain.gain.cancelScheduledValues(audioContext.currentTime);
     ambienceGain.gain.setValueAtTime(0,audioContext.currentTime);
   }
+  if(effectGain&&audioContext){
+    effectGain.gain.cancelScheduledValues(audioContext.currentTime);
+    effectGain.gain.setValueAtTime(0,audioContext.currentTime);
+  }
 
   if(resetPosition){
     try{theme.currentTime=0}catch{}
     try{ambience.currentTime=0}catch{}
+    try{effectAudio.currentTime=0}catch{}
   }
 
   if(suspendContext&&audioContext?.state==="running"){
@@ -364,23 +376,30 @@ async function ensureAudioGraph(){
   audioContext=new AudioCtx();
   themeGain=audioContext.createGain();
   ambienceGain=audioContext.createGain();
+  effectGain=audioContext.createGain();
   masterGain=audioContext.createGain();
 
   themeGain.gain.value=SERIES.defaultVolume??.24;
   ambienceGain.gain.value=0;
+  effectGain.gain.value=0;
   masterGain.gain.value=1;
 
   themeSourceNode=audioContext.createMediaElementSource(theme);
   ambienceSourceNode=audioContext.createMediaElementSource(ambience);
+  effectSourceNode=audioContext.createMediaElementSource(effectAudio);
 
   themeSourceNode.connect(themeGain);
   ambienceSourceNode.connect(ambienceGain);
+  effectSourceNode.connect(effectGain);
   themeGain.connect(masterGain);
   ambienceGain.connect(masterGain);
+  effectGain.connect(masterGain);
   masterGain.connect(audioContext.destination);
 
   theme.volume=1;
   ambience.volume=1;
+  effectAudio.volume=1;
+  effectAudio.loop=false;
   audioGraphReady=true;
 
   if(audioContext.state==="suspended"){
@@ -389,6 +408,73 @@ async function ensureAudioGraph(){
   return true;
 }
 
+
+async function primeEffectTrack(src){
+  if(!src)return false;
+  if(!await ensureAudioGraph())return false;
+
+  const absolute=new URL(src,location.href).href;
+  if(effectAudio.src!==absolute){
+    effectAudio.src=src;
+    effectAudio.load();
+  }
+
+  effectPrimedSrc=src;
+
+  try{
+    const now=audioContext.currentTime;
+    effectGain.gain.cancelScheduledValues(now);
+    effectGain.gain.setValueAtTime(0,now);
+    effectAudio.loop=false;
+
+    // Unlock the element during the user's start gesture.
+    await effectAudio.play();
+    effectAudio.pause();
+    effectAudio.currentTime=0;
+    return true;
+  }catch(error){
+    console.warn("[Scene Player] effect prime failed:",src,error);
+    return false;
+  }
+}
+
+function firstEffectSrc(){
+  for(const cut of story){
+    if(cut.effectAudio?.src)return cut.effectAudio.src;
+  }
+  return null;
+}
+
+async function playEffect(direction){
+  if(!direction?.src||musicMuted)return;
+  if(!await ensureAudioGraph())return;
+
+  const absolute=new URL(direction.src,location.href).href;
+  if(effectAudio.src!==absolute){
+    effectAudio.src=direction.src;
+    effectAudio.load();
+    effectPrimedSrc=direction.src;
+  }
+
+  try{
+    effectAudio.pause();
+    effectAudio.loop=false;
+    effectAudio.currentTime=0;
+
+    const now=audioContext.currentTime;
+    const volume=Math.max(0,Math.min(1,Number(direction.volume??0.65)));
+    effectGain.gain.cancelScheduledValues(now);
+    effectGain.gain.setValueAtTime(0.0001,now);
+
+    await effectAudio.play();
+    effectGain.gain.linearRampToValueAtTime(
+      Math.max(0.0001,volume),
+      now+0.025
+    );
+  }catch(error){
+    console.warn("[Scene Player] effect failed:",direction.src,error);
+  }
+}
 
 async function primeAmbienceTrack(src){
   if(!src)return false;
@@ -509,6 +595,7 @@ function applyMusic(cut){
     animateVolume(direction.volume??SERIES.defaultVolume??.24,direction.fade??800);
   }
   if(cut.ambience)playAmbience(cut.ambience);
+  if(cut.effectAudio)playEffect(cut.effectAudio);
 }
 
 function tactileRelease(){
@@ -585,6 +672,12 @@ async function startEpisode(fromSaved=false){
     const ambienceSrc=firstAmbienceSrc();
     if(ambienceSrc){
       await primeAmbienceTrack(ambienceSrc);
+      if(session!==playbackSession)return;
+    }
+
+    const effectSrc=firstEffectSrc();
+    if(effectSrc){
+      await primeEffectTrack(effectSrc);
       if(session!==playbackSession)return;
     }
 
@@ -731,11 +824,13 @@ async function toggleSound(){
     const session=playbackSession;
     deClickGain(themeGain,0.0001,500);
     deClickGain(ambienceGain,0.0001,500);
+    deClickGain(effectGain,0.0001,120);
 
     managedTimeout(()=>{
       if(session!==playbackSession)return;
       theme.pause();
       ambience.pause();
+      effectAudio.pause();
     },78);
   }else{
     try{
