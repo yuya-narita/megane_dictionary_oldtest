@@ -11,7 +11,7 @@ window.SHINO_SERIES = {
   "title": "テーマソング",
   "description": "歌詞カード",
   "src": "./ep/ep000.js"
-}
+},
     {
       "id": "ep001",
       "number": 1,
