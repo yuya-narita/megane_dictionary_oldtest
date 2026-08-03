@@ -96,6 +96,56 @@ function cancelScheduledAudio(){
   }
 }
 
+function deClickGain(node,target,durationMs=35){
+  if(!node?.gain||!audioContext)return;
+
+  const now=audioContext.currentTime;
+  const current=Math.max(0.0001,Number(node.gain.value)||0.0001);
+  const targetValue=Math.max(0.0001,Number(target)||0.0001);
+  const end=now+Math.max(0.012,durationMs/1000);
+
+  node.gain.cancelScheduledValues(now);
+  node.gain.setValueAtTime(current,now);
+  node.gain.linearRampToValueAtTime(targetValue,end);
+}
+
+async function softStopAudio({
+  resetPosition=false,
+  suspendContext=false,
+  fadeMs=45
+}={}){
+  clearAudioCleanupTimers();
+  clearTimeout(ambienceStopTimer);
+  ambienceStopTimer=null;
+  cancelScheduledAudio();
+
+  if(audioContext&&audioContext.state==="suspended"){
+    try{await audioContext.resume()}catch{}
+  }
+
+  deClickGain(themeGain,0.0001,fadeMs);
+  deClickGain(ambienceGain,0.0001,fadeMs);
+
+  await new Promise(resolve=>setTimeout(resolve,fadeMs+18));
+
+  try{theme.pause()}catch{}
+  try{ambience.pause()}catch{}
+
+  theme.playbackRate=1;
+  theme.defaultPlaybackRate=1;
+  ambience.playbackRate=1;
+  ambience.defaultPlaybackRate=1;
+
+  if(resetPosition){
+    try{theme.currentTime=0}catch{}
+    try{ambience.currentTime=0}catch{}
+  }
+
+  if(suspendContext&&audioContext?.state==="running"){
+    try{await audioContext.suspend()}catch{}
+  }
+}
+
 function hardStopAudio({resetPosition=false,suspendContext=false}={}){
   clearAudioCleanupTimers();
   clearTimeout(ambienceStopTimer);
@@ -177,8 +227,12 @@ function openAdjacentEpisode(offset){
   playbackSession++;
   startingEpisode=false;
   clearTimers();
-  hardStopAudio({resetPosition:false,suspendContext:true});
   openCover(target.id);
+  softStopAudio({
+    resetPosition:false,
+    suspendContext:true,
+    fadeMs:48
+  });
 }
 
 function openCover(id){
@@ -541,19 +595,26 @@ async function startEpisode(fromSaved=false){
     }
 
     if(themeGain&&audioContext){
-      themeGain.gain.cancelScheduledValues(audioContext.currentTime);
-      themeGain.gain.setValueAtTime(
-        musicMuted?0:Math.max(.0001,resumeVolume),
-        audioContext.currentTime
-      );
+      const now=audioContext.currentTime;
+      themeGain.gain.cancelScheduledValues(now);
+      themeGain.gain.setValueAtTime(0.0001,now);
     }
 
     if(!musicMuted){
       await theme.play();
+
       if(session!==playbackSession){
         theme.pause();
         return;
       }
+
+      // A very short fade removes the iPhone start click without
+      // making the restart feel delayed.
+      deClickGain(
+        themeGain,
+        Math.max(.0001,resumeVolume),
+        fromSaved?90:70
+      );
     }
   }catch(error){
     console.warn("[Scene Player] audio start failed",error);
@@ -627,13 +688,20 @@ function finish(){
   },3600);
 }
 
-function backToCover(){
+async function backToCover(){
   saveProgress();
   playbackSession++;
   startingEpisode=false;
   clearTimers();
-  hardStopAudio({resetPosition:false,suspendContext:true});
+
+  // Change screen immediately, but let the audio close over a tiny
+  // envelope so the waveform is not cut at a non-zero point.
   show(cover);
+  await softStopAudio({
+    resetPosition:false,
+    suspendContext:true,
+    fadeMs:48
+  });
 }
 
 function toggleAuto(){
@@ -651,16 +719,23 @@ async function toggleSound(){
   await ensureAudioGraph();
 
   if(musicMuted){
-    rampGain(themeGain,0,260);
-    rampGain(ambienceGain,0,260);
     const session=playbackSession;
+    deClickGain(themeGain,0.0001,55);
+    deClickGain(ambienceGain,0.0001,55);
+
     managedTimeout(()=>{
       if(session!==playbackSession)return;
       theme.pause();
       ambience.pause();
-    },300);
+    },78);
   }else{
     try{
+      if(themeGain&&audioContext){
+        const now=audioContext.currentTime;
+        themeGain.gain.cancelScheduledValues(now);
+        themeGain.gain.setValueAtTime(0.0001,now);
+      }
+
       await theme.play();
 
       if(ambiencePrimedSrc){
@@ -668,13 +743,22 @@ async function toggleSound(){
           ambience.src=ambiencePrimedSrc;
           ambience.load();
         }
-        ambienceGain.gain.setValueAtTime(0,audioContext.currentTime);
+
+        if(ambienceGain&&audioContext){
+          ambienceGain.gain.cancelScheduledValues(audioContext.currentTime);
+          ambienceGain.gain.setValueAtTime(0.0001,audioContext.currentTime);
+        }
+
         await ambience.play();
         ambienceUnlocked=true;
       }
     }catch{}
 
-    rampGain(themeGain,resumeVolume||SERIES.defaultVolume||.24,700);
+    deClickGain(
+      themeGain,
+      resumeVolume||SERIES.defaultVolume||.24,
+      90
+    );
   }
 
   saveProgress();
