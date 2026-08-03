@@ -3,7 +3,7 @@ window.SHINO_EPISODES["ep003"] = {
   "id": "ep003",
   "number": 3,
   "title": "準備中",
-  "description": "",
+  "description": "読了ボタンの配置確認用",
   "story": [
     {
       "type": "narration",

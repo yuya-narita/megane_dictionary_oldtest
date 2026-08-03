@@ -9,13 +9,13 @@ window.SHINO_SERIES = {
       "id": "ep001",
       "number": 1,
       "title": "タダの冷蔵庫",
-      "description": "",
+      "description": "冷蔵庫を直して、おにぎりをもらう日。",
       "src": "./ep/ep001.js"
     },
     {
       "id": "ep002",
       "number": 2,
-      "title": "空き地の映画館",
+      "title": "「空き地の映画館」",
       "description": "",
       "src": "./ep/ep002.js"
     },
