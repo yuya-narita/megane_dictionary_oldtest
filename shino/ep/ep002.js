@@ -13,7 +13,7 @@ window.SHINO_EPISODES["ep002"] = {
     },
     {
       "type": "narration",
-      "text": "シノは路地裏で、拾ってきた折りたたみイスのネジを締めている。",
+      "text": "シノは路地裏で、\n拾ってきた折りたたみイスのネジを締めている。",
       "pause": 1300,
       "time": 8.241
     },
@@ -61,7 +61,7 @@ window.SHINO_EPISODES["ep002"] = {
     },
     {
       "type": "narration",
-      "text": "たぶんどこかの粗大ゴミ置き場出身。",
+      "text": "たぶん\nどこかの粗大ゴミ置き場出身。",
       "pause": 1300,
       "time": 31.495
     },
@@ -97,13 +97,13 @@ window.SHINO_EPISODES["ep002"] = {
     },
     {
       "type": "dialogue",
-      "text": "「壊れてる前提で聞くの、いい性格してるな」",
+      "text": "「壊れてる前提で聞くの、\nいい性格してるな」",
       "pause": 1300,
       "time": 50.173
     },
     {
       "type": "narration",
-      "text": "シノの作業場（と呼んでいる空き店舗）で分解。",
+      "text": "シノの作業場で分解。",
       "pause": 1300,
       "time": 56.797
     },
@@ -115,7 +115,7 @@ window.SHINO_EPISODES["ep002"] = {
     },
     {
       "type": "dialogue",
-      "text": "「わあ、内部に砂漠が広がってる」",
+      "text": "「わあ、\n内部に砂漠が広がってる」",
       "pause": 1300,
       "time": 62.789
     },
@@ -133,7 +133,7 @@ window.SHINO_EPISODES["ep002"] = {
     },
     {
       "type": "narration",
-      "text": "配線をつなぎ、レンズを拭き、コードを継ぎ足す。",
+      "text": "配線をつなぎ、\nレンズを拭き、\nコードを継ぎ足す。",
       "pause": 1300,
       "time": 72.305
     },
@@ -153,7 +153,8 @@ window.SHINO_EPISODES["ep002"] = {
       "type": "sound",
       "text": "ブゥン",
       "pause": 1300,
-      "time": 81.96
+      "time": 81.96,
+      "effect": "pulse"
     },
     {
       "type": "narration",
@@ -169,7 +170,7 @@ window.SHINO_EPISODES["ep002"] = {
     },
     {
       "type": "dialogue",
-      "text": "「まだ夕方だから見えないな。夜、試すか」",
+      "text": "「まだ夕方だから見えないな。\n夜、試すか」",
       "pause": 1300,
       "time": 90.161
     },
@@ -199,7 +200,7 @@ window.SHINO_EPISODES["ep002"] = {
     },
     {
       "type": "narration",
-      "text": "ビールケース、牛乳箱、タイヤ。",
+      "text": "ビールケース、\n牛乳箱、\nタイヤ。",
       "pause": 1300,
       "time": 107.642
     },
@@ -255,7 +256,8 @@ window.SHINO_EPISODES["ep002"] = {
       "type": "sound",
       "text": "ジジジ……",
       "pause": 1300,
-      "time": 129.25
+      "time": 129.25,
+      "effect": "whisper"
     },
     {
       "type": "narration",
@@ -265,7 +267,7 @@ window.SHINO_EPISODES["ep002"] = {
     },
     {
       "type": "narration",
-      "text": "映ったのは、昔のアニメのDVD。",
+      "text": "映ったのは、\n昔のアニメのDVD。",
       "pause": 1300,
       "time": 137.194
     },
@@ -277,7 +279,7 @@ window.SHINO_EPISODES["ep002"] = {
     },
     {
       "type": "narration",
-      "text": "画面が少し傾き、色も薄い。",
+      "text": "画面が少し傾き、\n色も薄い。",
       "pause": 1300,
       "time": 142.225
     },
@@ -303,11 +305,12 @@ window.SHINO_EPISODES["ep002"] = {
       "type": "dialogue",
       "text": "「空き地はだいたい何にでもなれる」",
       "pause": 1300,
-      "time": 155.462
+      "time": 155.462,
+      "effect": "whisper"
     },
     {
       "type": "narration",
-      "text": "上映中、蚊が多い。",
+      "text": "上映中、\n蚊が多い。",
       "pause": 1300,
       "time": 158.522
     },
@@ -336,14 +339,8 @@ window.SHINO_EPISODES["ep002"] = {
       "time": 168.991
     },
     {
-      "type": "narration",
-      "text": "シノ",
-      "pause": 1300,
-      "time": 171.954
-    },
-    {
       "type": "dialogue",
-      "text": "「インターミッションです。高級っぽいだろ」",
+      "text": "「インターミッションです。\n高級っぽいだろ」",
       "pause": 1300,
       "time": 174.867
     },
@@ -361,7 +358,7 @@ window.SHINO_EPISODES["ep002"] = {
     },
     {
       "type": "narration",
-      "text": "マツさん、ポップコーンの代わりにせんべいを配る。",
+      "text": "マツさん、\nポップコーンの代わりにせんべいを配る。",
       "pause": 1300,
       "time": 181.521
     },
@@ -391,7 +388,7 @@ window.SHINO_EPISODES["ep002"] = {
     },
     {
       "type": "narration",
-      "text": "帰り際、ユウが言う。",
+      "text": "帰り際、\nユウが言う。",
       "pause": 1300,
       "time": 195.719
     },
@@ -409,7 +406,7 @@ window.SHINO_EPISODES["ep002"] = {
     },
     {
       "type": "narration",
-      "text": "みんな帰って、シノ一人。",
+      "text": "みんな帰って、\nシノ一人。",
       "pause": 1300,
       "time": 204.797
     },
@@ -463,15 +460,9 @@ window.SHINO_EPISODES["ep002"] = {
     },
     {
       "type": "narration",
-      "text": "夜の路地に、シノの鼻歌が消えていく。",
+      "text": "夜の路地に、\nシノの鼻歌が消えていく。",
       "pause": 1300,
       "time": 233.458
-    },
-    {
-      "type": "narration",
-      "text": "つづく…かな？",
-      "pause": 1300,
-      "time": 236.316
     }
   ]
 };
