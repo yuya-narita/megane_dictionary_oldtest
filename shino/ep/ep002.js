@@ -2,7 +2,7 @@ window.SHINO_EPISODES = window.SHINO_EPISODES || {};
 window.SHINO_EPISODES["ep002"] = {
   "id": "ep002",
   "number": 2,
-  "title": "「空き地の映画館」",
+  "title": "空き地の映画館",
   "description": "",
   "story": [
     {
