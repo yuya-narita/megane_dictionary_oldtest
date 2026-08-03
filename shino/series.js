@@ -10,7 +10,7 @@ window.SHINO_SERIES = {
       "id": "ep001",
       "number": 1,
       "title": "タダの冷蔵庫",
-      "description": "冷蔵庫を直して、おにぎりをもらう日。",
+      "description": "",
       "story": [
         {
           "type": "narration",
@@ -461,7 +461,7 @@ window.SHINO_SERIES = {
     {
       "id": "ep002",
       "number": 2,
-      "title": "「空き地の映画館」",
+      "title": "空き地の映画館",
       "description": "",
       "story": [
         {
