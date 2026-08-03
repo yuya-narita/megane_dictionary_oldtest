@@ -5,13 +5,6 @@ window.SHINO_SERIES = {
   "themeSrc": "./audio/shino_theme.mp3",
   "defaultVolume": 0.24,
   "episodes": [
-{
-  "id": "ep000",
-  "number": 0,
-  "title": "テーマソング",
-  "description": "歌詞カード",
-  "src": "./ep/ep000.js"
-},
     {
       "id": "ep001",
       "number": 1,
