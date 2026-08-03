@@ -1,7 +1,16 @@
 (()=>{
 "use strict";
 
-const SERIES=window.SHINO_SERIES||{episodes:[]};
+const MANIFEST=window.SHINO_SERIES||{episodes:[]};
+const EPISODE_DATA=window.SHINO_EPISODES||{};
+const SERIES={
+  ...MANIFEST,
+  episodes:(MANIFEST.episodes||[]).map(meta=>({
+    ...meta,
+    ...(EPISODE_DATA[meta.id]||{}),
+    src:meta.src
+  }))
+};
 const g=id=>document.getElementById(id);
 
 const screens=[g("shelf"),g("cover"),g("player"),g("ending")];
