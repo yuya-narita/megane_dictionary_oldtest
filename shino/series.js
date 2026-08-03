@@ -87,19 +87,12 @@ window.SHINO_SERIES = {
   },
   {
     "type": "sound",
-    "effect": "null",
+    "effect": null,
     "text": "コン、\nコン。",
     "pause": 1200,
     "music": {
       "volume": 0.1,
       "fade": 500
-    },
-    "ambience": {
-      "src": "./audio/knock.mp3",
-      "volume": 0.55,
-      "fadeIn": 900,
-      "fadeOut": 1700,
-      "stopAfter": 2600
     }
   },
   {

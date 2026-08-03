@@ -231,7 +231,7 @@ function openAdjacentEpisode(offset){
   softStopAudio({
     resetPosition:false,
     suspendContext:true,
-    fadeMs:48
+    fadeMs:900
   });
 }
 
@@ -613,7 +613,7 @@ async function startEpisode(fromSaved=false){
       deClickGain(
         themeGain,
         Math.max(.0001,resumeVolume),
-        fromSaved?90:70
+        fromSaved?1800:1500
       );
     }
   }catch(error){
@@ -700,7 +700,7 @@ async function backToCover(){
   await softStopAudio({
     resetPosition:false,
     suspendContext:true,
-    fadeMs:48
+    fadeMs:900
   });
 }
 
@@ -720,8 +720,8 @@ async function toggleSound(){
 
   if(musicMuted){
     const session=playbackSession;
-    deClickGain(themeGain,0.0001,55);
-    deClickGain(ambienceGain,0.0001,55);
+    deClickGain(themeGain,0.0001,500);
+    deClickGain(ambienceGain,0.0001,500);
 
     managedTimeout(()=>{
       if(session!==playbackSession)return;
@@ -757,7 +757,7 @@ async function toggleSound(){
     deClickGain(
       themeGain,
       resumeVolume||SERIES.defaultVolume||.24,
-      90
+      900
     );
   }
 
