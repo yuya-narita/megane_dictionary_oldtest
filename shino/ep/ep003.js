@@ -21,7 +21,8 @@ window.SHINO_EPISODES["ep003"] = {
       "type": "dialogue",
       "text": "「……あれ？」",
       "pause": 1300,
-      "time": 11.438
+      "time": 11.438,
+      "effect": "tilt"
     },
     {
       "type": "narration",
@@ -265,7 +266,7 @@ window.SHINO_EPISODES["ep003"] = {
     },
     {
       "type": "dialogue",
-      "text": "「これ、あんたのじゃないかい？」",
+      "text": "「これ、\nあんたのじゃないかい？」",
       "pause": 1300,
       "time": 161.999
     },
@@ -279,11 +280,12 @@ window.SHINO_EPISODES["ep003"] = {
       "type": "dialogue",
       "text": "「おおおおお帰り！！！」",
       "pause": 1300,
-      "time": 168.616
+      "time": 168.616,
+      "effect": "shake"
     },
     {
       "type": "dialogue",
-      "text": "「道に落ちてたのを、向かいの奥さんが拾ってね」",
+      "text": "「道に落ちてたのを、\n向かいの奥さんが拾ってね」",
       "pause": 1300,
       "time": 173.464
     },
@@ -379,7 +381,7 @@ window.SHINO_EPISODES["ep003"] = {
     },
     {
       "type": "dialogue",
-      "text": "「失うと分かるな。\n財布って、ただの入れ物じゃなくて“安心の塊”だったんだな」",
+      "text": "「失うと分かるな。\n財布って、ただの入れ物じゃなくて安心の塊だったんだな」",
       "pause": 1300,
       "time": 238.105
     },
@@ -421,7 +423,7 @@ window.SHINO_EPISODES["ep003"] = {
     },
     {
       "type": "dialogue",
-      "text": "「よし、今日も黒字」",
+      "text": "「よし、\n今日も黒字」",
       "pause": 1300,
       "time": 267.059
     },
@@ -433,7 +435,7 @@ window.SHINO_EPISODES["ep003"] = {
     },
     {
       "type": "narration",
-      "text": "でも、町への信頼残高が増えた気がした。",
+      "text": "でも、\n町への信頼残高が増えた気がした。",
       "pause": 1300,
       "time": 273.971
     },
