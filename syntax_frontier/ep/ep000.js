@@ -1,6 +1,6 @@
 window.SHINO_EPISODES = window.SHINO_EPISODES || {};
-window.SHINO_EPISODES["ep000"] = {
-  "id": "ep000",
+window.SHINO_EPISODES["ep001"] = {
+  "id": "ep001",
   "number": 1,
   "title": "跳ねのない街",
   "description": "",
@@ -12,17 +12,19 @@ window.SHINO_EPISODES["ep000"] = {
       "effect": "blur",
       "view": "world",
       "clear": true,
-      "display": "solo"
+      "display": "solo",
+      "dim": 0.75
     },
     {
-      "type": "sound",
+      "type": "dialogue",
       "text": "それなのに、音だけが鳴っている。",
       "pause": 1300,
       "effect": "blur",
       "view": "world",
       "clear": true,
       "display": "solo",
-      "wrap": "nowrap"
+      "wrap": "nowrap",
+      "dim": 0.65
     },
     {
       "type": "narration",
@@ -321,7 +323,8 @@ window.SHINO_EPISODES["ep000"] = {
       "effect": "blur",
       "view": "world",
       "clear": true,
-      "display": "solo"
+      "display": "solo",
+      "dim": 0.9
     },
     {
       "type": "narration",
@@ -338,16 +341,15 @@ window.SHINO_EPISODES["ep000"] = {
       "view": "world"
     },
     {
-      "type": "narration",
+      "type": "dialogue",
       "text": "HINT: PRESS ANY KEY TO CONTINUE",
       "pause": 1300,
       "effect": "whisper",
-      "view": "console",
+      "view": "world",
       "clear": true,
       "display": "solo",
-      "wrap": "nowrap",
-      "fontSize": "custom",
-      "fontPx": 10
+      "bgTransition": "glitch",
+      "dim": 0.9
     },
     {
       "type": "narration",
@@ -565,11 +567,11 @@ window.SHINO_EPISODES["ep000"] = {
       "text": "HINT: PRESS ANY KEY TO CONTINUE\n[λ]= 0.79 / [!]= 0.00 / [σ]= 0.00",
       "pause": 1300,
       "effect": "whisper",
-      "view": "console",
+      "view": "world",
       "clear": true,
       "display": "solo",
-      "fontSize": "custom",
-      "fontPx": 14
+      "bgTransition": "glitch",
+      "dim": 0.9
     },
     {
       "type": "narration",
@@ -746,11 +748,13 @@ window.SHINO_EPISODES["ep000"] = {
     },
     {
       "type": "narration",
-      "text": "午後三時の鐘が、一回ぶんだけ、遅れた。",
+      "text": "午後三時の鐘が、\n一回ぶんだけ、遅れた。",
       "pause": 1300,
+      "effect": "blur",
       "view": "world",
       "clear": true,
       "display": "solo",
+      "dim": 0.9,
       "ambience": {
         "src": "./audio/kane.mp3",
         "volume": 0.8,
