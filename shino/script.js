@@ -292,10 +292,23 @@ function getGap(prevType,nextType){
   return BASE_GAP;
 }
 
+function normalizeEffectClasses(effect){
+  if(!effect)return "";
+  return String(effect)
+    .split(/\s+/)
+    .filter(Boolean)
+    .flatMap(name=>{
+      const raw=name.replace(/^effect-/,"");
+      return [raw,`effect-${raw}`];
+    })
+    .join(" ");
+}
+
 function createLine(cut){
   const node=document.createElement("div");
   const typeClass=cut.type==="ending"?"endingtype":cut.type;
-  node.className=`line ${typeClass}${cut.effect?" "+cut.effect:""} entering`;
+  const effectClasses=normalizeEffectClasses(cut.effect);
+  node.className=`line ${typeClass}${effectClasses?" "+effectClasses:""} entering`;
   node.textContent=cut.text;
   node.dataset.type=cut.type||"narration";
   lines.appendChild(node);

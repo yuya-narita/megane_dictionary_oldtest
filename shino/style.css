@@ -681,3 +681,121 @@ button,.episode-card,.ending-nav-button,.replay-link,.cover-back{
 .ending-actions.is-visible{
   transform:translate(-50%,0);
 }
+
+
+/* =========================================================
+   SCENE PLAYER v0.7 — Standard text effects
+   Studio v0.5 presets:
+   pulse / shake / blur / loud / whisper / slow / tilt / fade / pop
+   ========================================================= */
+
+/* Use margin/filter/font-size rather than transform animations,
+   because Scene layout already positions each line using transform. */
+
+.line.effect-pulse.visible,
+.line.pulse.visible{
+  animation:spFxPulse .95s ease-out 1;
+}
+@keyframes spFxPulse{
+  0%{opacity:.2;filter:blur(2px);font-size:.82em}
+  45%{opacity:1;filter:blur(0);font-size:1.08em}
+  100%{font-size:1em}
+}
+
+.line.effect-shake.visible,
+.line.shake.visible{
+  animation:spFxShake .48s ease-out 1;
+}
+@keyframes spFxShake{
+  0%,100%{margin-left:0}
+  20%{margin-left:-8px}
+  40%{margin-left:7px}
+  60%{margin-left:-4px}
+  80%{margin-left:2px}
+}
+
+.line.effect-blur.visible,
+.line.blur.visible{
+  animation:spFxBlur 1.05s ease-out 1;
+}
+@keyframes spFxBlur{
+  from{filter:blur(10px);opacity:.12}
+  to{filter:blur(0);opacity:1}
+}
+
+.line.effect-loud,
+.line.loud{
+  font-size:1.24em!important;
+  font-weight:800!important;
+  letter-spacing:.05em;
+}
+.line.effect-loud.visible,
+.line.loud.visible{
+  animation:spFxLoud .58s ease-out 1;
+}
+@keyframes spFxLoud{
+  0%{opacity:0;font-size:.72em}
+  55%{opacity:1;font-size:1.34em}
+  100%{font-size:1.24em}
+}
+
+.line.effect-whisper,
+.line.whisper{
+  font-size:.78em!important;
+  opacity:.7!important;
+  letter-spacing:.08em;
+  font-weight:400!important;
+}
+
+.line.effect-slow,
+.line.slow{
+  transition:
+    transform 1.25s cubic-bezier(.18,.78,.16,1),
+    opacity 1.05s ease!important;
+}
+
+.line.effect-tilt,
+.line.tilt{
+  rotate:-2deg;
+}
+
+.line.effect-fade.visible,
+.line.fade.visible{
+  animation:spFxFade 1.2s ease-out 1;
+}
+@keyframes spFxFade{
+  from{opacity:0}
+  to{opacity:1}
+}
+
+.line.effect-pop.visible,
+.line.pop.visible{
+  animation:spFxPop .52s cubic-bezier(.16,1.45,.36,1) 1;
+}
+@keyframes spFxPop{
+  0%{opacity:0;font-size:.7em}
+  75%{opacity:1;font-size:1.12em}
+  100%{font-size:1em}
+}
+
+/* Respect reduced-motion preference. */
+@media (prefers-reduced-motion: reduce){
+  .line.effect-pulse,
+  .line.pulse,
+  .line.effect-shake,
+  .line.shake,
+  .line.effect-blur,
+  .line.blur,
+  .line.effect-loud,
+  .line.loud,
+  .line.effect-fade,
+  .line.fade,
+  .line.effect-pop,
+  .line.pop{
+    animation:none!important;
+  }
+  .line.effect-slow,
+  .line.slow{
+    transition-duration:.01ms!important;
+  }
+}
