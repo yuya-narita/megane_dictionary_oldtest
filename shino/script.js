@@ -806,6 +806,22 @@ async function backToCover(){
   });
 }
 
+async function backToShelf(){
+  playbackSession++;
+  startingEpisode=false;
+  clearTimers();
+
+  renderShelf();
+  show(shelf);
+
+  // The UI responds immediately; BGM/ambience/SE gently leave the room.
+  await softStopAudio({
+    resetPosition:false,
+    suspendContext:true,
+    fadeMs:1200
+  });
+}
+
 function toggleAuto(){
   auto=!auto;
   modeBtn.textContent=auto?"MAN":"AUTO";
@@ -913,14 +929,14 @@ function showScrollHint(){
   setTimeout(()=>gestureHint.hidden=true,1650);
 }
 
-g("coverBack").addEventListener("click",()=>{renderShelf();show(shelf)});
+g("coverBack").addEventListener("click",backToShelf);
 g("start").addEventListener("click",()=>startEpisode(false));
 g("resumeFromCover").addEventListener("click",()=>startEpisode(true));
 g("back").addEventListener("click",backToCover);
 g("replay").addEventListener("click",()=>{openCover(episode.id);startEpisode(false)});
 previousEpisodeButton.addEventListener("click",()=>openAdjacentEpisode(-1));
 nextEpisodeButton.addEventListener("click",()=>openAdjacentEpisode(1));
-g("episodes").addEventListener("click",()=>{renderShelf();show(shelf)});
+g("episodes").addEventListener("click",backToShelf);
 continueButton.addEventListener("click",()=>{
   const saved=savedProgress();
   if(saved){openCover(saved.episodeId);startEpisode(true)}
