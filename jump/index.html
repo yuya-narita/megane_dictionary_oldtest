@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#efe8dc">
+  <title>跳ねる前のこの感じ — Jump Before Player v0.1</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<main>
+  <section id="shelf" class="screen shelf">
+    <div class="shelf-art" aria-hidden="true"></div>
+    <div class="shelf-inner">
+      <div class="eyebrow">JUMP BEFORE PLAYER</div>
+      <h1 id="seriesTitle">跳ねる前のこの感じ</h1>
+      <p class="shelf-copy">立ち止まるように、読む。</p>
+      <button id="continueButton" class="walk-button resume-button" hidden>
+        <span>つづきから</span>
+        <small>前に立ち止まった場所へ</small>
+      </button>
+      <div id="episodeList" class="episode-list"></div>
+      <p class="shelf-note">一文ずつ、歩くように進みます。</p>
+    </div>
+  </section>
+
+  <section id="cover" class="screen cover" hidden>
+    <button id="coverBack" class="cover-back" aria-label="話数一覧へ">
+      <span aria-hidden="true">←</span><span>道を戻る</span>
+    </button>
+    <div class="cover-light" aria-hidden="true"></div>
+    <div class="cover-inner">
+      <div class="eyebrow">JUMP BEFORE PLAYER</div>
+      <h1>跳ねる前のこの感じ</h1>
+      <p id="episodeNumber">第1話</p>
+      <h2 id="episodeTitle">「校門の前」</h2>
+      <button id="start" class="walk-button">歩き出す</button>
+      <button id="resumeFromCover" class="walk-button secondary-button" hidden>途中から歩く</button>
+      <small>急がなくても、ここは残っている。</small>
+    </div>
+  </section>
+
+  <section id="player" class="screen player" hidden>
+    <header>
+      <button id="back" aria-label="表紙へ戻る">‹</button>
+      <div>
+        <small id="playerSeries">跳ねる前のこの感じ</small>
+        <strong id="playerEpisode">第1話「校門の前」</strong>
+      </div>
+      <button id="sound" aria-label="BGM切替">♪</button>
+    </header>
+
+    <div id="stage">
+      <div id="sceneBackground" aria-hidden="true"></div>
+      <div class="daylight" aria-hidden="true"></div>
+      <div id="scanlines" aria-hidden="true"></div>
+      <div id="focusGuide" aria-hidden="true"></div>
+      <div id="lines"></div>
+      <div id="hint">・</div>
+      <div id="gestureHint" hidden>スクロールではなく、タップで歩きます。</div>
+    </div>
+
+    <footer>
+      <span id="count">0 / 0</span>
+      <div class="bar"><i id="bar"></i></div>
+      <button id="mode">AUTO</button>
+    </footer>
+  </section>
+
+  <section id="ending" class="screen ending" hidden>
+    <div class="ending-card">
+      <h2>今日も、まだ。</h2>
+    </div>
+
+    <div id="endingActions" class="ending-actions" hidden>
+      <div class="episode-nav">
+        <button id="previousEpisode" class="ending-nav-button" hidden>
+          <span class="nav-kicker">BEFORE</span>
+          <span class="nav-label">前の道</span>
+        </button>
+
+        <button id="episodes" class="ending-nav-button">
+          <span class="nav-kicker">MOMENTS</span>
+          <span class="nav-label">場面一覧</span>
+        </button>
+
+        <button id="nextEpisode" class="ending-nav-button" hidden>
+          <span class="nav-kicker">NEXT</span>
+          <span class="nav-label">続きへ</span>
+        </button>
+      </div>
+
+      <button id="replay" class="replay-link">もう一度歩く</button>
+    </div>
+  </section>
+</main>
+
+<audio id="theme" loop preload="auto" playsinline></audio>
+<audio id="ambience" loop preload="auto" playsinline></audio>
+<audio id="effectAudio" preload="auto" playsinline></audio>
+
+<script src="./series.js"></script>
+<script>
+(async function bootScenePlayer(){
+  const manifest=window.SHINO_SERIES||{episodes:[]};
+  window.SHINO_EPISODES=window.SHINO_EPISODES||{};
+
+  function loadScript(src){
+    return new Promise((resolve,reject)=>{
+      const script=document.createElement("script");
+      script.src=src;
+      script.onload=resolve;
+      script.onerror=()=>reject(new Error("Episode load failed: "+src));
+      document.head.appendChild(script);
+    });
+  }
+
+  try{
+    for(const episode of manifest.episodes||[]){
+      await loadScript(episode.src);
+    }
+    const app=document.createElement("script");
+    app.src="./script.js";
+    document.body.appendChild(app);
+  }catch(error){
+    console.error(error);
+    document.body.innerHTML=
+      '<main style="padding:30px;font-family:serif">作品データを読み込めませんでした。</main>';
+  }
+})();
+</script>
+</body>
+</html>
