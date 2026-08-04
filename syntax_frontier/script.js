@@ -277,6 +277,7 @@ function progress(){
 }
 
 function resetScene(startIndex=0){
+  stopActiveTyping(false);
   clearTimers();
   i=Math.max(0,Math.min(startIndex,story.length));
   busy=false;
@@ -348,6 +349,46 @@ function scheduleSceneDisappear(node,cut){
   },after);
 }
 
+let activeTyping=null;
+function stopActiveTyping(complete=false){
+  if(!activeTyping)return false;
+  clearInterval(activeTyping.timer);
+  if(complete)activeTyping.node.textContent=activeTyping.text;
+  activeTyping=null;
+  return true;
+}
+function startTyping(node,cut){
+  const mode=cut.typing||"none";
+  if(mode==="none"){
+    node.textContent=cut.text;
+    return;
+  }
+  stopActiveTyping(true);
+  const speeds={
+    fast:24,
+    slow:110,
+    terminal:Number(cut.typingSpeed)||48,
+    typing:Number(cut.typingSpeed)||55
+  };
+  const speed=Math.max(10,speeds[mode]||55);
+  const cursor=cut.typingCursor??"_";
+  const chars=Array.from(cut.text||"");
+  let index=0;
+  node.textContent=cursor;
+  activeTyping={
+    node,
+    text:cut.text||"",
+    timer:setInterval(()=>{
+      index++;
+      node.textContent=chars.slice(0,index).join("")+(index<chars.length?cursor:"");
+      if(index>=chars.length){
+        clearInterval(activeTyping.timer);
+        activeTyping=null;
+      }
+    },speed)
+  };
+}
+
 function createLine(cut){
   const node=document.createElement("div");
   const typeClass=cut.type==="ending"?"endingtype":cut.type;
@@ -365,7 +406,7 @@ function createLine(cut){
   const resolvedColor=resolvePlayerTextColor(cut);
   if(resolvedColor)node.style.setProperty("--scene-text-color",resolvedColor);
 
-  node.textContent=cut.text;
+  startTyping(node,cut);
   node.dataset.type=cut.type||"narration";
   lines.appendChild(node);
   node.getBoundingClientRect();
@@ -698,6 +739,7 @@ function tactileRelease(){
 }
 
 function next(){
+  if(stopActiveTyping(true))return;
   if(busy){queuedNext=true;return}
   if(i>=story.length){finish();return}
 
