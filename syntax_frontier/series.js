@@ -2,7 +2,7 @@ window.SHINO_SERIES = {
   id: "syntax-frontier",
   title: "Syntax Frontier",
   subtitle: "人工世界を、観測する。",
-  themeSrc: "./audio/kaze.mp3",
+  themeSrc: "./audio/frontier_loop.wav",
   defaultVolume: 0.16,
   episodes: [{
     id:"ep000", number:0, title:"跳ねのない街",

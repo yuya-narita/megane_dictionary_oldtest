@@ -305,12 +305,66 @@ function normalizeEffectClasses(effect){
     .join(" ");
 }
 
+
+const SCENE_TEXT_COLORS={
+  white:"#ffffff",
+  lavender:"#bda7ff",
+  pink:"#f2b7cf",
+  cyan:"#83e7ff",
+  green:"#7fffb2",
+  amber:"#ffc86b",
+  red:"#ff7b8c",
+  gray:"#a7a4b1"
+};
+
+function resolvePlayerTextColor(cut){
+  const key=cut.textColor||"theme";
+  if(key==="theme")return "";
+  if(key==="custom")return cut.customColor||"#bda7ff";
+  return SCENE_TEXT_COLORS[key]||"";
+}
+
+function removeVisibleNode(node){
+  const index=visibleItems.findIndex(item=>item.node===node);
+  if(index>=0)visibleItems.splice(index,1);
+  node.remove();
+  requestAnimationFrame(()=>positionLines(0));
+}
+
+function scheduleSceneDisappear(node,cut){
+  const after=Math.max(0,Number(cut.disappearAfter)||0);
+  if(!after)return;
+
+  const fade=Math.max(100,Number(cut.disappearFade)||700);
+  node.style.setProperty("--scene-disappear-fade",`${fade}ms`);
+
+  managedTimeout(()=>{
+    if(!node.isConnected)return;
+    node.classList.add("scene-disappearing");
+
+    managedTimeout(()=>{
+      if(node.isConnected)removeVisibleNode(node);
+    },fade+40);
+  },after);
+}
+
 function createLine(cut){
   const node=document.createElement("div");
   const typeClass=cut.type==="ending"?"endingtype":cut.type;
   const effectClasses=normalizeEffectClasses(cut.effect);
   const view=cut.view||"world";
-  node.className=`line ${typeClass} view-${view}${effectClasses?" "+effectClasses:""} entering`;
+  const wrapClass=cut.wrap==="nowrap"?" is-nowrap":"";
+  const sizeClass=cut.fontSize&&cut.fontSize!=="auto"
+    ?` size-${cut.fontSize}`:"";
+  node.className=
+    `line ${typeClass} view-${view}${effectClasses?" "+effectClasses:""}${wrapClass}${sizeClass} entering`;
+  if(cut.fontSize==="custom"&&Number(cut.fontPx)){
+    node.style.fontSize=`${Number(cut.fontPx)}px`;
+  }
+
+  const resolvedColor=resolvePlayerTextColor(cut);
+  if(resolvedColor)node.style.setProperty("--scene-text-color",resolvedColor);
+
   node.textContent=cut.text;
   node.dataset.type=cut.type||"narration";
   lines.appendChild(node);
@@ -608,7 +662,15 @@ function stopAmbience(fade=900){
 function applyVisual(cut){
   const view=cut.view||"world";
   stage.dataset.view=view;
-  if(cut.clear){
+
+  const transition=cut.bgTransition||"fade";
+  stage.classList.remove("bg-cut","bg-fade","bg-flash","bg-glitch");
+  void stage.offsetWidth;
+  stage.classList.add(`bg-${transition}`);
+
+  sceneBackground.style.backgroundSize=cut.bgFit||"cover";
+
+  if(cut.display==="solo"||cut.clear){
     lines.innerHTML="";
     visibleItems=[];
   }
@@ -652,7 +714,10 @@ function next(){
   progress();
   saveProgress();
 
-  requestAnimationFrame(()=>breatheWhitespace(node));
+  requestAnimationFrame(()=>{
+    breatheWhitespace(node);
+    scheduleSceneDisappear(node,cut);
+  });
 
   const hold=cut.music?.hold||0;
   setTimeout(()=>{
