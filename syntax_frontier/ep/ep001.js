@@ -45,7 +45,12 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
-      "textColor": "lavender"
+      "textColor": "lavender",
+      "effectAudio": {
+        "src": "./audio/ep001/aisathu.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -59,7 +64,12 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
-      "textColor": "lavender"
+      "textColor": "lavender",
+      "effectAudio": {
+        "src": "./audio/ep001/aisathu.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -73,7 +83,12 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
-      "textColor": "lavender"
+      "textColor": "lavender",
+      "effectAudio": {
+        "src": "./audio/ep001/aisathu.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -129,7 +144,12 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
-      "textColor": "lavender"
+      "textColor": "lavender",
+      "effectAudio": {
+        "src": "./audio/ep001/aisathu.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -143,7 +163,12 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
-      "textColor": "lavender"
+      "textColor": "lavender",
+      "effectAudio": {
+        "src": "./audio/ep001/aisathu.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -157,7 +182,12 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
-      "textColor": "lavender"
+      "textColor": "lavender",
+      "effectAudio": {
+        "src": "./audio/ep001/aisathu.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -199,6 +229,8 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "──午後三時。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
@@ -206,6 +238,8 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "遠い鐘の音が空気を均等に叩く。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
@@ -213,6 +247,8 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "間隔はぴったり同じ。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
@@ -220,6 +256,8 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "前の一打と同じ大きさで、\n同じ高さで、同じ速度で、同じ三時を打つ。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
@@ -227,6 +265,8 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "「三時」は時刻ではなく、ラベルだ。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
@@ -368,7 +408,7 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "lavender"
     },
     {
       "type": "narration",
@@ -536,42 +576,59 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "小さな広場に出る。",
       "pause": 1300,
       "view": "world",
-      "textColor": "lavender"
+      "clear": true,
+      "display": "solo",
+      "textColor": "white"
     },
     {
       "type": "narration",
       "text": "噴水があるが、水は上がらない。",
       "pause": 1300,
       "view": "world",
-      "textColor": "lavender"
+      "clear": true,
+      "display": "solo",
+      "textColor": "white"
     },
     {
       "type": "narration",
       "text": "透明なガラスの棒のように、水は上がりかけの姿勢で止まり、そのまま動かない。",
       "pause": 1300,
       "view": "world",
-      "textColor": "lavender"
+      "clear": true,
+      "display": "solo",
+      "textColor": "white"
     },
     {
       "type": "narration",
       "text": "子どもが縁に手をかけ、覗き込む。",
       "pause": 1300,
       "view": "world",
-      "textColor": "lavender"
+      "clear": true,
+      "display": "solo",
+      "textColor": "white"
     },
     {
       "type": "narration",
       "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
-      "textColor": "lavender"
+      "clear": true,
+      "display": "solo",
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/ep001/aisathu.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
       "text": "口が言葉に先回りし、眼差しは水面を通り抜けてどこにも届かない。",
       "pause": 1300,
       "view": "world",
-      "textColor": "lavender"
+      "clear": true,
+      "display": "solo",
+      "textColor": "white"
     },
     {
       "type": "narration",
@@ -613,6 +670,8 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "私は歩く。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
@@ -620,10 +679,12 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "歩いている間、世界は私の歩きを正しく処理し続ける。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
-      "type": "narration",
+      "type": "sound",
       "text": "角度、速度、姿勢——",
       "pause": 1300,
       "view": "world",
@@ -655,7 +716,12 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
-      "textColor": "lavender"
+      "textColor": "lavender",
+      "effectAudio": {
+        "src": "./audio/ep001/aisathu.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -717,28 +783,22 @@ window.SHINO_EPISODES["ep001"] = {
       "type": "narration",
       "text": "一度だけ、わずかにタイミングがずれたような気がした。",
       "pause": 1300,
-      "view": "warning",
-      "textColor": "lavender",
-      "disappearAfter": 1500,
-      "disappearFade": 700
+      "view": "world",
+      "textColor": "lavender"
     },
     {
       "type": "narration",
       "text": "「今日もい」",
       "pause": 1300,
-      "view": "warning",
-      "textColor": "lavender",
-      "disappearAfter": 1500,
-      "disappearFade": 700
+      "view": "world",
+      "textColor": "lavender"
     },
     {
       "type": "narration",
       "text": "半拍早く、子どもの声が立ち上がりかけ、すぐに街の合唱に追いついて修正された。",
       "pause": 1300,
-      "view": "warning",
-      "textColor": "lavender",
-      "disappearAfter": 1500,
-      "disappearFade": 700
+      "view": "world",
+      "textColor": "lavender"
     },
     {
       "type": "narration",
@@ -832,10 +892,21 @@ window.SHINO_EPISODES["ep001"] = {
       "textColor": "white"
     },
     {
-      "type": "narration",
-      "text": "H… まで読めて、すぐ木目に戻る。",
+      "type": "sound",
+      "text": "H…",
       "pause": 1300,
-      "view": "world",
+      "view": "void",
+      "clear": true,
+      "display": "solo",
+      "textColor": "white"
+    },
+    {
+      "type": "sound",
+      "text": "まで読めて、すぐ木目に戻る。",
+      "pause": 1300,
+      "view": "void",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
@@ -843,6 +914,8 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "ただの傷だ、と言い聞かせる。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
@@ -854,33 +927,38 @@ window.SHINO_EPISODES["ep001"] = {
     },
     {
       "type": "narration",
-      "text": "信号は青のまま、横断歩道は白いまま、鐘は同じ間隔で鳴り続ける。",
+      "text": "信号は青のまま、\n横断歩道は白いまま、\n鐘は同じ間隔で鳴り続ける。",
       "pause": 1300,
-      "effect": "whisper",
+      "effect": "blur",
       "view": "world",
       "textColor": "lavender",
-      "disappearAfter": 1500,
-      "disappearFade": 700
+      "disappearAfter": 3000,
+      "disappearFade": 1200
     },
     {
       "type": "narration",
       "text": "私は白の上を渡る。",
       "pause": 1300,
-      "effect": "whisper",
+      "effect": "blur",
       "view": "world",
       "textColor": "lavender",
-      "disappearAfter": 1500,
-      "disappearFade": 700
+      "disappearAfter": 3000,
+      "disappearFade": 1200
     },
     {
       "type": "dialogue",
       "text": "「今日もいい天気ですね」\n　　「今日もいい天気ですね」\n　　　　「今日もいい天気ですね」",
       "pause": 1300,
-      "effect": "whisper",
+      "effect": "blur",
       "view": "world",
       "textColor": "lavender",
-      "disappearAfter": 1500,
-      "disappearFade": 700
+      "disappearAfter": 3000,
+      "disappearFade": 1200,
+      "effectAudio": {
+        "src": "./audio/ep001/aisathu.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -957,7 +1035,14 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
-      "textColor": "lavender"
+      "clear": true,
+      "display": "solo",
+      "textColor": "lavender",
+      "effectAudio": {
+        "src": "./audio/ep001/aisathu.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -999,6 +1084,8 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "一つ、",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
@@ -1006,6 +1093,8 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "二つ、",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
@@ -1013,6 +1102,8 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "三つ。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
@@ -1020,6 +1111,8 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "音は同じ、間も同じ。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
@@ -1069,6 +1162,8 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "見間違いだ。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
@@ -1083,6 +1178,8 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "通りの端に戻る。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
@@ -1090,6 +1187,8 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "看板の傷が、さっきよりもわずかに長くなっている気がした。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
@@ -1118,6 +1217,8 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "私は歩くのをやめる。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
@@ -1125,6 +1226,8 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "耳を澄ます。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
@@ -1132,6 +1235,8 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "鼓動が、今度は規則に従う。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
@@ -1160,14 +1265,24 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
-      "textColor": "lavender"
+      "textColor": "lavender",
+      "effectAudio": {
+        "src": "./audio/ep001/aisathu.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
       "text": "声が重なり、街は揺れない。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/ep001/aisathu.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -1292,8 +1407,10 @@ window.SHINO_EPISODES["ep001"] = {
       "type": "dialogue",
       "text": "世界はそれを、いまのところ、消しそこねている。",
       "pause": 1300,
-      "effect": "slow",
+      "effect": "blur",
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     }
   ]
