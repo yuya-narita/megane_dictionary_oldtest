@@ -3,7 +3,7 @@ window.SHINO_EPISODES["ep000"] = {
   "id": "ep000",
   "number": 0,
   "title": "跳ねのない街",
-  "description": "",
+  "description": "世界は、跳ねを一度も起こさない。",
   "story": [
     {
       "type": "dialogue",
