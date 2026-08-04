@@ -449,7 +449,21 @@ window.SHINO_EPISODES["ep000"] = {
     },
     {
       "type": "narration",
-      "text": "タイヤの跡も、\n砂粒のばらつきも、\n影の縁のブレもない。",
+      "text": "タイヤの跡も、",
+      "pause": 1300,
+      "view": "world",
+      "textColor": "white"
+    },
+    {
+      "type": "narration",
+      "text": "砂粒のばらつきも、",
+      "pause": 1300,
+      "view": "world",
+      "textColor": "white"
+    },
+    {
+      "type": "narration",
+      "text": "影の縁のブレもない。",
       "pause": 1300,
       "view": "world",
       "textColor": "white"
@@ -470,8 +484,7 @@ window.SHINO_EPISODES["ep000"] = {
       "view": "world",
       "clear": true,
       "display": "solo",
-      "textColor": "custom",
-      "customColor": "#001eff"
+      "textColor": "white"
     },
     {
       "type": "narration",
@@ -670,7 +683,6 @@ window.SHINO_EPISODES["ep000"] = {
       "textColor": "green",
       "disappearAfter": 1000,
       "disappearFade": 1200,
-      "bgTransition": "glitch",
       "dim": 0.9
     },
     {
@@ -890,14 +902,12 @@ window.SHINO_EPISODES["ep000"] = {
       "display": "solo",
       "fontSize": "normal",
       "textColor": "white",
-      "disappearAfter": 3000,
+      "disappearAfter": 5000,
       "disappearFade": 2000,
       "dim": 0.9,
-      "ambience": {
+      "effectAudio": {
         "src": "./audio/kane.mp3",
         "volume": 0.8,
-        "fadeIn": 700,
-        "fadeOut": 1200,
         "loop": false
       }
     }
