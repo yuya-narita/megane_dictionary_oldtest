@@ -15,7 +15,7 @@ episodes: [
   {
     id:"ep001",
     number:1,
-    title:"○○○",
+    title:"声のそろう通り",
     description:"...",
     src:"./ep/ep001.js"
   }
