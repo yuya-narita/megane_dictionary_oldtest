@@ -14,7 +14,7 @@ window.SHINO_EPISODES["ep000"] = {
       "clear": true,
       "display": "solo",
       "textColor": "white",
-      "disappearAfter": 2000,
+      "disappearAfter": 3000,
       "disappearFade": 2000,
       "dim": 0.5
     },
@@ -28,7 +28,7 @@ window.SHINO_EPISODES["ep000"] = {
       "display": "solo",
       "wrap": "nowrap",
       "textColor": "white",
-      "disappearAfter": 2000,
+      "disappearAfter": 3000,
       "disappearFade": 2000,
       "dim": 0.45
     },
@@ -408,7 +408,6 @@ window.SHINO_EPISODES["ep000"] = {
       "textColor": "green",
       "disappearAfter": 1000,
       "disappearFade": 2000,
-      "bgTransition": "glitch",
       "dim": 0.9
     },
     {
