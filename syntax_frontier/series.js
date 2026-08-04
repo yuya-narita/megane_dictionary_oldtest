@@ -9,7 +9,7 @@ window.SHINO_SERIES = {
     {
       id:"ep000",
       number:0,
-      title:"跳ねのない街",
+      title:"OBSERVATION LOG 00",
       description:"世界は、跳ねを一度も起こさない。",
       src:"./ep/ep000.js"
     },
