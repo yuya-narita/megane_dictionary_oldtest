@@ -17,7 +17,7 @@ window.SHINO_SERIES = {
       id:"ep001",
       number:1,
       title:"声のそろう通り",
-      description:"今日もいい天気ですね",
+      description:"「今日もいい天気ですね」",
       src:"./ep/ep001.js"
     }
   ]
