@@ -46,6 +46,7 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "だが針は動かない。",
       "pause": 1300,
+      "effect": "fade",
       "view": "world",
       "textColor": "white"
     },
@@ -53,6 +54,7 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "sound",
       "text": "「午後三時」",
       "pause": 1300,
+      "effect": "fade",
       "view": "world",
       "textColor": "white"
     },
@@ -60,6 +62,7 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "それは時刻ではなく、状態のラベルみたいに貼り付いていた。",
       "pause": 1300,
+      "effect": "fade",
       "view": "world",
       "textColor": "white"
     },
@@ -67,6 +70,7 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "風が通りを横切る気配だけがある。",
       "pause": 1300,
+      "effect": "fade",
       "view": "world",
       "textColor": "white"
     },
@@ -74,6 +78,7 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "頬を撫で、髪を揺らすはずの風だ。",
       "pause": 1300,
+      "effect": "fade",
       "view": "world",
       "textColor": "white"
     },
@@ -81,6 +86,7 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "けれど一本の髪も動かず、\n街路樹の葉は一枚として震えない。",
       "pause": 1300,
+      "effect": "fade",
       "view": "world",
       "textColor": "white"
     },
@@ -88,6 +94,7 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "風だけが処理され、\n世界の側はそれを記録しない。",
       "pause": 1300,
+      "effect": "fade",
       "view": "world",
       "textColor": "white"
     },
@@ -104,7 +111,7 @@ window.SHINO_EPISODES["ep000"] = {
         "fade": 900
       },
       "effectAudio": {
-        "src": "./audio/aisathu.mp3",
+        "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.8,
         "loop": false
       }
@@ -299,7 +306,7 @@ window.SHINO_EPISODES["ep000"] = {
         "fade": 900
       },
       "effectAudio": {
-        "src": "./audio/aisathu.mp3",
+        "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.8,
         "loop": false
       }
@@ -403,10 +410,13 @@ window.SHINO_EPISODES["ep000"] = {
       "text": "HINT: PRESS ANY KEY TO CONTINUE",
       "pause": 1300,
       "effect": "whisper",
-      "view": "world",
+      "view": "console",
       "clear": true,
       "display": "solo",
       "textColor": "green",
+      "typing": "fast",
+      "typingSpeed": 55,
+      "typingCursor": "_",
       "disappearAfter": 1000,
       "disappearFade": 2000,
       "dim": 0.9
@@ -550,7 +560,7 @@ window.SHINO_EPISODES["ep000"] = {
       "display": "solo",
       "textColor": "lavender",
       "effectAudio": {
-        "src": "./audio/aisathu.mp3",
+        "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.8,
         "loop": false
       }
@@ -678,11 +688,14 @@ window.SHINO_EPISODES["ep000"] = {
       "text": "HINT: PRESS ANY KEY TO CONTINUE\n[λ]= 0.79 / [!]= 0.00 / [σ]= 0.00",
       "pause": 1300,
       "effect": "whisper",
-      "view": "world",
+      "view": "console",
       "clear": true,
       "display": "solo",
       "textColor": "green",
-      "disappearAfter": 1000,
+      "typing": "fast",
+      "typingSpeed": 55,
+      "typingCursor": "_",
+      "disappearAfter": 1500,
       "disappearFade": 1200,
       "dim": 0.9
     },
@@ -837,7 +850,7 @@ window.SHINO_EPISODES["ep000"] = {
       "display": "solo",
       "textColor": "lavender",
       "effectAudio": {
-        "src": "./audio/aisathu.mp3",
+        "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.8,
         "loop": false
       }
@@ -905,7 +918,7 @@ window.SHINO_EPISODES["ep000"] = {
       "fontSize": "normal",
       "textColor": "white",
       "effectAudio": {
-        "src": "./audio/kane.mp3",
+        "src": "./audio/ep001/kane.mp3",
         "volume": 0.8,
         "loop": false
       }
