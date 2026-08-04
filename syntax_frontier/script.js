@@ -216,20 +216,47 @@ function clearTimers(){
 
 function renderShelf(){
   episodeList.innerHTML="";
-  SERIES.episodes.forEach(ep=>{
+
+  SERIES.episodes.forEach((ep,index)=>{
     const button=document.createElement("button");
     button.className="episode-card";
+
+    const episodeLabel=ep.number===0
+      ?"PROLOGUE"
+      :`EPISODE ${String(ep.number).padStart(2,"0")}`;
+
     button.innerHTML=`
-      <span class="number">EP.${String(ep.number).padStart(2,"0")}</span>
-      <span><strong>${ep.title}</strong><small>${ep.description||""}</small></span>
-      <span class="arrow">›</span>`;
+      <span class="episode-index">${String(index+1).padStart(2,"0")}</span>
+      <span class="episode-main">
+        <span class="number">${episodeLabel}</span>
+        <strong>${ep.title}</strong>
+        <small>${ep.description||"観測記録を開く。"}</small>
+      </span>
+      <span class="arrow" aria-hidden="true">→</span>`;
+
     button.addEventListener("click",()=>openCover(ep.id));
     episodeList.appendChild(button);
   });
 
   const saved=savedProgress();
-  const resumable=saved&&SERIES.episodes.some(ep=>ep.id===saved.episodeId)&&saved.sceneIndex>0;
+  const savedEpisode=saved
+    ?SERIES.episodes.find(ep=>ep.id===saved.episodeId)
+    :null;
+
+  const resumable=Boolean(
+    savedEpisode &&
+    saved.sceneIndex>0 &&
+    saved.sceneIndex<(savedEpisode.story?.length||Infinity)
+  );
+
   continueButton.hidden=!resumable;
+
+  const meta=g("continueMeta");
+  if(meta){
+    meta.textContent=resumable
+      ?`${savedEpisode.number===0?"PROLOGUE":`EP.${String(savedEpisode.number).padStart(2,"0")}`}  ${savedEpisode.title}  /  SCENE ${saved.sceneIndex}`
+      :"";
+  }
 }
 
 function episodeIndex(){

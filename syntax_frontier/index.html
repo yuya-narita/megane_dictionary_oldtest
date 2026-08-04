@@ -10,23 +10,69 @@
 <body>
 <main>
   <section id="shelf" class="screen shelf">
-    <div class="eyebrow">SYNTAX FRONTIER</div>
-    <h1 id="seriesTitle">Syntax Frontier</h1>
-    <p class="shelf-copy">人工世界を、観測する。</p>
-    <div id="episodeList" class="episode-list"></div>
-    <button id="continueButton" class="primary-button" hidden>つづきから</button>
-    <small>PRESS ANY KEY TO CONTINUE</small>
+    <div class="shelf-atmosphere" aria-hidden="true"></div>
+
+    <div class="launcher">
+      <img
+        class="series-logo"
+        src="./images/syntax_frontier_logo.svg"
+        alt="Syntax Frontier"
+      >
+
+      <p class="shelf-copy">人工世界を、観測する。</p>
+
+      <button id="continueButton" class="continue-panel" hidden>
+        <span class="continue-kicker">RESUME OBSERVATION</span>
+        <span class="continue-label">つづきから</span>
+        <span id="continueMeta" class="continue-meta"></span>
+      </button>
+
+      <div class="archive-label">
+        <span>OBSERVATION ARCHIVE</span>
+        <i></i>
+      </div>
+
+      <div id="episodeList" class="episode-list"></div>
+
+      <div class="launcher-footer">
+        <span class="launcher-dot"></span>
+        <small>PRESS ANY KEY TO CONTINUE</small>
+      </div>
+    </div>
   </section>
 
   <section id="cover" class="screen cover" hidden>
-    <button id="coverBack" class="cover-back" aria-label="話数一覧へ"><span aria-hidden="true">←</span><span>話数一覧</span></button>
-    <div class="eyebrow">SYNTAX FRONTIER</div>
-    <h1>Syntax Frontier</h1>
-    <p id="episodeNumber">第1話</p>
-    <h2 id="episodeTitle">「タダの冷蔵庫」</h2>
-    <button id="start" class="primary-button">はじめる</button>
-    <button id="resumeFromCover" class="secondary-button" hidden>途中から</button>
-    <small>人工世界を、観測する。</small>
+    <div class="cover-atmosphere" aria-hidden="true"></div>
+
+    <button id="coverBack" class="cover-back" aria-label="話数一覧へ">
+      <span aria-hidden="true">←</span>
+      <span>ARCHIVE</span>
+    </button>
+
+    <div class="cover-panel">
+      <img
+        class="cover-series-logo"
+        src="./images/syntax_frontier_logo.svg"
+        alt="Syntax Frontier"
+      >
+
+      <div class="cover-divider"></div>
+
+      <p id="episodeNumber">PROLOGUE</p>
+      <h2 id="episodeTitle">「跳ねのない街」</h2>
+
+      <button id="start" class="start-button">
+        <span class="button-kicker">BEGIN OBSERVATION</span>
+        <span>はじめる</span>
+      </button>
+
+      <button id="resumeFromCover" class="resume-button" hidden>
+        <span class="button-kicker">RESUME</span>
+        <span>途中から</span>
+      </button>
+
+      <small class="cover-copy">人工世界を、観測する。</small>
+    </div>
   </section>
 
   <section id="player" class="screen player" hidden>
