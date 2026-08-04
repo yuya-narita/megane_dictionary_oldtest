@@ -3,7 +3,7 @@ window.SHINO_EPISODES["ep001"] = {
   "id": "ep001",
   "number": 1,
   "title": "声のそろう通り",
-  "description": "今日もいい天気ですね",
+  "description": "「今日もいい天気ですね。」",
   "story": [
     {
       "type": "narration",
