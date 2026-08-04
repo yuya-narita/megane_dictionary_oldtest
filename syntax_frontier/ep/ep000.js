@@ -36,6 +36,7 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "時計台の鐘は、一定の間隔で空気を叩く。",
       "pause": 1300,
+      "effect": "fade",
       "view": "world",
       "clear": true,
       "display": "solo",
@@ -97,7 +98,7 @@ window.SHINO_EPISODES["ep000"] = {
       "view": "world",
       "clear": true,
       "display": "solo",
-      "textColor": "pink",
+      "textColor": "lavender",
       "music": {
         "volume": 0.24,
         "fade": 900
@@ -889,6 +890,7 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "narration",
       "text": "世界が微かに、きしんだ。",
       "pause": 1300,
+      "effect": "fade",
       "view": "world",
       "textColor": "white"
     },
@@ -896,15 +898,12 @@ window.SHINO_EPISODES["ep000"] = {
       "type": "sound",
       "text": "午後三時の鐘が、\n一回ぶんだけ、遅れた。",
       "pause": 1300,
-      "effect": "whisper",
-      "view": "world",
+      "effect": "slow",
+      "view": "void",
       "clear": true,
       "display": "solo",
       "fontSize": "normal",
       "textColor": "white",
-      "disappearAfter": 5000,
-      "disappearFade": 2000,
-      "dim": 0.9,
       "effectAudio": {
         "src": "./audio/kane.mp3",
         "volume": 0.8,
