@@ -966,7 +966,7 @@ window.SHINO_EPISODES["ep001"] = {
     },
     {
       "type": "dialogue",
-      "text": "「今日もいい天気ですね」\n「今日もいい天気ですね」\n　　「今日もいい天気ですね」",
+      "text": "「今日もいい天気ですね」\n\n「今日もいい天気ですね」\n\n　　「今日もいい天気ですね」",
       "pause": 1300,
       "effect": "whisper",
       "view": "world",
