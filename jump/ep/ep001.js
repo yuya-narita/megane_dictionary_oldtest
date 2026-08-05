@@ -10,13 +10,10 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "ミオは、学校が終わると少し遠回りをして帰る。",
       "pause": 1300,
       "view": "world",
-      "ambience": {
+      "effectAudio": {
         "src": "./audio/ep000/jump_001.mp3",
-        "volume": 0.35,
-        "fadeIn": 700,
-        "fadeOut": 7000,
-        "loop": true,
-        "stopAfter": 18000
+        "volume": 0.65,
+        "loop": false
       }
     },
     {
@@ -27,22 +24,22 @@ window.SHINO_EPISODES["ep001"] = {
       "ambience": {
         "src": "./audio/ep000/ep002.mp3",
         "volume": 0.5,
-        "fadeIn": 700,
-        "fadeOut": 6000,
-        "loop": true,
+        "fadeIn": 2000,
+        "fadeOut": 70000,
+        "loop": false,
         "stopAfter": 73000
-      },
-      "effectAudio": {
-        "src": "./audio/ep000/ep003.mp3",
-        "volume": 0.65,
-        "loop": false
       }
     },
     {
       "type": "narration",
       "text": "ただ、正門を出てすぐの道は、いつも速すぎる気がするからだ。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "effectAudio": {
+        "src": "./audio/ep000/ep003.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -64,9 +61,9 @@ window.SHINO_EPISODES["ep001"] = {
       "ambience": {
         "src": "./audio/ep000/ep004.mp3",
         "volume": 0.5,
-        "fadeIn": 700,
-        "fadeOut": 6000,
-        "loop": true,
+        "fadeIn": 2000,
+        "fadeOut": 35000,
+        "loop": false,
         "stopAfter": 37000
       }
     },
@@ -119,8 +116,8 @@ window.SHINO_EPISODES["ep001"] = {
       "ambience": {
         "src": "./audio/ep000/ep006.mp3",
         "volume": 0.5,
-        "fadeIn": 700,
-        "fadeOut": 6000,
+        "fadeIn": 2000,
+        "fadeOut": 28000,
         "loop": false,
         "stopAfter": 30000
       }
