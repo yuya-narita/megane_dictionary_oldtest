@@ -59,6 +59,7 @@ const EFFECT_FADE_IN_MS=180;
 const AMBIENCE_SWITCH_FADE_OUT_MS=650;
 const AMBIENCE_SWITCH_FADE_IN_MS=900;
 let currentAmbienceVolume=0.5;
+let currentEffectVolume=0.65;
 
 let playbackSession=0;
 let startingEpisode=false;
@@ -579,6 +580,7 @@ async function playEffect(direction){
   const fadeOut=Math.max(80,Number(direction.fadeOut??EFFECT_FADE_OUT_MS));
   const fadeIn=Math.max(40,Number(direction.fadeIn??EFFECT_FADE_IN_MS));
   const volume=Math.max(0,Math.min(1,Number(direction.volume??0.65)));
+  currentEffectVolume=volume;
 
   // A previous SE never survives into the next Scene at full volume.
   if(!effectAudio.paused){
@@ -987,38 +989,42 @@ function finish(){
   endingActions.hidden=true;
   show(ending);
 
-  // Ending is still part of the story. Keep BGM and ambience at
-  // their current audible levels. Cancel any Scene-level stop/fade.
+  // The ending screen is still part of the episode.
+  // Cancel every Scene-level fade/stop and keep all currently playing audio alive.
   clearTimeout(ambienceStopTimer);
   ambienceStopTimer=null;
-  ambienceTransitionToken++;
-  effectTransitionToken++;
+  clearAudioCleanupTimers();
+  cancelScheduledAudio();
 
   if(audioGraphReady&&audioContext){
     const now=audioContext.currentTime;
 
-    if(themeGain){
-      const themeLevel=Math.max(.0001,resumeVolume||SERIES.defaultVolume||.24);
-      themeGain.gain.cancelScheduledValues(now);
-      themeGain.gain.setValueAtTime(Math.max(.0001,themeGain.gain.value||themeLevel),now);
-      themeGain.gain.linearRampToValueAtTime(themeLevel,now+.45);
-    }
+    const holdGain=(node,target)=>{
+      if(!node?.gain)return;
+      const level=Math.max(.0001,Number(target)||.0001);
+      node.gain.cancelScheduledValues(now);
+      node.gain.setValueAtTime(level,now);
+    };
 
-    if(ambienceGain&&!ambience.paused){
-      const ambienceLevel=Math.max(.0001,currentAmbienceVolume||.5);
-      ambienceGain.gain.cancelScheduledValues(now);
-      ambienceGain.gain.setValueAtTime(Math.max(.0001,ambienceGain.gain.value||ambienceLevel),now);
-      ambienceGain.gain.linearRampToValueAtTime(ambienceLevel,now+.45);
-    }
+    holdGain(themeGain,musicMuted?.0001:(resumeVolume||SERIES.defaultVolume||.24));
+    holdGain(ambienceGain,currentAmbienceVolume||.5);
+    holdGain(effectGain,currentEffectVolume||.65);
   }
 
-  // Only foreground SE disappears.
-  deClickGain(effectGain,0.0001,650);
-  managedTimeout(()=>{
-    try{effectAudio.pause()}catch{}
-  },700);
+  // Resume only tracks that were paused by a scheduled Scene transition.
+  // Do not restart a track that naturally reached its end.
+  const resumeIfInterrupted=media=>{
+    if(musicMuted||!media?.src||!media.paused||media.ended)return;
+    const duration=Number(media.duration);
+    const time=Number(media.currentTime);
+    if(Number.isFinite(duration)&&duration>0&&time>=duration-.12)return;
+    media.play().catch(()=>{});
+  };
 
-  // First leave only the centered end card and the theme.
+  resumeIfInterrupted(theme);
+  resumeIfInterrupted(ambience);
+  resumeIfInterrupted(effectAudio);
+
   endingTimer=setTimeout(()=>{
     endingActions.hidden=false;
     requestAnimationFrame(()=>endingActions.classList.add("is-visible"));
