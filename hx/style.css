@@ -1,0 +1,426 @@
+
+:root{
+  --bg:#050505;
+  --panel:#0b0b0b;
+  --gold:#caa56a;
+  --gold2:#8b6536;
+  --white:#f2eee7;
+  --muted:#777169;
+  --line:rgba(202,165,106,.22);
+  --danger:#ff685f;
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--white)}
+body{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;-webkit-tap-highlight-color:transparent}
+button,input{font:inherit}
+button{color:inherit}
+[hidden]{display:none!important}
+.screen{position:fixed;inset:0}
+
+.archive{
+  overflow-y:auto;
+  padding:max(24px,env(safe-area-inset-top)) 20px calc(45px + env(safe-area-inset-bottom));
+  background:#020202;
+}
+.archive-bg{
+  position:fixed;inset:0;
+  background:url("./images/cover.jpg") center top/cover no-repeat;
+  opacity:.17;filter:grayscale(1) contrast(1.15);
+}
+.archive-overlay{
+  position:fixed;inset:0;
+  background:
+    radial-gradient(circle at 50% 14%,rgba(202,165,106,.09),transparent 30%),
+    linear-gradient(rgba(0,0,0,.2),#020202 55%);
+}
+.archive-header,.archive-brand,.resume-card,.report-heading,.track-list{position:relative;z-index:2}
+.archive-header{
+  display:flex;justify-content:space-between;gap:20px;
+  color:rgba(255,255,255,.42);font-size:8px;letter-spacing:.16em
+}
+.archive-brand{text-align:center;padding:24px 0 30px}
+.archive-brand img{width:min(52vw,260px);height:auto;filter:drop-shadow(0 0 20px rgba(202,165,106,.12))}
+.archive-brand h1{margin:8px 0 5px;font:500 clamp(28px,7vw,48px)/1.1 Georgia,serif;color:var(--gold)}
+.archive-brand p{margin:0;color:#aaa29a;font-size:12px;letter-spacing:.1em}
+.resume-card,.track-card{
+  width:100%;border:1px solid var(--line);background:rgba(7,7,7,.86);text-align:left
+}
+.resume-card{padding:17px;margin:0 0 28px}
+.resume-card span,.track-card .num,.report-heading{
+  color:var(--gold);font-size:9px;letter-spacing:.18em
+}
+.resume-card strong{display:block;margin:8px 0 5px;font-size:19px}
+.resume-card small{color:var(--muted)}
+.report-heading{margin-bottom:10px}
+.track-list{display:grid;gap:10px}
+.track-card{
+  min-height:92px;display:grid;grid-template-columns:56px 1fr auto;
+  align-items:center;gap:13px;padding:14px
+}
+.track-card strong{display:block;font:500 17px/1.35 Georgia,serif;color:var(--white)}
+.track-card small{display:block;margin-top:6px;color:var(--muted);font-size:10px}
+.track-card .arrow{color:var(--gold);font-size:20px}
+
+.player{display:grid;grid-template-rows:auto 1fr auto;background:#030303}
+.player-header{
+  display:grid;grid-template-columns:42px 1fr 42px;align-items:center;
+  min-height:74px;padding:max(12px,env(safe-area-inset-top)) 12px 10px;
+  border-bottom:1px solid var(--line);background:rgba(3,3,3,.92);text-align:center
+}
+.player-header button{border:0;background:none;font-size:18px}
+.player-header small{display:block;color:#7f776d;font-size:9px;letter-spacing:.12em}
+.player-header strong{display:block;margin-top:5px;font-size:12px;color:#d9d2c8}
+.stage{position:relative;overflow:hidden;padding:18px 24px 24px;display:flex;flex-direction:column;align-items:center}
+.stage-noise{position:absolute;inset:0;opacity:.09;background-image:radial-gradient(#fff .35px,transparent .45px);background-size:4px 4px}
+.stage-scanlines{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent 0 3px,rgba(255,255,255,.018) 3px 4px)}
+.report-meta{position:relative;z-index:2;align-self:stretch;display:flex;justify-content:space-between;color:var(--gold);font-size:9px;letter-spacing:.16em}
+.stage-logo{position:relative;z-index:2;width:min(44vw,220px);margin:4vh 0 1vh;opacity:.84}
+.stage h2{position:relative;z-index:2;margin:0;font:500 clamp(27px,7vw,48px)/1.1 Georgia,serif;color:var(--white);text-align:center}
+.stage>p{position:relative;z-index:2;color:#877d70;font-size:11px;letter-spacing:.12em}
+.narration{position:relative;z-index:2;width:100%;margin:auto 0;min-height:180px;display:grid;align-content:center}
+.previous-line{min-height:24px;color:#5b5650;font-size:13px;line-height:1.7;text-align:center}
+.current-line{margin-top:15px;color:#f2eee7;font:500 clamp(20px,5.7vw,36px)/1.75 "Yu Mincho","Hiragino Mincho ProN",serif;text-align:center;text-shadow:0 0 18px rgba(255,255,255,.08)}
+.current-line.glitch{animation:glitch .18s steps(2) 2}
+.meter-row{position:relative;z-index:2;width:100%;display:grid;grid-template-columns:auto 1fr auto 1fr auto 1fr;gap:8px;align-items:center;color:#766f65;font-size:10px}
+.meter-row i{height:2px;background:#1a1917}
+.meter-row b{display:block;height:100%;width:0;background:var(--gold);transition:width .7s ease}
+
+.player-footer{
+  display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;
+  padding:11px 16px max(13px,env(safe-area-inset-bottom));border-top:1px solid var(--line);background:#050505;
+  color:#777;font-size:10px
+}
+.player-footer input{width:100%;accent-color:var(--gold)}
+.player-footer button{width:40px;height:40px;border:1px solid var(--line);background:#090909;color:var(--gold)}
+
+.ending{display:grid;place-items:center;text-align:center;background:radial-gradient(circle at 50% 38%,#171109,#030303 55%)}
+.ending img{width:min(50vw,260px);opacity:.76}
+.ending p{color:var(--gold);font-size:10px;letter-spacing:.22em}
+.ending h2{font:500 32px Georgia,serif;margin:0 0 32px}
+.ending div{display:flex;gap:10px}
+.ending button{min-width:130px;padding:15px;border:1px solid var(--line);background:#080808}
+
+@keyframes glitch{
+  0%{transform:translate(0)}
+  25%{transform:translate(2px,-1px)}
+  50%{transform:translate(-2px,1px)}
+  75%{transform:translate(1px,1px)}
+  100%{transform:translate(0)}
+}
+@media(max-width:420px){
+  .archive{padding-left:14px;padding-right:14px}
+  .track-card{grid-template-columns:46px 1fr auto}
+}
+
+
+/* =========================================================
+   H(x)∞ Player v0.2.1 — Reading Focus
+   The emblem belongs to the report header, not the reading field.
+   ========================================================= */
+
+.stage{
+  display:grid;
+  grid-template-rows:auto auto minmax(0,1fr) auto;
+  align-items:start;
+  padding:15px 22px 20px;
+}
+
+.report-meta{
+  grid-row:1;
+}
+
+.stage-logo{
+  grid-row:2;
+  width:min(31vw,142px);
+  max-height:17vh;
+  margin:2.2vh auto .7vh;
+  transition:
+    width .65s cubic-bezier(.2,.75,.2,1),
+    max-height .65s cubic-bezier(.2,.75,.2,1),
+    margin .65s cubic-bezier(.2,.75,.2,1),
+    opacity .5s ease,
+    filter .5s ease;
+}
+
+.stage h2{
+  grid-row:2;
+  align-self:end;
+  margin:0 auto;
+  transform:translateY(52px);
+  font-size:clamp(23px,6vw,38px);
+  transition:
+    transform .65s cubic-bezier(.2,.75,.2,1),
+    font-size .65s cubic-bezier(.2,.75,.2,1),
+    opacity .5s ease;
+}
+
+.stage>p{
+  grid-row:2;
+  align-self:end;
+  margin:0 auto;
+  transform:translateY(75px);
+  transition:opacity .35s ease,transform .65s cubic-bezier(.2,.75,.2,1);
+}
+
+.narration{
+  grid-row:3;
+  align-self:stretch;
+  min-height:0;
+  margin:78px 0 0;
+  padding:12px 0 18px;
+  display:grid;
+  grid-template-rows:minmax(25px,auto) minmax(0,1fr);
+  align-content:center;
+  transition:margin .65s cubic-bezier(.2,.75,.2,1);
+}
+
+.previous-line{
+  align-self:end;
+  min-height:25px;
+  padding-bottom:10px;
+  font-size:12px;
+}
+
+.current-line{
+  align-self:center;
+  margin:0;
+  padding:6px 2px;
+  max-height:100%;
+  overflow:auto;
+  font-size:clamp(20px,5.4vw,34px);
+  line-height:1.72;
+}
+
+.meter-row{
+  grid-row:4;
+}
+
+/* After narration begins, collapse the report emblem into a quiet stamp. */
+.stage.is-reading .stage-logo{
+  width:min(20vw,88px);
+  max-height:10vh;
+  margin:.8vh auto 0;
+  opacity:.50;
+  filter:drop-shadow(0 0 8px rgba(202,165,106,.10));
+}
+
+.stage.is-reading h2{
+  transform:translateY(25px);
+  font-size:clamp(16px,4vw,23px);
+  opacity:.52;
+}
+
+.stage.is-reading>p{
+  transform:translateY(43px);
+  opacity:0;
+}
+
+.stage.is-reading .narration{
+  margin:45px 0 0;
+}
+
+@media(max-height:720px){
+  .stage-logo{
+    width:min(26vw,112px);
+    max-height:13vh;
+    margin:1vh auto .4vh;
+  }
+  .stage h2{
+    transform:translateY(41px);
+    font-size:clamp(20px,5.2vw,31px);
+  }
+  .stage>p{
+    transform:translateY(61px);
+  }
+  .narration{
+    margin:62px 0 0;
+  }
+  .stage.is-reading .stage-logo{
+    width:min(17vw,72px);
+    max-height:8vh;
+  }
+  .stage.is-reading h2{
+    transform:translateY(20px);
+    font-size:15px;
+  }
+  .stage.is-reading>p{
+    transform:translateY(34px);
+  }
+  .stage.is-reading .narration{
+    margin:34px 0 0;
+  }
+}
+
+@media(max-height:620px){
+  .stage.is-reading .stage-logo,
+  .stage.is-reading h2,
+  .stage.is-reading>p{
+    opacity:0;
+    pointer-events:none;
+  }
+  .stage.is-reading .narration{
+    margin:0;
+  }
+}
+
+
+/* =========================================================
+   H(x)∞ Player v0.2.2 — Report title behaves like a Scene
+   Intro: full emblem. Reading: it exits upward. Finale: it returns.
+   ========================================================= */
+
+.stage{
+  position:relative;
+  display:block;
+  padding:15px 22px 20px;
+}
+
+.report-meta{
+  position:relative;
+  z-index:5;
+}
+
+.stage-logo,
+.stage h2,
+.stage>p{
+  position:absolute;
+  left:50%;
+  z-index:3;
+  margin:0;
+  transform:translateX(-50%);
+  transition:
+    transform .78s cubic-bezier(.2,.72,.18,1),
+    opacity .58s ease,
+    filter .58s ease;
+}
+
+.stage-logo{
+  top:8.5%;
+  width:min(43vw,205px);
+  max-height:25vh;
+  opacity:.88;
+}
+
+.stage h2{
+  top:35%;
+  width:calc(100% - 44px);
+  font-size:clamp(25px,6.8vw,44px);
+  text-align:center;
+}
+
+.stage>p{
+  top:42%;
+  width:calc(100% - 44px);
+  text-align:center;
+  opacity:.82;
+}
+
+.narration{
+  position:absolute;
+  z-index:4;
+  inset:46% 22px 48px;
+  min-height:0;
+  margin:0;
+  padding:10px 0 18px;
+  display:grid;
+  grid-template-rows:minmax(24px,auto) minmax(0,1fr);
+  align-content:center;
+  transition:inset .78s cubic-bezier(.2,.72,.18,1);
+}
+
+.previous-line{
+  align-self:end;
+  min-height:24px;
+  padding-bottom:10px;
+}
+
+.current-line{
+  align-self:center;
+  margin:0;
+  max-height:100%;
+  overflow:auto;
+}
+
+.meter-row{
+  position:absolute;
+  z-index:5;
+  left:22px;
+  right:22px;
+  bottom:18px;
+}
+
+/* Middle pages: report mark leaves the viewport exactly like old text. */
+.stage.is-reading .stage-logo,
+.stage.is-reading h2,
+.stage.is-reading>p{
+  opacity:0;
+  transform:translate(-50%,-150px);
+  filter:blur(2px);
+  pointer-events:none;
+}
+
+.stage.is-reading .narration{
+  inset:11% 22px 48px;
+}
+
+/* Last page: emblem and report title return at their original scale. */
+.stage.is-finale .stage-logo{
+  top:9%;
+  width:min(43vw,205px);
+  max-height:25vh;
+  opacity:.88;
+  transform:translateX(-50%);
+  filter:none;
+}
+
+.stage.is-finale h2{
+  top:36%;
+  font-size:clamp(25px,6.8vw,44px);
+  opacity:1;
+  transform:translateX(-50%);
+}
+
+.stage.is-finale>p{
+  top:43%;
+  opacity:.72;
+  transform:translateX(-50%);
+}
+
+.stage.is-finale .narration{
+  inset:51% 22px 48px;
+}
+
+.stage.is-finale .previous-line{
+  opacity:0;
+}
+
+@media(max-height:720px){
+  .stage-logo{top:6.5%;width:min(34vw,150px);max-height:20vh}
+  .stage h2{top:31%;font-size:clamp(22px,6vw,35px)}
+  .stage>p{top:38%}
+  .narration{inset:42% 22px 44px}
+  .stage.is-reading .narration{inset:8% 22px 44px}
+  .stage.is-finale .stage-logo{top:6.5%;width:min(34vw,150px);max-height:20vh}
+  .stage.is-finale h2{top:31%;font-size:clamp(22px,6vw,35px)}
+  .stage.is-finale>p{top:38%}
+  .stage.is-finale .narration{inset:45% 22px 44px}
+}
+
+@media(max-height:620px){
+  .stage-logo{top:5%;width:min(29vw,118px);max-height:17vh}
+  .stage h2{top:26%;font-size:20px}
+  .stage>p{top:32%;font-size:9px}
+  .narration{inset:36% 20px 40px}
+  .stage.is-reading .narration{inset:5% 20px 40px}
+  .stage.is-finale .stage-logo{top:5%;width:min(29vw,118px);max-height:17vh;opacity:.82}
+  .stage.is-finale h2{top:26%;font-size:20px;opacity:1}
+  .stage.is-finale>p{top:32%;opacity:.65}
+  .stage.is-finale .narration{inset:38% 20px 40px}
+}
+
+
+/* H(x)∞ Player v0.2.3 — meter removed */
+.meter-row{display:none!important}
+.narration{bottom:24px!important}
+.stage.is-reading .narration{bottom:24px!important}
+.stage.is-finale .narration{bottom:24px!important}
