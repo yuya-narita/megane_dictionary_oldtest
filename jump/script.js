@@ -52,6 +52,13 @@ let ambienceUnlocked=false;
 let ambiencePrimedSrc=null;
 let effectPrimedSrc=null;
 
+let effectTransitionToken=0;
+let ambienceTransitionToken=0;
+const EFFECT_FADE_OUT_MS=260;
+const EFFECT_FADE_IN_MS=180;
+const AMBIENCE_SWITCH_FADE_OUT_MS=650;
+const AMBIENCE_SWITCH_FADE_IN_MS=900;
+
 let playbackSession=0;
 let startingEpisode=false;
 const audioCleanupTimers=new Set();
@@ -61,7 +68,7 @@ const AUTO_SLOW_FACTOR=1.85;
 const BASE_GAP=36;
 const LARGE_GAP=68;
 const SOUND_GAP=80;
-const SAVE_KEY="jump_before_player_progress_v01";
+const SAVE_KEY="jump_before_player_progress_v013";
 
 function show(target){
   screens.forEach(node=>node.hidden=node!==target);
@@ -127,6 +134,8 @@ async function softStopAudio({
   suspendContext=false,
   fadeMs=45
 }={}){
+  effectTransitionToken++;
+  ambienceTransitionToken++;
   clearAudioCleanupTimers();
   clearTimeout(ambienceStopTimer);
   ambienceStopTimer=null;
@@ -138,7 +147,7 @@ async function softStopAudio({
 
   deClickGain(themeGain,0.0001,fadeMs);
   deClickGain(ambienceGain,0.0001,fadeMs);
-  deClickGain(effectGain,0.0001,Math.min(fadeMs,120));
+  deClickGain(effectGain,0.0001,Math.max(180,Math.min(fadeMs,900)));
 
   await new Promise(resolve=>setTimeout(resolve,fadeMs+18));
 
@@ -163,6 +172,8 @@ async function softStopAudio({
 }
 
 function hardStopAudio({resetPosition=false,suspendContext=false}={}){
+  effectTransitionToken++;
+  ambienceTransitionToken++;
   clearAudioCleanupTimers();
   clearTimeout(ambienceStopTimer);
   ambienceStopTimer=null;
@@ -559,30 +570,46 @@ async function playEffect(direction){
   if(!direction?.src||musicMuted)return;
   if(!await ensureAudioGraph())return;
 
-  const absolute=new URL(direction.src,location.href).href;
-  if(effectAudio.src!==absolute){
-    effectAudio.src=direction.src;
-    effectAudio.load();
-    effectPrimedSrc=direction.src;
+  const token=++effectTransitionToken;
+  const requestedSrc=direction.src;
+  const absolute=new URL(requestedSrc,location.href).href;
+  const fadeOut=Math.max(80,Number(direction.fadeOut??EFFECT_FADE_OUT_MS));
+  const fadeIn=Math.max(40,Number(direction.fadeIn??EFFECT_FADE_IN_MS));
+  const volume=Math.max(0,Math.min(1,Number(direction.volume??0.65)));
+
+  // A previous SE never survives into the next Scene at full volume.
+  if(!effectAudio.paused){
+    deClickGain(effectGain,0.0001,fadeOut);
+    await new Promise(resolve=>setTimeout(resolve,fadeOut+20));
+    if(token!==effectTransitionToken)return;
+    try{effectAudio.pause()}catch{}
   }
 
+  if(token!==effectTransitionToken)return;
+
   try{
-    effectAudio.pause();
-    effectAudio.loop=false;
-    effectAudio.currentTime=0;
+    if(effectAudio.src!==absolute){
+      effectAudio.src=requestedSrc;
+      effectAudio.load();
+      effectPrimedSrc=requestedSrc;
+    }
+
+    effectAudio.loop=Boolean(direction.loop);
+    try{effectAudio.currentTime=0}catch{}
 
     const now=audioContext.currentTime;
-    const volume=Math.max(0,Math.min(1,Number(direction.volume??0.65)));
     effectGain.gain.cancelScheduledValues(now);
     effectGain.gain.setValueAtTime(0.0001,now);
 
     await effectAudio.play();
-    effectGain.gain.linearRampToValueAtTime(
-      Math.max(0.0001,volume),
-      now+0.025
-    );
+    if(token!==effectTransitionToken){
+      try{effectAudio.pause()}catch{}
+      return;
+    }
+
+    deClickGain(effectGain,Math.max(0.0001,volume),fadeIn);
   }catch(error){
-    console.warn("[Scene Player] effect failed:",direction.src,error);
+    console.warn("[Scene Player] effect failed:",requestedSrc,error);
   }
 }
 
@@ -641,46 +668,82 @@ function animateVolume(target,duration=800){
 
 async function playAmbience(direction){
   if(!direction?.src)return;
-  console.info("[Scene Player] ambience requested:", direction.src);
+  if(!await ensureAudioGraph())return;
 
+  const token=++ambienceTransitionToken;
   clearTimeout(ambienceStopTimer);
   ambienceStopTimer=null;
 
-  if(!await ensureAudioGraph())return;
+  const requestedSrc=direction.src;
+  const absolute=new URL(requestedSrc,location.href).href;
+  const sourceChanged=ambience.src!==absolute;
+  const fadeOut=Math.max(
+    120,
+    Number(direction.switchFadeOut??direction.fadeOut??AMBIENCE_SWITCH_FADE_OUT_MS)
+  );
+  const fadeIn=Math.max(
+    120,
+    Number(direction.fadeIn??AMBIENCE_SWITCH_FADE_IN_MS)
+  );
+  const targetVolume=Math.max(0,Math.min(1,Number(direction.volume??.5)));
 
-  const absolute=new URL(direction.src,location.href).href;
-
-  if(ambience.src!==absolute){
-    const switched=await primeAmbienceTrack(direction.src);
-    if(!switched)return;
-  }else if(ambience.paused){
-    try{
-      await ambience.play();
-      ambienceUnlocked=true;
-    }catch{
-      return;
-    }
+  // When the environment changes, let the old place disappear first.
+  if(sourceChanged&&!ambience.paused){
+    rampGain(ambienceGain,0,fadeOut);
+    await new Promise(resolve=>setTimeout(resolve,fadeOut+25));
+    if(token!==ambienceTransitionToken)return;
+    try{ambience.pause()}catch{}
   }
 
-  rampGain(
-    ambienceGain,
-    direction.volume??.5,
-    direction.fadeIn??700
-  );
+  if(token!==ambienceTransitionToken)return;
+
+  try{
+    if(sourceChanged){
+      ambience.src=requestedSrc;
+      ambience.load();
+      ambiencePrimedSrc=requestedSrc;
+    }
+
+    ambience.loop=direction.loop!==false;
+
+    if(sourceChanged){
+      try{ambience.currentTime=0}catch{}
+    }
+
+    const now=audioContext.currentTime;
+    ambienceGain.gain.cancelScheduledValues(now);
+    ambienceGain.gain.setValueAtTime(0.0001,now);
+
+    if(ambience.paused){
+      await ambience.play();
+      ambienceUnlocked=true;
+    }
+
+    if(token!==ambienceTransitionToken){
+      try{ambience.pause()}catch{}
+      return;
+    }
+
+    rampGain(ambienceGain,targetVolume,fadeIn);
+  }catch(error){
+    ambienceUnlocked=false;
+    console.warn("[Scene Player] ambience failed:",requestedSrc,error);
+    return;
+  }
 
   if(direction.stopAfter){
     ambienceStopTimer=managedTimeout(()=>{
-      rampGain(ambienceGain,0,direction.fadeOut??1200);
+      if(token!==ambienceTransitionToken)return;
+      rampGain(ambienceGain,0,Number(direction.fadeOut??1200));
 
-      // Keep the track running silently on iPhone so later scenes
-      // do not need a new play() permission.
       ambienceStopTimer=managedTimeout(()=>{
+        if(token!==ambienceTransitionToken)return;
         if(ambienceGain&&audioContext){
           ambienceGain.gain.cancelScheduledValues(audioContext.currentTime);
           ambienceGain.gain.setValueAtTime(0,audioContext.currentTime);
         }
-      },(direction.fadeOut??1200)+40);
-    },direction.stopAfter);
+      },Number(direction.fadeOut??1200)+40);
+    },Number(direction.stopAfter));
   }
 }
 
@@ -919,7 +982,12 @@ function finish(){
   endingActions.classList.remove("is-visible");
   endingActions.hidden=true;
   show(ending);
-  stopAmbience(900);
+  stopAmbience(1100);
+  effectTransitionToken++;
+  deClickGain(effectGain,0.0001,650);
+  managedTimeout(()=>{
+    try{effectAudio.pause()}catch{}
+  },700);
   animateVolume(.42,1800);
 
   // First leave only the centered end card and the theme.
@@ -941,7 +1009,7 @@ async function backToCover(){
   await softStopAudio({
     resetPosition:false,
     suspendContext:true,
-    fadeMs:900
+    fadeMs:1300
   });
 }
 
@@ -957,7 +1025,7 @@ async function backToShelf(){
   await softStopAudio({
     resetPosition:false,
     suspendContext:true,
-    fadeMs:1200
+    fadeMs:1600
   });
 }
 
