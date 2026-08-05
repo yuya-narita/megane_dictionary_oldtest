@@ -9,6 +9,7 @@ window.SHINO_EPISODES["ep001"] = {
       "type": "narration",
       "text": "ミオは、学校が終わると少し遠回りをして帰る。",
       "pause": 1300,
+      "time": 4.171,
       "view": "world",
       "effectAudio": {
         "src": "./audio/ep000/jump_001.mp3",
@@ -20,6 +21,7 @@ window.SHINO_EPISODES["ep001"] = {
       "type": "narration",
       "text": "理由は特にない。",
       "pause": 1300,
+      "time": 31.027,
       "view": "world",
       "ambience": {
         "src": "./audio/ep000/ep002.mp3",
@@ -34,6 +36,7 @@ window.SHINO_EPISODES["ep001"] = {
       "type": "narration",
       "text": "ただ、正門を出てすぐの道は、いつも速すぎる気がするからだ。",
       "pause": 1300,
+      "time": 41.906,
       "view": "world",
       "effectAudio": {
         "src": "./audio/ep000/ep003.mp3",
@@ -45,18 +48,21 @@ window.SHINO_EPISODES["ep001"] = {
       "type": "narration",
       "text": "住宅街を抜けて、古い給水塔の方へ向かう。",
       "pause": 1300,
+      "time": 59.634,
       "view": "world"
     },
     {
       "type": "narration",
       "text": "誰も通らないわけじゃないけれど、\nみんなそこを「通過」するだけで、立ち止まらない。",
       "pause": 1300,
+      "time": 68.039,
       "view": "world"
     },
     {
       "type": "narration",
       "text": "給水塔の裏には、草が少しだけ長く伸びている場所がある。",
       "pause": 1300,
+      "time": 77.263,
       "view": "world",
       "ambience": {
         "src": "./audio/ep000/ep004.mp3",
@@ -109,7 +115,7 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world"
     },
     {
-      "type": "narration",
+      "type": "dialogue",
       "text": "風が吹く。",
       "pause": 1300,
       "view": "world",
@@ -194,7 +200,7 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world"
     },
     {
-      "type": "narration",
+      "type": "dialogue",
       "text": "ただ、ここにいる。",
       "pause": 1300,
       "view": "world",
@@ -240,7 +246,7 @@ window.SHINO_EPISODES["ep001"] = {
     },
     {
       "type": "dialogue",
-      "text": "「今日は、起きなかった」",
+      "text": "今日は、起きなかった",
       "pause": 1300,
       "view": "world"
     },
