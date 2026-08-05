@@ -21,14 +21,14 @@ window.SHINO_EPISODES["ep001"] = {
     },
     {
       "type": "narration",
-      "text": "風がある",
+      "text": "風がある——",
       "pause": 1300,
       "view": "world",
       "textColor": "white"
     },
     {
       "type": "narration",
-      "text": "——はずなのに、頬に触れず、\nただ耳の奥で風という処理だけが鳴っている。",
+      "text": "はずなのに、頬に触れず、\nただ耳の奥で風という処理だけが鳴っている。",
       "pause": 1300,
       "view": "world",
       "textColor": "white"
@@ -117,14 +117,14 @@ window.SHINO_EPISODES["ep001"] = {
     },
     {
       "type": "narration",
-      "text": "ほんの僅かな遅れや噛み、咳払い",
+      "text": "ほんの僅かな遅れや噛み、咳払い――",
       "pause": 1300,
       "view": "world",
       "textColor": "white"
     },
     {
       "type": "narration",
-      "text": "――人間の証拠のようなそういうものが、まるごと削除されていた。",
+      "text": "人間の証拠のようなそういうものが、まるごと削除されていた。",
       "pause": 1300,
       "view": "world",
       "textColor": "white"
@@ -235,7 +235,7 @@ window.SHINO_EPISODES["ep001"] = {
       "textColor": "white",
       "effectAudio": {
         "src": "./audio/ep001/3bell.mp3",
-        "volume": 0.35,
+        "volume": 0.20,
         "loop": false
       }
     },
@@ -1114,7 +1114,7 @@ window.SHINO_EPISODES["ep001"] = {
       "textColor": "white",
       "effectAudio": {
         "src": "./audio/ep001/1dell.mp3",
-        "volume": 0.65,
+        "volume": 0.20,
         "loop": false
       }
     },
@@ -1128,7 +1128,7 @@ window.SHINO_EPISODES["ep001"] = {
       "textColor": "white",
       "effectAudio": {
         "src": "./audio/ep001/1dell.mp3",
-        "volume": 0.65,
+        "volume": 0.20,
         "loop": false
       }
     },
@@ -1142,7 +1142,7 @@ window.SHINO_EPISODES["ep001"] = {
       "textColor": "white",
       "effectAudio": {
         "src": "./audio/ep001/1dell.mp3",
-        "volume": 0.65,
+        "volume": 0.20,
         "loop": false
       }
     },
@@ -1392,7 +1392,7 @@ window.SHINO_EPISODES["ep001"] = {
       "textColor": "white",
       "effectAudio": {
         "src": "./audio/ep001/3bell.mp3",
-        "volume": 0.3,
+        "volume": 0.1,
         "loop": false
       }
     },
