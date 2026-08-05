@@ -413,3 +413,55 @@ footer button{border:0;background:none;color:var(--muted)}
 @media(prefers-reduced-motion:reduce){
   *,*:before,*:after{animation:none!important;transition-duration:.01ms!important}
 }
+
+/* Jump Before Player v0.1.1: supplied SVG title */
+.jump-title-logo{
+  display:block;
+  width:min(88vw,560px);
+  height:auto;
+  margin:18px auto 10px;
+  filter:drop-shadow(0 1px 7px rgba(50,38,30,.22));
+}
+.shelf-title-logo{
+  width:min(86vw,530px);
+  margin-top:17px;
+}
+.cover-title-logo{
+  width:min(88vw,570px);
+  margin:20px auto 24px;
+}
+
+/* Keep the final line fixed while action controls fade in. */
+.ending{
+  position:fixed;
+  inset:0;
+  display:block;
+  padding:0;
+}
+.ending-card{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  padding:32px;
+  pointer-events:none;
+  z-index:1;
+}
+.ending-card h2{
+  margin:0;
+  transform:none;
+}
+.ending-actions{
+  position:absolute;
+  left:25px;
+  right:25px;
+  bottom:calc(58px + env(safe-area-inset-bottom));
+  z-index:2;
+  opacity:0;
+  transform:translateY(12px);
+  transition:opacity .9s ease, transform .9s ease;
+}
+.ending-actions.is-visible{
+  opacity:1;
+  transform:translateY(0);
+}
