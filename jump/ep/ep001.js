@@ -11,12 +11,12 @@ window.SHINO_EPISODES["ep001"] = {
       "pause": 1300,
       "view": "world",
       "ambience": {
-        "src": "./audio/ep000/ep002.mp3",
-        "volume": 0.5,
+        "src": "./audio/ep000/jump_001.mp3",
+        "volume": 0.35,
         "fadeIn": 700,
-        "fadeOut": 1200,
+        "fadeOut": 7000,
         "loop": true,
-        "stopAfter": 1800
+        "stopAfter": 18000
       }
     },
     {
@@ -28,8 +28,9 @@ window.SHINO_EPISODES["ep001"] = {
         "src": "./audio/ep000/ep002.mp3",
         "volume": 0.5,
         "fadeIn": 700,
-        "fadeOut": 1200,
-        "loop": true
+        "fadeOut": 6000,
+        "loop": true,
+        "stopAfter": 73000
       },
       "effectAudio": {
         "src": "./audio/ep000/ep003.mp3",
@@ -64,9 +65,9 @@ window.SHINO_EPISODES["ep001"] = {
         "src": "./audio/ep000/ep004.mp3",
         "volume": 0.5,
         "fadeIn": 700,
-        "fadeOut": 1600,
+        "fadeOut": 6000,
         "loop": true,
-        "stopAfter": 2000
+        "stopAfter": 37000
       }
     },
     {
@@ -115,10 +116,13 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "風が吹く。",
       "pause": 1300,
       "view": "world",
-      "effectAudio": {
+      "ambience": {
         "src": "./audio/ep000/ep006.mp3",
-        "volume": 0.65,
-        "loop": false
+        "volume": 0.5,
+        "fadeIn": 700,
+        "fadeOut": 6000,
+        "loop": false,
+        "stopAfter": 30000
       }
     },
     {
