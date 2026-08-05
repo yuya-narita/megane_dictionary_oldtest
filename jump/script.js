@@ -253,19 +253,21 @@ function adjacentEpisode(offset){
   return SERIES.episodes[index+offset]||null;
 }
 
-function openAdjacentEpisode(offset){
+async function openAdjacentEpisode(offset){
   const target=adjacentEpisode(offset);
   if(!target)return;
 
   playbackSession++;
   startingEpisode=false;
   clearTimers();
-  openCover(target.id);
-  softStopAudio({
-    resetPosition:false,
-    suspendContext:true,
-    fadeMs:900
+
+  await softStopAudio({
+    resetPosition:true,
+    suspendContext:false,
+    fadeMs:1300
   });
+
+  openCover(target.id);
 }
 
 function openCover(id){
@@ -978,17 +980,19 @@ function finish(){
   }
 
   const endingTitle=ending.querySelector(".ending-card h2");
-  if(endingTitle)endingTitle.textContent=episode?.ending||"CONTINUE";
+  if(endingTitle)endingTitle.textContent=episode?.ending||"今日も、まだ。";
   endingActions.classList.remove("is-visible");
   endingActions.hidden=true;
   show(ending);
-  stopAmbience(1100);
+
+  // Ending is still part of the story.
+  // Keep BGM and ambience alive; fade only the foreground SE.
   effectTransitionToken++;
   deClickGain(effectGain,0.0001,650);
   managedTimeout(()=>{
     try{effectAudio.pause()}catch{}
   },700);
-  animateVolume(.42,1800);
+  animateVolume(.34,1800);
 
   // First leave only the centered end card and the theme.
   endingTimer=setTimeout(()=>{
@@ -1140,7 +1144,15 @@ g("coverBack").addEventListener("click",backToShelf);
 g("start").addEventListener("click",()=>startEpisode(false));
 g("resumeFromCover").addEventListener("click",()=>startEpisode(true));
 g("back").addEventListener("click",backToCover);
-g("replay").addEventListener("click",()=>{openCover(episode.id);startEpisode(false)});
+g("replay").addEventListener("click",async()=>{
+  await softStopAudio({
+    resetPosition:true,
+    suspendContext:false,
+    fadeMs:1300
+  });
+  openCover(episode.id);
+  startEpisode(false);
+});
 previousEpisodeButton.addEventListener("click",()=>openAdjacentEpisode(-1));
 nextEpisodeButton.addEventListener("click",()=>openAdjacentEpisode(1));
 g("episodes").addEventListener("click",backToShelf);
