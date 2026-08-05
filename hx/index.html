@@ -3,91 +3,164 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-  <meta name="theme-color" content="#050505">
+  <meta name="theme-color" content="#050403">
   <title>H(x)∞ origin｜世界バグ報告書</title>
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
 <main>
-  <section id="archive" class="screen archive">
-    <div class="archive-bg"></div>
-    <div class="archive-overlay"></div>
-    <header class="archive-header">
-      <span>FUTURE DETERMINATION CONFLUENCE</span>
-      <span>NIX-LOG</span>
-    </header>
+  <section id="shelf" class="screen shelf">
+    <div class="shelf-atmosphere" aria-hidden="true"></div>
 
-    <div class="archive-brand">
-      <img id="archiveLogo" src="./images/logo.svg" alt="H(x)∞ logo">
-      <h1>H(x)∞ origin</h1>
-      <p>世界バグ報告書：NIX_LOG_∞</p>
+    <div class="launcher">
+      <img
+        class="series-logo"
+        src="./images/logo.svg"
+        alt="H(x)∞ origin"
+      >
+
+      <p class="shelf-copy"></p>
+
+      <button id="continueButton" class="continue-panel" hidden>
+        <span class="continue-kicker">RESUME REPORT</span>
+        <span class="continue-label">つづきから</span>
+        <span id="continueMeta" class="continue-meta"></span>
+      </button>
+
+      <div class="archive-label">
+        <span>WORLD BUG REPORTS</span>
+        <i></i>
+      </div>
+
+      <div id="episodeList" class="episode-list"></div>
+
+      <div class="launcher-footer">
+        <span class="launcher-dot"></span>
+        <small>ACCESS REPORT</small>
+      </div>
     </div>
+  </section>
 
-    <button id="resumeButton" class="resume-card" hidden>
-      <span>RESUME LOG</span>
-      <strong>観測を再開する</strong>
-      <small id="resumeMeta"></small>
+  <section id="cover" class="screen cover" hidden>
+    <div class="cover-atmosphere" aria-hidden="true"></div>
+
+    <button id="coverBack" class="cover-back" aria-label="報告書一覧へ">
+      <span aria-hidden="true">←</span>
+      <span>ARCHIVE</span>
     </button>
 
-    <div class="report-heading">WORLD BUG REPORTS</div>
-    <div id="trackList" class="track-list"></div>
+    <div class="cover-panel">
+      <img
+        class="cover-series-logo"
+        src="./images/logo.svg"
+        alt="H(x)∞ origin"
+      >
+
+      <div class="cover-divider"></div>
+
+      <p id="episodeNumber">PROLOGUE</p>
+      <h2 id="episodeTitle"></h2>
+
+      <button id="start" class="start-button">
+        <span class="button-kicker">OPEN REPORT</span>
+        <span>はじめる</span>
+      </button>
+
+      <button id="resumeFromCover" class="resume-button" hidden>
+        <span class="button-kicker">RESUME</span>
+        <span>途中から</span>
+      </button>
+
+      <small class="cover-copy"></small>
+    </div>
   </section>
 
   <section id="player" class="screen player" hidden>
-    <header class="player-header">
-      <button id="backButton" aria-label="一覧へ戻る">←</button>
+    <header>
+      <button id="back" aria-label="表紙へ戻る">‹</button>
       <div>
         <small id="playerSeries">H(x)∞ origin</small>
-        <strong id="playerTitle">REPORT 01 / Calm Down BUG</strong>
+        <strong id="playerEpisode">REPORT 01「Calm Down BUG」</strong>
       </div>
-      <button id="soundButton" aria-label="音声切替">♪</button>
+      <button id="sound" aria-label="BGM切替">♪</button>
     </header>
 
-    <div class="stage">
-      <div class="stage-noise"></div>
-      <div class="stage-scanlines"></div>
-
-      <div class="report-meta">
-        <span id="reportNumber">REPORT 01</span>
-        <span id="reportState">ANALYSIS READY</span>
-      </div>
-
-      <img class="stage-logo" src="./images/logo.svg" alt="">
-      <h2 id="trackTitle">Calm Down BUG</h2>
-      <p id="trackSubtitle">世界バグ報告書</p>
-
-      <div id="narration" class="narration">
-        <div class="scene-stack">
-          <div id="previousLine" class="scene-line previous-line"></div>
-          <div id="currentLine" class="scene-line current-line">ACCESSING...</div>
-        </div>
-        <div class="tap-hint">TAP</div>
-      </div>
+    <div id="stage">
+      <div id="sceneBackground" aria-hidden="true"></div><div id="scanlines" aria-hidden="true"></div>
+      <div id="focusGuide" aria-hidden="true"></div>
+      <div id="lines"></div>
+      <div id="hint">TAP</div>
+      <div id="gestureHint" hidden>スクロールではなく、タップで進みます。</div>
     </div>
 
-    <footer class="player-footer">
-      <span id="sceneCount">1 / 1</span>
-      <div class="story-progress"><i id="storyProgress"></i></div>
-      <button id="autoButton" type="button">AUTO</button>
-      <button id="playPause" aria-label="BGM再生">▶</button>
+    <footer>
+      <span id="count">0 / 0</span>
+      <div class="bar"><i id="bar"></i></div>
+      <button id="mode">AUTO</button>
     </footer>
   </section>
 
   <section id="ending" class="screen ending" hidden>
-    <img src="./images/logo.svg" alt="">
-    <p>LOG SAVED.</p>
-    <h2>観測終了。</h2>
-    <div>
-      <button id="nextTrack">NEXT REPORT</button>
-      <button id="backArchive">ARCHIVE</button>
+    <div class="ending-card">
+      <h2>LOG SAVED.</h2>
+    </div>
+
+    <div id="endingActions" class="ending-actions" hidden>
+      <div class="episode-nav">
+        <button id="previousEpisode" class="ending-nav-button" hidden>
+          <span class="nav-kicker">PREVIOUS</span>
+          <span class="nav-label">前の話</span>
+        </button>
+
+        <button id="episodes" class="ending-nav-button">
+          <span class="nav-kicker">REPORTS</span>
+          <span class="nav-label">報告書一覧</span>
+        </button>
+
+        <button id="nextEpisode" class="ending-nav-button" hidden>
+          <span class="nav-kicker">NEXT</span>
+          <span class="nav-label">続き</span>
+        </button>
+      </div>
+
+      <button id="replay" class="replay-link">REOPEN</button>
     </div>
   </section>
 </main>
 
-<audio id="music" preload="metadata"></audio>
-<audio id="voice" preload="metadata"></audio>
+<audio id="theme" loop preload="auto" playsinline></audio>
+<audio id="ambience" loop preload="auto" playsinline></audio>
+<audio id="effectAudio" preload="auto" playsinline></audio>
+<script src="./series.js"></script>
+<script>
+(async function bootScenePlayer(){
+  const manifest=window.SHINO_SERIES||{episodes:[]};
+  window.SHINO_REPORTS=window.SHINO_REPORTS||{};
 
-<script src="./data/tracks.js"></script>
-<script src="./script.js"></script>
+  function loadScript(src){
+    return new Promise((resolve,reject)=>{
+      const script=document.createElement("script");
+      script.src=src;
+      script.onload=resolve;
+      script.onerror=()=>reject(new Error("Episode load failed: "+src));
+      document.head.appendChild(script);
+    });
+  }
+
+  try{
+    for(const episode of manifest.episodes||[]){
+      await loadScript(episode.src);
+    }
+
+    const app=document.createElement("script");
+    app.src="./script.js";
+    document.body.appendChild(app);
+  }catch(error){
+    console.error(error);
+    document.body.innerHTML=
+      '<main style="padding:30px;font-family:sans-serif">Episode data could not be loaded.</main>';
+  }
+})();
+</script>
 </body>
 </html>
