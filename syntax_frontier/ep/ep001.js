@@ -3,7 +3,7 @@ window.SHINO_EPISODES["ep001"] = {
   "id": "ep001",
   "number": 1,
   "title": "声のそろう通り",
-  "description": "「今日もいい天気ですね。」",
+  "description": "",
   "story": [
     {
       "type": "narration",
@@ -21,14 +21,14 @@ window.SHINO_EPISODES["ep001"] = {
     },
     {
       "type": "narration",
-      "text": "風がある——",
+      "text": "風がある",
       "pause": 1300,
       "view": "world",
       "textColor": "white"
     },
     {
       "type": "narration",
-      "text": "はずなのに、頬に触れず、\nただ耳の奥で風という処理だけが鳴っている。",
+      "text": "——はずなのに、頬に触れず、\nただ耳の奥で風という処理だけが鳴っている。",
       "pause": 1300,
       "view": "world",
       "textColor": "white"
@@ -123,14 +123,14 @@ window.SHINO_EPISODES["ep001"] = {
     },
     {
       "type": "narration",
-      "text": "ほんの僅かな遅れや噛み、咳払い――",
+      "text": "ほんの僅かな遅れや噛み、咳払い",
       "pause": 1300,
       "view": "world",
       "textColor": "white"
     },
     {
       "type": "narration",
-      "text": "人間の証拠のようなそういうものが、まるごと削除されていた。",
+      "text": "――人間の証拠のようなそういうものが、まるごと削除されていた。",
       "pause": 1300,
       "view": "world",
       "textColor": "white"
@@ -247,7 +247,12 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world",
       "clear": true,
       "display": "solo",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/ep000/kane.mp3",
+        "volume": 0.2,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -417,7 +422,12 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world",
       "clear": true,
       "display": "solo",
-      "textColor": "lavender"
+      "textColor": "lavender",
+      "effectAudio": {
+        "src": "./audio/ep000/aisathu.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -694,7 +704,7 @@ window.SHINO_EPISODES["ep001"] = {
     },
     {
       "type": "sound",
-      "text": "角度、速度、姿勢——",
+      "text": "角度、速度、姿勢。",
       "pause": 1300,
       "view": "world",
       "textColor": "white"
@@ -806,7 +816,14 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "「今日もい」",
       "pause": 1300,
       "view": "world",
-      "textColor": "lavender"
+      "textColor": "lavender",
+      "typing": "terminal",
+      "typingSpeed": 55,
+      "effectAudio": {
+        "src": "./audio/ep000/han.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -868,21 +885,21 @@ window.SHINO_EPISODES["ep001"] = {
     },
     {
       "type": "narration",
-      "text": "その軋みは、いつも——",
+      "text": "その軋みは、いつも",
       "pause": 1300,
       "view": "world",
       "textColor": "white"
     },
     {
       "type": "narration",
-      "text": "たぶん——",
+      "text": "——たぶん",
       "pause": 1300,
       "view": "world",
       "textColor": "white"
     },
     {
       "type": "narration",
-      "text": "私だけが知っている。",
+      "text": "——私だけが知っている。",
       "pause": 1300,
       "view": "world",
       "textColor": "white"
@@ -911,7 +928,7 @@ window.SHINO_EPISODES["ep001"] = {
       "textColor": "white"
     },
     {
-      "type": "sound",
+      "type": "narration",
       "text": "H…まで読めて、すぐ木目に戻る。",
       "pause": 1300,
       "view": "void",
@@ -935,37 +952,33 @@ window.SHINO_EPISODES["ep001"] = {
       "type": "narration",
       "text": "信号は青のまま、横断歩道は白いまま、鐘は同じ間隔で鳴り続ける。",
       "pause": 1300,
-      "effect": "blur",
       "view": "world",
       "clear": true,
       "display": "solo",
-      "textColor": "white",
-      "disappearAfter": 3000,
-      "disappearFade": 1200
+      "textColor": "white"
     },
     {
       "type": "narration",
       "text": "私は白の上を渡る。",
       "pause": 1300,
-      "effect": "blur",
       "view": "world",
-      "textColor": "white",
-      "disappearAfter": 3000,
-      "disappearFade": 1200
+      "textColor": "white"
     },
     {
       "type": "dialogue",
-      "text": "「今日もいい天気ですね」\n　　「今日もいい天気ですね」\n　　　　「今日もいい天気ですね」",
+      "text": "「今日もいい天気ですね」\n「今日もいい天気ですね」\n　　「今日もいい天気ですね」",
       "pause": 1300,
       "effect": "whisper",
       "view": "world",
       "clear": true,
       "display": "solo",
       "textColor": "lavender",
+      "typing": "fast",
+      "typingSpeed": 55,
       "disappearAfter": 3000,
       "disappearFade": 1200,
       "effectAudio": {
-        "src": "./audio/ep000/aisathu.mp3",
+        "src": "./audio/ep000/han.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -1031,7 +1044,7 @@ window.SHINO_EPISODES["ep001"] = {
       "textColor": "white"
     },
     {
-      "type": "narration",
+      "type": "dialogue",
       "text": "想像だけで終わる。",
       "pause": 1300,
       "view": "world",
@@ -1102,21 +1115,36 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "一つ、",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/ep000/Bell0_01.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "dialogue",
       "text": "二つ、",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/ep000/Bell0_01.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "dialogue",
       "text": "三つ。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/ep000/Bell0_01.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -1273,7 +1301,7 @@ window.SHINO_EPISODES["ep001"] = {
       "display": "solo",
       "textColor": "lavender",
       "effectAudio": {
-        "src": "./audio/ep000/aisathu.mp3",
+        "src": "./audio/ep000/a.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -1285,12 +1313,7 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world",
       "clear": true,
       "display": "solo",
-      "textColor": "white",
-      "effectAudio": {
-        "src": "./audio/ep000/aisathu.mp3",
-        "volume": 0.65,
-        "loop": false
-      }
+      "textColor": "white"
     },
     {
       "type": "narration",
@@ -1307,7 +1330,7 @@ window.SHINO_EPISODES["ep001"] = {
       "textColor": "white"
     },
     {
-      "type": "narration",
+      "type": "dialogue",
       "text": "平均が、すべてを正す。",
       "pause": 1300,
       "view": "world",
@@ -1344,7 +1367,7 @@ window.SHINO_EPISODES["ep001"] = {
       "textColor": "white"
     },
     {
-      "type": "narration",
+      "type": "dialogue",
       "text": "気のせいだ。",
       "pause": 1300,
       "view": "world",
@@ -1367,7 +1390,7 @@ window.SHINO_EPISODES["ep001"] = {
       "textColor": "white",
       "effectAudio": {
         "src": "./audio/ep000/kane.mp3",
-        "volume": 0.25,
+        "volume": 0.1,
         "loop": false
       }
     },
