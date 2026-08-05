@@ -249,7 +249,7 @@ window.SHINO_EPISODES["ep001"] = {
       "display": "solo",
       "textColor": "white",
       "effectAudio": {
-        "src": "./audio/ep001/3bell.mp3",
+        "src": "./audio/ep000/kane.mp3",
         "volume": 0.2,
         "loop": false
       }
@@ -817,10 +817,10 @@ window.SHINO_EPISODES["ep001"] = {
       "pause": 1300,
       "view": "world",
       "textColor": "lavender",
-      "typing": "terminal",
+      "typing": "slow",
       "typingSpeed": 55,
       "effectAudio": {
-        "src": "./audio/ep001/han.mp3",
+        "src": "./audio/ep000/han.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -885,21 +885,21 @@ window.SHINO_EPISODES["ep001"] = {
     },
     {
       "type": "narration",
-      "text": "その軋みは、いつも",
+      "text": "その軋みは、いつも——",
       "pause": 1300,
       "view": "world",
       "textColor": "white"
     },
     {
       "type": "narration",
-      "text": "——たぶん",
+      "text": "たぶん——",
       "pause": 1300,
       "view": "world",
       "textColor": "white"
     },
     {
       "type": "narration",
-      "text": "——私だけが知っている。",
+      "text": "私だけが知っている。",
       "pause": 1300,
       "view": "world",
       "textColor": "white"
@@ -975,8 +975,8 @@ window.SHINO_EPISODES["ep001"] = {
       "textColor": "lavender",
       "typing": "fast",
       "typingSpeed": 55,
-      "disappearAfter": 3000,
-      "disappearFade": 1200,
+      "disappearAfter": 5000,
+      "disappearFade": 2000,
       "effectAudio": {
         "src": "./audio/ep000/3ai.mp3",
         "volume": 0.65,
@@ -1066,7 +1066,7 @@ window.SHINO_EPISODES["ep001"] = {
       "display": "solo",
       "textColor": "lavender",
       "effectAudio": {
-        "src": "./audio/ep001/aisathu.mp3",
+        "src": "./audio/ep000/aisathu.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -1076,8 +1076,6 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "少女も言う。",
       "pause": 1300,
       "view": "world",
-      "clear": true,
-      "display": "solo",
       "textColor": "white"
     },
     {
@@ -1115,9 +1113,11 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "一つ、",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white",
       "effectAudio": {
-        "src": "./audio/ep001/Bell0_01.mp3",
+        "src": "./audio/ep000/1dell.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -1127,9 +1127,11 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "二つ、",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white",
       "effectAudio": {
-        "src": "./audio/ep001/Bell0_01.mp3",
+        "src": "./audio/ep000/1dell.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -1139,9 +1141,11 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "三つ。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white",
       "effectAudio": {
-        "src": "./audio/ep001/Bell0_01.mp3",
+        "src": "./audio/ep000/1dell.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -1151,6 +1155,8 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "音は同じ、間も同じ。",
       "pause": 1300,
       "view": "world",
+      "clear": true,
+      "display": "solo",
       "textColor": "white"
     },
     {
@@ -1301,7 +1307,7 @@ window.SHINO_EPISODES["ep001"] = {
       "display": "solo",
       "textColor": "lavender",
       "effectAudio": {
-        "src": "./audio/ep001/a.mp3",
+        "src": "./audio/ep000/a.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -1378,7 +1384,12 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "ここでは、気のせいはいつも気のせいで終わる。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/ep000/3bell.mp3",
+        "volume": 0.05,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -1387,12 +1398,7 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world",
       "clear": true,
       "display": "solo",
-      "textColor": "white",
-      "effectAudio": {
-        "src": "./audio/ep001/kane.mp3",
-        "volume": 0.1,
-        "loop": false
-      }
+      "textColor": "white"
     },
     {
       "type": "narration",
