@@ -15,6 +15,8 @@ let currentSegmentIndex=0;
 let segmentStopTimer=null;
 let lastSegment=-1;
 let audioReady=false;
+let autoMode=false;
+let autoTimer=null;
 
 const SAVE_KEY="hx_infinity_player_progress_v01";
 
@@ -79,8 +81,6 @@ function openTrack(id,startAt=0){
   $("previousLine").textContent="";
   $("reportState").textContent="ANALYSIS READY";
   document.querySelector(".stage")?.classList.remove("is-reading","is-finale");
-  $("duration").textContent=fmt(currentTrack.duration||0);
-  $("seek").value=0;
   lastSegment=-1;
 
   music.src=currentTrack.musicSrc;
@@ -96,6 +96,10 @@ function openTrack(id,startAt=0){
   voice.addEventListener("loadedmetadata",setTime,{once:true});
 
   currentSegmentIndex=0;
+  clearTimeout(autoTimer);
+  autoTimer=null;
+  $("sceneCount").textContent=`1 / ${Math.max(1,currentTrack.segments?.length||1)}`;
+  $("storyProgress").style.width=`${100/Math.max(1,currentTrack.segments?.length||1)}%`;
   show(player);
   startMusic(startAt);
   showSegment(0,false);
@@ -175,23 +179,52 @@ function showSegment(index,playVoice=true){
   stage?.classList.toggle("is-finale",isFinale);
 
   const segment=segments[currentSegmentIndex];
-
-  $("previousLine").textContent=
-    currentSegmentIndex>0?segments[currentSegmentIndex-1].text:"";
-
+  const previous=$("previousLine");
   const current=$("currentLine");
+
+  previous.textContent=currentSegmentIndex>0?segments[currentSegmentIndex-1].text:"";
+  previous.className="scene-line previous-line visible";
+
   current.textContent=segment.text;
-  current.classList.remove("glitch");
+  current.className="scene-line current-line entering";
   void current.offsetWidth;
+  current.classList.add("visible");
+  current.classList.remove("entering");
 
   if(/BUG|H\(x\)|最悪|壊|侵入|反転/.test(segment.text)){
     current.classList.add("glitch");
   }
 
+  $("sceneCount").textContent=`${currentSegmentIndex+1} / ${segments.length}`;
+  $("storyProgress").style.width=`${((currentSegmentIndex+1)/segments.length)*100}%`;
 
-  if(playVoice){
-    playCurrentSegmentVoice();
+  if(playVoice)playCurrentSegmentVoice();
+  scheduleAutoAdvance();
+}
+
+function scheduleAutoAdvance(){
+  clearTimeout(autoTimer);
+  autoTimer=null;
+  if(!autoMode||!currentTrack)return;
+
+  const segments=currentTrack.segments||[];
+  const current=segments[currentSegmentIndex];
+  const next=segments[currentSegmentIndex+1];
+  let delay=2800;
+
+  if(next&&Number.isFinite(Number(next.time))&&Number.isFinite(Number(current?.time))){
+    delay=Math.max(1600,Math.min(9000,(Number(next.time)-Number(current.time))*1000));
+  }else{
+    delay=Math.max(2200,Math.min(7500,(String(current?.text||"").length*95)+1200));
   }
+  autoTimer=setTimeout(()=>advanceSegment(),delay);
+}
+
+function toggleAuto(){
+  autoMode=!autoMode;
+  $("autoButton").classList.toggle("is-active",autoMode);
+  $("autoButton").textContent=autoMode?"AUTO ON":"AUTO";
+  scheduleAutoAdvance();
 }
 
 function advanceSegment(){
@@ -214,20 +247,9 @@ function startTick(){
   clearInterval(timer);
   timer=setInterval(()=>{
     if(!currentTrack)return;
-
-    const t=music.currentTime||0;
-    const duration=music.duration||currentTrack.duration||1;
-
-    $("currentTime").textContent=fmt(t);
-    $("duration").textContent=fmt(duration);
-    $("seek").value=Math.min(1000,(t/duration)*1000);
-
     saveProgress();
-
-    if(music.ended){
-      finishTrack();
-    }
-  },100);
+    if(music.ended)finishTrack();
+  },250);
 }
 
 
@@ -259,6 +281,8 @@ async function closeToArchive(){
 }
 
 function finishTrack(){
+  clearTimeout(autoTimer);
+  autoTimer=null;
   clearInterval(timer);
   clearTimeout(segmentStopTimer);
   segmentStopTimer=null;
@@ -275,17 +299,12 @@ $("playPause").addEventListener("click",()=>{
   if(playing)pausePlayback();
   else startMusic();
 });
-$("seek").addEventListener("input",()=>{
-  if(!currentTrack)return;
-  const duration=music.duration||currentTrack.duration||1;
-  const t=duration*Number($("seek").value)/1000;
-  try{music.currentTime=t}catch{}
-});
 document.querySelector(".stage").addEventListener("click",event=>{
   if(event.target.closest("button,input,a"))return;
   advanceSegment();
 });
 
+$("autoButton").addEventListener("click",toggleAuto);
 $("soundButton").addEventListener("click",()=>{
   const muted=!music.muted;
   music.muted=muted;voice.muted=muted;

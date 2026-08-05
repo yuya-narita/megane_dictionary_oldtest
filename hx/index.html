@@ -57,16 +57,19 @@
       <p id="trackSubtitle">世界バグ報告書</p>
 
       <div id="narration" class="narration">
-        <div id="previousLine" class="previous-line"></div>
-        <div id="currentLine" class="current-line">ACCESSING...</div>
+        <div class="scene-stack">
+          <div id="previousLine" class="scene-line previous-line"></div>
+          <div id="currentLine" class="scene-line current-line">ACCESSING...</div>
+        </div>
+        <div class="tap-hint">TAP</div>
       </div>
     </div>
 
     <footer class="player-footer">
-      <span id="currentTime">00:00</span>
-      <input id="seek" type="range" min="0" max="1000" value="0">
-      <span id="duration">00:00</span>
-      <button id="playPause">▶</button>
+      <span id="sceneCount">1 / 1</span>
+      <div class="story-progress"><i id="storyProgress"></i></div>
+      <button id="autoButton" type="button">AUTO</button>
+      <button id="playPause" aria-label="BGM再生">▶</button>
     </footer>
   </section>
 

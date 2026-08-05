@@ -424,3 +424,78 @@ button{color:inherit}
 .narration{bottom:24px!important}
 .stage.is-reading .narration{bottom:24px!important}
 .stage.is-finale .narration{bottom:24px!important}
+
+
+/* =========================================================
+   H(x)∞ Player v0.3 — Unified Scene Player
+   ========================================================= */
+.player{grid-template-rows:auto minmax(0,1fr) auto}
+.stage{position:relative;display:block;padding:0 32px}
+.report-meta{position:absolute;top:18px;left:24px;right:24px}
+
+.stage-logo,.stage h2,.stage>p{
+  position:absolute;left:50%;transform:translateX(-50%);z-index:3;
+  transition:opacity .72s ease,transform .82s cubic-bezier(.16,.72,.17,1),filter .72s ease
+}
+.stage-logo{top:10%;width:min(43vw,210px);margin:0}
+.stage h2{top:36%;width:100%;margin:0;font-size:clamp(27px,7vw,46px)}
+.stage>p{top:45%;width:100%;margin:0}
+
+.stage.is-reading .stage-logo,
+.stage.is-reading h2,
+.stage.is-reading>p{
+  opacity:0;transform:translate(-50%,-45px);filter:blur(2px);pointer-events:none
+}
+.stage.is-finale .stage-logo,
+.stage.is-finale h2,
+.stage.is-finale>p{
+  opacity:1;transform:translateX(-50%);filter:none
+}
+
+.narration{
+  position:absolute;inset:68px 32px 26px;min-height:0;margin:0;padding:0;
+  display:grid;align-content:center
+}
+.scene-stack{display:grid;align-content:center;gap:34px;width:100%}
+.scene-line{
+  white-space:pre-line;text-align:center;font-family:"Yu Mincho","Hiragino Mincho ProN",serif;
+  transition:transform .82s cubic-bezier(.16,.72,.17,1),opacity .72s ease,filter .72s ease
+}
+.previous-line{min-height:0;color:#57514b;font-size:clamp(14px,3.6vw,20px);line-height:1.75}
+.current-line{
+  margin:0;padding:0;max-height:none;overflow:visible;color:#f2eee7;
+  font-size:clamp(22px,5.8vw,37px);line-height:1.8
+}
+.current-line.entering{opacity:0;transform:translateY(14px);filter:blur(2px)}
+.current-line.visible{opacity:1;transform:none;filter:none}
+.tap-hint{
+  position:absolute;right:0;bottom:0;color:rgba(202,165,106,.44);
+  font:9px/1 ui-monospace,monospace;letter-spacing:.18em
+}
+
+.player-footer{
+  grid-template-columns:auto 1fr auto auto;gap:13px;min-height:65px;
+  padding:11px 18px max(12px,env(safe-area-inset-bottom));color:#81796f
+}
+.story-progress{height:1px;background:rgba(202,165,106,.16);overflow:hidden}
+.story-progress i{
+  display:block;height:100%;width:0;background:linear-gradient(90deg,#8b6536,#caa56a);
+  transition:width .52s ease
+}
+#sceneCount,#autoButton{color:#81796f;font:10px/1 ui-monospace,monospace;white-space:nowrap}
+#autoButton{border:0;background:none;width:auto;height:auto}
+#autoButton.is-active{color:var(--gold)}
+#playPause{width:38px;height:38px}
+
+@media(max-height:700px){
+  .stage-logo{top:8%;width:min(34vw,150px)}
+  .stage h2{top:30%;font-size:clamp(23px,6vw,35px)}
+  .stage>p{top:39%}
+  .narration{inset:58px 27px 22px}
+  .scene-stack{gap:24px}
+}
+@media(max-width:430px){
+  .stage{padding:0 26px}
+  .narration{left:26px;right:26px}
+  .current-line{font-size:clamp(21px,6vw,31px)}
+}
