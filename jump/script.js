@@ -58,6 +58,7 @@ const EFFECT_FADE_OUT_MS=260;
 const EFFECT_FADE_IN_MS=180;
 const AMBIENCE_SWITCH_FADE_OUT_MS=650;
 const AMBIENCE_SWITCH_FADE_IN_MS=900;
+let currentAmbienceVolume=0.5;
 
 let playbackSession=0;
 let startingEpisode=false;
@@ -688,6 +689,7 @@ async function playAmbience(direction){
     Number(direction.fadeIn??AMBIENCE_SWITCH_FADE_IN_MS)
   );
   const targetVolume=Math.max(0,Math.min(1,Number(direction.volume??.5)));
+  currentAmbienceVolume=targetVolume;
 
   // When the environment changes, let the old place disappear first.
   if(sourceChanged&&!ambience.paused){
@@ -985,14 +987,36 @@ function finish(){
   endingActions.hidden=true;
   show(ending);
 
-  // Ending is still part of the story.
-  // Keep BGM and ambience alive; fade only the foreground SE.
+  // Ending is still part of the story. Keep BGM and ambience at
+  // their current audible levels. Cancel any Scene-level stop/fade.
+  clearTimeout(ambienceStopTimer);
+  ambienceStopTimer=null;
+  ambienceTransitionToken++;
   effectTransitionToken++;
+
+  if(audioGraphReady&&audioContext){
+    const now=audioContext.currentTime;
+
+    if(themeGain){
+      const themeLevel=Math.max(.0001,resumeVolume||SERIES.defaultVolume||.24);
+      themeGain.gain.cancelScheduledValues(now);
+      themeGain.gain.setValueAtTime(Math.max(.0001,themeGain.gain.value||themeLevel),now);
+      themeGain.gain.linearRampToValueAtTime(themeLevel,now+.45);
+    }
+
+    if(ambienceGain&&!ambience.paused){
+      const ambienceLevel=Math.max(.0001,currentAmbienceVolume||.5);
+      ambienceGain.gain.cancelScheduledValues(now);
+      ambienceGain.gain.setValueAtTime(Math.max(.0001,ambienceGain.gain.value||ambienceLevel),now);
+      ambienceGain.gain.linearRampToValueAtTime(ambienceLevel,now+.45);
+    }
+  }
+
+  // Only foreground SE disappears.
   deClickGain(effectGain,0.0001,650);
   managedTimeout(()=>{
     try{effectAudio.pause()}catch{}
   },700);
-  animateVolume(.34,1800);
 
   // First leave only the centered end card and the theme.
   endingTimer=setTimeout(()=>{

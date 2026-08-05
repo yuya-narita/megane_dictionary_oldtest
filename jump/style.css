@@ -360,7 +360,7 @@ footer button{border:0;background:none;color:var(--muted)}
 .ending-card h2{
   margin:0;
   color:var(--ink-strong);
-  font-size:clamp(37px,9vw,62px);
+  font-size:clamp(28px,6.4vw,44px);
   font-weight:400;
   letter-spacing:.12em;
 }
