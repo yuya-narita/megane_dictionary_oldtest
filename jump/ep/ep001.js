@@ -7,28 +7,35 @@ window.SHINO_EPISODES["ep001"] = {
   "story": [
     {
       "type": "narration",
-      "text": "",
+      "text": "ミオは、学校が終わると少し遠回りをして帰る。",
       "pause": 1300,
       "view": "world",
       "ambience": {
-        "src": "./audio/ep000/jump_001.mp3",
+        "src": "./audio/ep000/ep002.mp3",
         "volume": 0.5,
         "fadeIn": 700,
         "fadeOut": 1200,
-        "loop": false
+        "loop": true,
+        "stopAfter": 1800
       }
-    },
-    {
-      "type": "narration",
-      "text": "ミオは、学校が終わると少し遠回りをして帰る。",
-      "pause": 1300,
-      "view": "world"
     },
     {
       "type": "narration",
       "text": "理由は特にない。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "ambience": {
+        "src": "./audio/ep000/ep002.mp3",
+        "volume": 0.5,
+        "fadeIn": 700,
+        "fadeOut": 1200,
+        "loop": true
+      },
+      "effectAudio": {
+        "src": "./audio/ep000/ep003.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -52,13 +59,26 @@ window.SHINO_EPISODES["ep001"] = {
       "type": "narration",
       "text": "給水塔の裏には、草が少しだけ長く伸びている場所がある。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "ambience": {
+        "src": "./audio/ep000/ep004.mp3",
+        "volume": 0.5,
+        "fadeIn": 700,
+        "fadeOut": 1600,
+        "loop": true,
+        "stopAfter": 2000
+      }
     },
     {
       "type": "narration",
       "text": "フェンスはあるけど、壊れたまま直されていない。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "effectAudio": {
+        "src": "./audio/ep000/ep005.mp3",
+        "volume": 0.49,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -94,7 +114,12 @@ window.SHINO_EPISODES["ep001"] = {
       "type": "narration",
       "text": "風が吹く。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "effectAudio": {
+        "src": "./audio/ep000/ep006.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -171,19 +196,34 @@ window.SHINO_EPISODES["ep001"] = {
       "type": "narration",
       "text": "ただ、ここにいる。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "effectAudio": {
+        "src": "./audio/ep000/ep007.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
       "text": "遠くで、誰かの自転車のベルが鳴る。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "effectAudio": {
+        "src": "./audio/ep000/ep008.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
       "text": "放課後の町は、ちゃんと動いている。",
       "pause": 1300,
-      "view": "world"
+      "view": "world",
+      "effectAudio": {
+        "src": "./audio/ep000/ep009.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
