@@ -250,7 +250,7 @@ window.SHINO_EPISODES["ep001"] = {
       "textColor": "white",
       "effectAudio": {
         "src": "./audio/ep001/3bell.mp3",
-        "volume": 0.1,
+        "volume": 0.2,
         "loop": false
       }
     },
@@ -974,7 +974,7 @@ window.SHINO_EPISODES["ep001"] = {
       "display": "solo",
       "textColor": "lavender",
       "typing": "fast",
-      "typingSpeed": 55,
+      "typingSpeed": 25,
       "disappearAfter": 5000,
       "disappearFade": 2000,
       "effectAudio": {
