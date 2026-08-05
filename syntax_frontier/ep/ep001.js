@@ -3,7 +3,7 @@ window.SHINO_EPISODES["ep001"] = {
   "id": "ep001",
   "number": 1,
   "title": "声のそろう通り",
-  "description": "「今日もいい天気ですね」",
+  "description": "",
   "story": [
     {
       "type": "narration",
@@ -46,7 +46,6 @@ window.SHINO_EPISODES["ep001"] = {
       "type": "dialogue",
       "text": "「今日もいい天気ですね」",
       "pause": 1300,
-      "effect": "fade",
       "view": "world",
       "textColor": "lavender",
       "effectAudio": {
@@ -59,7 +58,6 @@ window.SHINO_EPISODES["ep001"] = {
       "type": "narration",
       "text": "パン屋の店主が、窯の前で。",
       "pause": 1300,
-      "effect": "fade",
       "view": "world",
       "textColor": "white"
     },
@@ -67,7 +65,6 @@ window.SHINO_EPISODES["ep001"] = {
       "type": "dialogue",
       "text": "「今日もいい天気ですね」",
       "pause": 1300,
-      "effect": "fade",
       "view": "world",
       "textColor": "lavender",
       "effectAudio": {
@@ -80,7 +77,6 @@ window.SHINO_EPISODES["ep001"] = {
       "type": "narration",
       "text": "郵便配達の男が、サドルから片足を下ろしながら。",
       "pause": 1300,
-      "effect": "fade",
       "view": "world",
       "textColor": "white"
     },
@@ -88,7 +84,6 @@ window.SHINO_EPISODES["ep001"] = {
       "type": "dialogue",
       "text": "「今日もいい天気ですね」",
       "pause": 1300,
-      "effect": "fade",
       "view": "world",
       "textColor": "lavender",
       "effectAudio": {
@@ -101,7 +96,6 @@ window.SHINO_EPISODES["ep001"] = {
       "type": "narration",
       "text": "ランドセルの子どもが、横断歩道の端で。",
       "pause": 1300,
-      "effect": "fade",
       "view": "world",
       "textColor": "white"
     },
@@ -238,7 +232,12 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "踏む、という事実だけが、上から薄い透明フィルムで覆われていく。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/ep001/3bell.mp3",
+        "volume": 0.35,
+        "loop": false
+      }
     },
     {
       "type": "sound",
@@ -247,12 +246,7 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world",
       "clear": true,
       "display": "solo",
-      "textColor": "white",
-      "effectAudio": {
-        "src": "./audio/ep001/3bell.mp3",
-        "volume": 0.2,
-        "loop": false
-      }
+      "textColor": "white"
     },
     {
       "type": "narration",
@@ -819,6 +813,7 @@ window.SHINO_EPISODES["ep001"] = {
       "textColor": "lavender",
       "typing": "slow",
       "typingSpeed": 55,
+      "typingCursor": "_",
       "effectAudio": {
         "src": "./audio/ep001/han.mp3",
         "volume": 0.65,
@@ -973,8 +968,9 @@ window.SHINO_EPISODES["ep001"] = {
       "clear": true,
       "display": "solo",
       "textColor": "lavender",
-      "typing": "fast",
-      "typingSpeed": 25,
+      "typing": "slow",
+      "typingSpeed": 110,
+      "typingCursor": "_",
       "disappearAfter": 5000,
       "disappearFade": 2000,
       "effectAudio": {
@@ -1384,12 +1380,7 @@ window.SHINO_EPISODES["ep001"] = {
       "text": "ここでは、気のせいはいつも気のせいで終わる。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white",
-      "effectAudio": {
-        "src": "./audio/ep001/3bell.mp3",
-        "volume": 0.05,
-        "loop": false
-      }
+      "textColor": "white"
     },
     {
       "type": "narration",
@@ -1398,7 +1389,12 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world",
       "clear": true,
       "display": "solo",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/ep001/3bell.mp3",
+        "volume": 0.3,
+        "loop": false
+      }
     },
     {
       "type": "narration",
