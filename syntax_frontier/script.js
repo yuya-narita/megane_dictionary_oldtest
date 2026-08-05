@@ -311,6 +311,7 @@ function resetScene(startIndex=0){
   queuedNext=false;
   lines.innerHTML="";
   visibleItems=[];
+  applySyntaxMeters({meters:{lambda:0,jump:0,sigma:0}},0);
   progress();
 }
 
@@ -757,6 +758,69 @@ function applyMusic(cut){
   if(cut.effectAudio)playEffect(cut.effectAudio);
 }
 
+function clampSyntaxValue(value,fallback=0){
+  const number=Number(value);
+  return Number.isFinite(number)
+    ?Math.max(0,Math.min(1,number))
+    :fallback;
+}
+
+function inferSyntaxMeters(cut,index){
+  if(cut?.meters){
+    return {
+      lambda:clampSyntaxValue(cut.meters.lambda,0),
+      jump:clampSyntaxValue(cut.meters.jump,0),
+      sigma:clampSyntaxValue(cut.meters.sigma,0)
+    };
+  }
+
+  const text=String(cut?.text||"");
+  const progress=Math.max(0,Math.min(1,(index+1)/Math.max(1,story.length)));
+
+  let lambda=Math.min(.92,.18+progress*.54);
+  let jump=.01;
+  let sigma=Math.min(.88,progress*.46);
+
+  if(/[？?]|なぜ|なんで|違和感|気配|圧|まだ/.test(text))lambda+=.16;
+  if(/跳ね|反転|侵入|変わ|壊|遅れ|止ま/.test(text))jump+=.22;
+  if(/記録|固定|痕跡|確定|永遠|戻る|午後三時/.test(text))sigma+=.24;
+  if(cut?.view==="warning")jump+=.28;
+  if(cut?.view==="console")lambda+=.10;
+  if(cut?.type==="ending")sigma+=.24;
+
+  return {
+    lambda:clampSyntaxValue(lambda,.25),
+    jump:clampSyntaxValue(jump,.01),
+    sigma:clampSyntaxValue(sigma,.08)
+  };
+}
+
+function applySyntaxMeters(cut,index){
+  const values=inferSyntaxMeters(cut,index);
+  const entries=[
+    ["lambda",values.lambda],
+    ["jump",values.jump],
+    ["sigma",values.sigma]
+  ];
+
+  for(const [key,value] of entries){
+    const bar=g(`${key}Meter`);
+    const label=g(`${key}Label`);
+    if(bar)bar.style.width=`${Math.round(value*100)}%`;
+    if(label){
+      const symbol=key==="lambda"?"λ":key==="jump"?"!":"σ";
+      label.textContent=`${symbol} ${value.toFixed(2)}`;
+    }
+  }
+
+  const meter=g("syntaxMeter");
+  if(meter){
+    meter.classList.remove("meter-pulse");
+    void meter.offsetWidth;
+    if(values.jump>=.35)meter.classList.add("meter-pulse");
+  }
+}
+
 function tactileRelease(){
   stage.classList.remove("release-spring");
   void stage.offsetWidth;
@@ -774,9 +838,11 @@ function next(){
   queuedNext=false;
   tactileRelease();
 
+  const cutIndex=i;
   const cut=story[i++];
   applyVisual(cut);
   applyMusic(cut);
+  applySyntaxMeters(cut,cutIndex);
   const node=createLine(cut);
   visibleItems.push({node,type:cut.type||"narration"});
   removeOld();
