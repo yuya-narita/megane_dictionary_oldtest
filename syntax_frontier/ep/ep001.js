@@ -249,7 +249,7 @@ window.SHINO_EPISODES["ep001"] = {
       "display": "solo",
       "textColor": "white",
       "effectAudio": {
-        "src": "./audio/ep000/kane.mp3",
+        "src": "./audio/ep001/3bell.mp3",
         "volume": 0.2,
         "loop": false
       }
@@ -820,7 +820,7 @@ window.SHINO_EPISODES["ep001"] = {
       "typing": "terminal",
       "typingSpeed": 55,
       "effectAudio": {
-        "src": "./audio/ep000/han.mp3",
+        "src": "./audio/ep001/han.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -978,7 +978,7 @@ window.SHINO_EPISODES["ep001"] = {
       "disappearAfter": 3000,
       "disappearFade": 1200,
       "effectAudio": {
-        "src": "./audio/ep000/han.mp3",
+        "src": "./audio/ep000/3ai.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -1066,7 +1066,7 @@ window.SHINO_EPISODES["ep001"] = {
       "display": "solo",
       "textColor": "lavender",
       "effectAudio": {
-        "src": "./audio/ep000/aisathu.mp3",
+        "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -1117,7 +1117,7 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world",
       "textColor": "white",
       "effectAudio": {
-        "src": "./audio/ep000/Bell0_01.mp3",
+        "src": "./audio/ep001/Bell0_01.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -1129,7 +1129,7 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world",
       "textColor": "white",
       "effectAudio": {
-        "src": "./audio/ep000/Bell0_01.mp3",
+        "src": "./audio/ep001/Bell0_01.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -1141,7 +1141,7 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world",
       "textColor": "white",
       "effectAudio": {
-        "src": "./audio/ep000/Bell0_01.mp3",
+        "src": "./audio/ep001/Bell0_01.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -1301,7 +1301,7 @@ window.SHINO_EPISODES["ep001"] = {
       "display": "solo",
       "textColor": "lavender",
       "effectAudio": {
-        "src": "./audio/ep000/a.mp3",
+        "src": "./audio/ep001/a.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -1389,7 +1389,7 @@ window.SHINO_EPISODES["ep001"] = {
       "display": "solo",
       "textColor": "white",
       "effectAudio": {
-        "src": "./audio/ep000/kane.mp3",
+        "src": "./audio/ep001/kane.mp3",
         "volume": 0.1,
         "loop": false
       }
