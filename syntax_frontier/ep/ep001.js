@@ -3,7 +3,7 @@ window.SHINO_EPISODES["ep001"] = {
   "id": "ep001",
   "number": 1,
   "title": "声のそろう通り",
-  "description": "",
+  "description": "「今日もいい天気ですね」",
   "story": [
     {
       "type": "narration",
@@ -50,7 +50,7 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world",
       "textColor": "lavender",
       "effectAudio": {
-        "src": "./audio/ep000/aisathu.mp3",
+        "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -71,7 +71,7 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world",
       "textColor": "lavender",
       "effectAudio": {
-        "src": "./audio/ep000/aisathu.mp3",
+        "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -92,7 +92,7 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world",
       "textColor": "lavender",
       "effectAudio": {
-        "src": "./audio/ep000/aisathu.mp3",
+        "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -160,7 +160,7 @@ window.SHINO_EPISODES["ep001"] = {
       "display": "solo",
       "textColor": "lavender",
       "effectAudio": {
-        "src": "./audio/ep000/aisathu.mp3",
+        "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -179,7 +179,7 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world",
       "textColor": "lavender",
       "effectAudio": {
-        "src": "./audio/ep000/aisathu.mp3",
+        "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -198,7 +198,7 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world",
       "textColor": "lavender",
       "effectAudio": {
-        "src": "./audio/ep000/aisathu.mp3",
+        "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -249,8 +249,8 @@ window.SHINO_EPISODES["ep001"] = {
       "display": "solo",
       "textColor": "white",
       "effectAudio": {
-        "src": "./audio/ep000/kane.mp3",
-        "volume": 0.2,
+        "src": "./audio/ep001/3bell.mp3",
+        "volume": 0.1,
         "loop": false
       }
     },
@@ -424,7 +424,7 @@ window.SHINO_EPISODES["ep001"] = {
       "display": "solo",
       "textColor": "lavender",
       "effectAudio": {
-        "src": "./audio/ep000/aisathu.mp3",
+        "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -637,7 +637,7 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world",
       "textColor": "lavender",
       "effectAudio": {
-        "src": "./audio/ep000/aisathu.mp3",
+        "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -739,7 +739,7 @@ window.SHINO_EPISODES["ep001"] = {
       "display": "solo",
       "textColor": "lavender",
       "effectAudio": {
-        "src": "./audio/ep000/aisathu.mp3",
+        "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -820,7 +820,7 @@ window.SHINO_EPISODES["ep001"] = {
       "typing": "slow",
       "typingSpeed": 55,
       "effectAudio": {
-        "src": "./audio/ep000/han.mp3",
+        "src": "./audio/ep001/han.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -978,7 +978,7 @@ window.SHINO_EPISODES["ep001"] = {
       "disappearAfter": 5000,
       "disappearFade": 2000,
       "effectAudio": {
-        "src": "./audio/ep000/3ai.mp3",
+        "src": "./audio/ep001/3ai.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -1066,7 +1066,7 @@ window.SHINO_EPISODES["ep001"] = {
       "display": "solo",
       "textColor": "lavender",
       "effectAudio": {
-        "src": "./audio/ep000/aisathu.mp3",
+        "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -1117,7 +1117,7 @@ window.SHINO_EPISODES["ep001"] = {
       "display": "solo",
       "textColor": "white",
       "effectAudio": {
-        "src": "./audio/ep000/1dell.mp3",
+        "src": "./audio/ep001/1dell.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -1131,7 +1131,7 @@ window.SHINO_EPISODES["ep001"] = {
       "display": "solo",
       "textColor": "white",
       "effectAudio": {
-        "src": "./audio/ep000/1dell.mp3",
+        "src": "./audio/ep001/1dell.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -1145,7 +1145,7 @@ window.SHINO_EPISODES["ep001"] = {
       "display": "solo",
       "textColor": "white",
       "effectAudio": {
-        "src": "./audio/ep000/1dell.mp3",
+        "src": "./audio/ep001/1dell.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -1307,7 +1307,7 @@ window.SHINO_EPISODES["ep001"] = {
       "display": "solo",
       "textColor": "lavender",
       "effectAudio": {
-        "src": "./audio/ep000/a.mp3",
+        "src": "./audio/ep001/a.mp3",
         "volume": 0.65,
         "loop": false
       }
