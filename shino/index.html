@@ -1,90 +1,81 @@
-<!doctype html>
+<!DOCTYPE html>
+
 <html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-  <meta name="theme-color" content="#f5f2ea">
-  <title>貧乏メガネのシノ — SCENE PLAYER v0.7</title>
-  <link rel="stylesheet" href="./style.css">
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" name="viewport"/>
+<meta content="#f5f2ea" name="theme-color"/>
+<title>貧乏メガネのシノ — SCENE PLAYER v0.7</title>
+<link href="./style.css" rel="stylesheet"/>
 </head>
 <body>
 <main>
-  <section id="shelf" class="screen shelf">
-    <div class="eyebrow">SHINO SCENE PLAYER</div>
-    <h1 id="seriesTitle">貧乏メガネのシノ</h1>
-    <p class="shelf-copy">文字だけで、景色が浮かぶ。</p>
-    <div id="episodeList" class="episode-list"></div>
-    <button id="continueButton" class="primary-button" hidden>つづきから</button>
-    <small>一文ずつ、タップで進みます。</small>
-  </section>
-
-  <section id="cover" class="screen cover" hidden>
-    <button id="coverBack" class="cover-back" aria-label="話数一覧へ"><span aria-hidden="true">←</span><span>話数一覧</span></button>
-    <div class="eyebrow">SHINO SCENE PLAYER</div>
-    <h1>貧乏メガネのシノ</h1>
-    <p id="episodeNumber">第1話</p>
-    <h2 id="episodeTitle">「タダの冷蔵庫」</h2>
-    <button id="start" class="primary-button">はじめる</button>
-    <button id="resumeFromCover" class="secondary-button" hidden>途中から</button>
-    <small>文字だけで、景色が浮かぶ。</small>
-  </section>
-
-  <section id="player" class="screen player" hidden>
-    <header>
-      <button id="back" aria-label="表紙へ戻る">‹</button>
-      <div>
-        <small id="playerSeries">貧乏メガネのシノ</small>
-        <strong id="playerEpisode">第1話「タダの冷蔵庫」</strong>
-      </div>
-      <button id="sound" aria-label="BGM切替">♪</button>
-    </header>
-
-    <div id="stage">
-      <div id="paperPulse" aria-hidden="true"></div>
-      <div id="focusGuide" aria-hidden="true"></div>
-      <div id="lines"></div>
-      <div id="hint">TAP</div>
-      <div id="gestureHint" hidden>スクロールではなく、タップで進みます。</div>
-    </div>
-
-    <footer>
-      <span id="count">0 / 0</span>
-      <div class="bar"><i id="bar"></i></div>
-      <button id="mode">AUTO</button>
-    </footer>
-  </section>
-
-  <section id="ending" class="screen ending" hidden>
-    <div class="ending-card">
-      <h2>つづく</h2>
-    </div>
-
-    <div id="endingActions" class="ending-actions" hidden>
-      <div class="episode-nav">
-        <button id="previousEpisode" class="ending-nav-button" hidden>
-          <span class="nav-kicker">PREVIOUS</span>
-          <span class="nav-label">前の話</span>
-        </button>
-
-        <button id="episodes" class="ending-nav-button">
-          <span class="nav-kicker">EPISODES</span>
-          <span class="nav-label">話数一覧</span>
-        </button>
-
-        <button id="nextEpisode" class="ending-nav-button" hidden>
-          <span class="nav-kicker">NEXT</span>
-          <span class="nav-label">続き</span>
-        </button>
-      </div>
-
-      <button id="replay" class="replay-link">もう一度読む</button>
-    </div>
-  </section>
+<section class="screen shelf" id="shelf">
+<div class="eyebrow">SHINO SCENE PLAYER</div>
+<img alt="貧乏メガネのシノ" class="series-logo" src="./shino_logo.svg"/>
+<p class="shelf-copy">文字だけで、景色が浮かぶ。</p>
+<div class="episode-list" id="episodeList"></div>
+<button class="primary-button" hidden="" id="continueButton">つづきから</button>
+<small>一文ずつ、タップで進みます。</small>
+</section>
+<section class="screen cover" hidden="" id="cover">
+<button aria-label="話数一覧へ" class="cover-back" id="coverBack"><span aria-hidden="true">←</span><span>話数一覧</span></button>
+<div class="eyebrow">SHINO SCENE PLAYER</div>
+<img alt="貧乏メガネのシノ" class="series-logo" src="./shino_logo.svg"/>
+<p id="episodeNumber">第1話</p>
+<h2 id="episodeTitle">「タダの冷蔵庫」</h2>
+<button class="primary-button" id="start">はじめる</button>
+<button class="secondary-button" hidden="" id="resumeFromCover">途中から</button>
+<small>文字だけで、景色が浮かぶ。</small>
+</section>
+<section class="screen player" hidden="" id="player">
+<header>
+<button aria-label="表紙へ戻る" id="back">‹</button>
+<div>
+<small id="playerSeries">貧乏メガネのシノ</small>
+<strong id="playerEpisode">第1話「タダの冷蔵庫」</strong>
+</div>
+<button aria-label="BGM切替" id="sound">♪</button>
+</header>
+<div id="stage">
+<div aria-hidden="true" id="paperPulse"></div>
+<div aria-hidden="true" id="focusGuide"></div>
+<div id="lines"></div>
+<div id="hint">TAP</div>
+<div hidden="" id="gestureHint">スクロールではなく、タップで進みます。</div>
+</div>
+<footer>
+<span id="count">0 / 0</span>
+<div class="bar"><i id="bar"></i></div>
+<button id="mode">AUTO</button>
+</footer>
+</section>
+<section class="screen ending" hidden="" id="ending">
+<div class="ending-card">
+<h2>つづく</h2>
+</div>
+<div class="ending-actions" hidden="" id="endingActions">
+<div class="episode-nav">
+<button class="ending-nav-button" hidden="" id="previousEpisode">
+<span class="nav-kicker">PREVIOUS</span>
+<span class="nav-label">前の話</span>
+</button>
+<button class="ending-nav-button" id="episodes">
+<span class="nav-kicker">EPISODES</span>
+<span class="nav-label">話数一覧</span>
+</button>
+<button class="ending-nav-button" hidden="" id="nextEpisode">
+<span class="nav-kicker">NEXT</span>
+<span class="nav-label">続き</span>
+</button>
+</div>
+<button class="replay-link" id="replay">もう一度読む</button>
+</div>
+</section>
 </main>
-
-<audio id="theme" loop preload="auto" playsinline></audio>
-<audio id="ambience" loop preload="auto" playsinline></audio>
-<audio id="effectAudio" preload="auto" playsinline></audio>
+<audio id="theme" loop="" playsinline="" preload="auto"></audio>
+<audio id="ambience" loop="" playsinline="" preload="auto"></audio>
+<audio id="effectAudio" playsinline="" preload="auto"></audio>
 <script src="./series.js"></script>
 <script>
 (async function bootScenePlayer(){

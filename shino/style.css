@@ -799,3 +799,5 @@ button,.episode-card,.ending-nav-button,.replay-link,.cover-back{
     transition-duration:.01ms!important;
   }
 }
+
+.series-logo{width:min(92vw,420px);height:auto;display:block;margin:18px auto 12px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.08));}
