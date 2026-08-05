@@ -25,9 +25,9 @@ window.SHINO_EPISODES["ep001"] = {
         "src": "./audio/ep000/ep002.mp3",
         "volume": 0.5,
         "fadeIn": 2000,
-        "fadeOut": 70000,
+        "fadeOut": 30000,
         "loop": false,
-        "stopAfter": 73000
+        "stopAfter": 37000
       }
     },
     {
@@ -62,7 +62,7 @@ window.SHINO_EPISODES["ep001"] = {
         "src": "./audio/ep000/ep004.mp3",
         "volume": 0.5,
         "fadeIn": 2000,
-        "fadeOut": 35000,
+        "fadeOut": 30000,
         "loop": false,
         "stopAfter": 37000
       }
@@ -117,9 +117,9 @@ window.SHINO_EPISODES["ep001"] = {
         "src": "./audio/ep000/ep006.mp3",
         "volume": 0.5,
         "fadeIn": 2000,
-        "fadeOut": 28000,
+        "fadeOut": 15000,
         "loop": false,
-        "stopAfter": 30000
+        "stopAfter": 19000
       }
     },
     {
