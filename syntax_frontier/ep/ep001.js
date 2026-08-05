@@ -1386,7 +1386,7 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world",
       "textColor": "white",
       "effectAudio": {
-        "src": "./audio/ep000/3bell.mp3",
+        "src": "./audio/ep001/3bell.mp3",
         "volume": 0.05,
         "loop": false
       }
