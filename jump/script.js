@@ -982,7 +982,7 @@ function finish(){
   }
 
   const endingTitle=ending.querySelector(".ending-card h2");
-  if(endingTitle)endingTitle.textContent=episode?.ending||"今日も、まだ。";
+  if(endingTitle)endingTitle.textContent=episode?.ending||"まだ。";
   endingActions.classList.remove("is-visible");
   endingActions.hidden=true;
   show(ending);
