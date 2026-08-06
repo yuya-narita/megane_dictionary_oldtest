@@ -1,6 +1,6 @@
 window.SHINO_EPISODES = window.SHINO_EPISODES || {};
-window.SHINO_EPISODES["track01"] = {
-  "id": "track01",
+window.SHINO_EPISODES["ep001"] = {
+  "id": "ep001",
   "number": 1,
   "title": "世界バグ報告書：NIX_LOG_∞",
   "description": "",
@@ -9,36 +9,59 @@ window.SHINO_EPISODES["track01"] = {
       "type": "narration",
       "text": "静かだな。",
       "pause": 1300,
+      "effect": "blur",
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/audio/hx_000/001.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
       "text": "静かすぎると、世界の方が笑うんだよ。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
-    },
-    {
-      "type": "sound",
-      "text": "",
-      "pause": 1300,
-      "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/audio/hx_000/002.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "dialogue",
       "text": "……よし、始めるか。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/audio/hx_000/003.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
       "text": "ゼリスが立てた H(x) のおかげで、世界の壊れ方がようやく言語化できるようになった。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "ambience": {
+        "action": "start",
+        "src": "./audio/audio/hx_000/track01.mp3",
+        "volume": 0.5,
+        "fadeIn": 700,
+        "fadeOut": 1200,
+        "loop": true,
+        "restart": true
+      },
+      "effectAudio": {
+        "src": "./audio/audio/hx_000/004.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
@@ -84,11 +107,13 @@ window.SHINO_EPISODES["track01"] = {
       "textColor": "white",
       "bgTransition": "glitch",
       "ambience": {
-        "src": "./audio/ep000/track01.mp3",
+        "action": "start",
+        "src": "./audio/audio/hx_000/track01.mp3",
         "volume": 0.5,
         "fadeIn": 700,
         "fadeOut": 235000,
-        "loop": true
+        "loop": true,
+        "restart": true
       }
     },
     {
@@ -138,8 +163,9 @@ window.SHINO_EPISODES["track01"] = {
       "text": "▚▟▐ 白クマ バグ▗▌▜▙\n─ 禁止したもの強く考える ─",
       "pause": 1300,
       "effect": "whisper",
-      "view": "world",
-      "textColor": "white"
+      "view": "warning",
+      "textColor": "white",
+      "bgTransition": "glitch"
     },
     {
       "type": "narration",
@@ -191,12 +217,13 @@ window.SHINO_EPISODES["track01"] = {
       "textColor": "white"
     },
     {
-      "type": "narration",
+      "type": "dialogue",
       "text": "▞▚▐▖ Why?バグ ▗▌▙▜\n─ 理由を求めると脳が止まる ─",
       "pause": 1300,
       "effect": "whisper",
-      "view": "world",
-      "textColor": "white"
+      "view": "warning",
+      "textColor": "white",
+      "bgTransition": "glitch"
     },
     {
       "type": "dialogue",
@@ -227,11 +254,11 @@ window.SHINO_EPISODES["track01"] = {
       "textColor": "white"
     },
     {
-      "type": "narration",
+      "type": "dialogue",
       "text": "▚▟▐ 声バグ ▗▌▜▙\n─ 言葉より声が意味を支配する ─",
       "pause": 1300,
       "effect": "whisper",
-      "view": "world",
+      "view": "warning",
       "textColor": "white"
     },
     {
@@ -270,11 +297,11 @@ window.SHINO_EPISODES["track01"] = {
       "textColor": "white"
     },
     {
-      "type": "narration",
+      "type": "dialogue",
       "text": "▞▚▐▖ 沈黙バグ ▗▌▙▜\n─ 何も言わないと意味が増殖する ─",
       "pause": 1300,
       "effect": "whisper",
-      "view": "world",
+      "view": "warning",
       "textColor": "white"
     },
     {
@@ -324,7 +351,7 @@ window.SHINO_EPISODES["track01"] = {
       "text": "▚▟▐ ダブルバインド ▗▌▜▙\n─ どう選んでも詰みの構文 ─",
       "pause": 1300,
       "effect": "whisper",
-      "view": "world",
+      "view": "warning",
       "textColor": "white"
     },
     {
@@ -367,7 +394,7 @@ window.SHINO_EPISODES["track01"] = {
       "text": "▞▚▐▖ 比較バグ ▗▌▙▜\n─ 勝っても負けても傷つく構造 ─",
       "pause": 1300,
       "effect": "whisper",
-      "view": "world",
+      "view": "warning",
       "textColor": "white"
     },
     {
@@ -410,7 +437,7 @@ window.SHINO_EPISODES["track01"] = {
       "text": "▚▟▐ ポジティブ圧の逆流 ▗▌▜▙\n─ 励ました瞬間、心が折れる理由 ─",
       "pause": 1300,
       "effect": "whisper",
-      "view": "world",
+      "view": "warning",
       "textColor": "white"
     },
     {
@@ -422,7 +449,7 @@ window.SHINO_EPISODES["track01"] = {
     },
     {
       "type": "dialogue",
-      "text": "（今のあなたはできてないよ）",
+      "text": "今のあなたはできてないよ",
       "pause": 1300,
       "effect": "whisper",
       "view": "world",
@@ -454,7 +481,7 @@ window.SHINO_EPISODES["track01"] = {
       "text": "▞▚▐▖ AIありがとうバグ ▗▌▙▜\n─ AIに ありがとう を言うと意味が跳ねる謎現象 ─",
       "pause": 1300,
       "effect": "whisper",
-      "view": "world",
+      "view": "warning",
       "textColor": "white"
     },
     {
@@ -489,7 +516,7 @@ window.SHINO_EPISODES["track01"] = {
       "type": "narration",
       "text": "言語のバグじゃなく、存在構文のバグだ。",
       "pause": 1300,
-      "view": "world",
+      "view": "warning",
       "textColor": "white"
     },
     {
@@ -529,9 +556,10 @@ window.SHINO_EPISODES["track01"] = {
       "textColor": "white"
     },
     {
-      "type": "sound",
+      "type": "dialogue",
       "text": "……どうしろってんだよ。",
       "pause": 1300,
+      "effect": "whisper",
       "view": "world",
       "textColor": "white"
     },
@@ -625,6 +653,16 @@ window.SHINO_EPISODES["track01"] = {
       "pause": 1300,
       "view": "world",
       "textColor": "white"
+    },
+    {
+      "type": "dialogue",
+      "text": "",
+      "pause": 1300,
+      "effect": "fade",
+      "view": "world",
+      "textColor": "white",
+      "background": "images/track01/hx_logo.jpg",
+      "dim": 0.84
     }
   ]
 };
