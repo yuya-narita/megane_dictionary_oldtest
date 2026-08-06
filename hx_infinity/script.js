@@ -74,54 +74,49 @@ if("scrollRestoration" in history){
   history.scrollRestoration="manual";
 }
 
-let shelfScrollTop=0;
-let shelfPositionToken=0;
+let shelfResetToken=0;
 
-function setShelfPosition(top=0){
-  const token=++shelfPositionToken;
-  const y=Math.max(0,Number(top)||0);
+function resetShelfToTop(){
+  const token=++shelfResetToken;
 
-  // iOS Safari may scroll a focused episode button back into view when the
-  // shelf becomes visible. Remove that focus before restoring the position.
-  try{
-    const active=document.activeElement;
-    if(active&&typeof active.blur==="function")active.blur();
-  }catch{}
-
-  const apply=()=>{
-    if(token!==shelfPositionToken||shelf.hidden)return;
-    try{shelf.scrollTop=y}catch{}
-    try{shelf.scrollTo({top:y,left:0,behavior:"auto"})}catch{
-      try{shelf.scrollTo(0,y)}catch{}
-    }
+  const reset=()=>{
+    if(token!==shelfResetToken||shelf.hidden)return;
+    try{document.activeElement?.blur?.()}catch{}
+    try{shelf.scrollTop=0}catch{}
+    try{shelf.scrollTo(0,0)}catch{}
     try{document.documentElement.scrollTop=0}catch{}
     try{document.body.scrollTop=0}catch{}
     try{window.scrollTo(0,0)}catch{}
   };
 
-  // Do not change overflow here. On iOS, hidden -> auto can restore the old
-  // inner-scroll offset and was the likely cause of the fixed middle position.
-  apply();
+  // Freeze the actual scrolling element while Safari finishes restoring layout.
+  const oldOverflow=shelf.style.overflow;
+  shelf.style.overflow="hidden";
+  reset();
+
   requestAnimationFrame(()=>{
-    apply();
-    requestAnimationFrame(apply);
+    reset();
+    requestAnimationFrame(()=>{
+      reset();
+      shelf.style.overflow=oldOverflow||"auto";
+    });
   });
-  setTimeout(apply,80);
-  setTimeout(apply,240);
-}
 
-function resetShelfToTop(){
-  shelfScrollTop=0;
-  setShelfPosition(0);
-}
-
-function restoreShelfPosition(){
-  setShelfPosition(shelfScrollTop);
+  [60,160,360,700,1200].forEach(delay=>setTimeout(reset,delay));
 }
 
 function show(target){
-  screens.forEach(node=>node.hidden=node!==target);
-  if(target!==shelf)shelfResetToken++;
+  // Hide every screen first. This is important because the launcher CSS uses
+  // display:block!important; without an explicit hidden override Safari keeps
+  // the shelf alive behind the cover/player and preserves its scroll state.
+  screens.forEach(node=>{node.hidden=true});
+  target.hidden=false;
+
+  if(target===shelf){
+    resetShelfToTop();
+  }else{
+    shelfResetToken++;
+  }
 }
 
 function savedProgress(){
@@ -345,11 +340,6 @@ function openAdjacentEpisode(offset){
 }
 
 function openCover(id){
-  if(!shelf.hidden){
-    shelfScrollTop=shelf.scrollTop;
-    try{document.activeElement?.blur?.()}catch{}
-  }
-
   episode=SERIES.episodes.find(ep=>ep.id===id)||SERIES.episodes[0];
   if(!episode)return;
   story=episode.story||[];
@@ -1367,7 +1357,6 @@ async function backToShelf(){
 
   renderShelf();
   show(shelf);
-  restoreShelfPosition();
 
   // The UI responds immediately; BGM/ambience/SE gently leave the room.
   await softStopAudio({
@@ -1567,9 +1556,7 @@ addEventListener("keydown",e=>{
 
 addEventListener("pageshow",event=>{
   if(!shelf.hidden){
-    // Fresh navigation starts at the top; bfcache restores the last archive position.
-    if(event.persisted)restoreShelfPosition();
-    else resetShelfToTop();
+    resetShelfToTop();
   }
 });
 

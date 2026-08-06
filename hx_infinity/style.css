@@ -1,5 +1,4 @@
 [hidden]{display:none!important}
-.shelf[hidden],.cover[hidden],.player[hidden],.ending[hidden]{display:none!important}
 
 :root{
   --paper:#f5f2ea;
@@ -979,7 +978,7 @@ header,footer{background:rgba(3,3,7,.84)!important;border-color:#262334!importan
 }
 
 .shelf{
-  display:block;
+  display:block!important;
   padding:
     calc(46px + env(safe-area-inset-top))
     22px
@@ -988,6 +987,7 @@ header,footer{background:rgba(3,3,7,.84)!important;border-color:#262334!importan
   scrollbar-width:none;
 }
 .shelf::-webkit-scrollbar{display:none}
+.shelf[hidden]{display:none!important}
 .shelf,.launcher,.episode-list{overflow-anchor:none!important}
 
 .shelf-atmosphere,
