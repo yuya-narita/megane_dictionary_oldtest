@@ -8,8 +8,8 @@ window.SHINO_SERIES = {
     {
       "id": "track01",
       "number": 1,
-      "title": "Calm Down BUG",
-      "description": "世界バグ報告書",
+      "title": "世界バグ報告書",
+      "description": "NIX_LOG_∞",
       "src": "./ep/track01.js"
     },
     {
