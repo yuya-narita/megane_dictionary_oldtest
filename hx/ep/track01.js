@@ -101,7 +101,7 @@ window.SHINO_EPISODES["ep001"] = {
       "ambience": {
         "action": "start",
         "src": "./audio/hx_000/track01.mp3",
-        "volume": 0.5,
+        "volume": 0.1,
         "fadeIn": 0,
         "fadeOut": 235000,
         "loop": true,
