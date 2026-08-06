@@ -102,8 +102,8 @@ window.SHINO_EPISODES["track01"] = {
         "action": "start",
         "src": "./audio/hx_000/track01.mp3",
         "volume": 0.15,
-        "fadeIn": 0,
-        "fadeOut": 235000,
+        "fadeIn": 1300,
+        "fadeOut": 2000,
         "loop": true,
         "restart": true
       },
