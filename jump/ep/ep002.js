@@ -3,7 +3,7 @@ window.SHINO_EPISODES["ep002"]={
   "id": "ep002",
   "number": 2,
   "title": "みんな急いでる",
-  "description": "友だちは何かに追われてる。ミオだけが立ち止まる。",
+  "description": "友だちは何かに追われてる。",
   "ending": "まだ。",
   "story": [
     {
