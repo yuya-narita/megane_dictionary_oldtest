@@ -987,6 +987,10 @@ header,footer{background:rgba(3,3,7,.84)!important;border-color:#262334!importan
   scrollbar-width:none;
 }
 .shelf::-webkit-scrollbar{display:none}
+.shelf.is-resetting-scroll{
+  overflow:hidden!important;
+  overscroll-behavior:none!important;
+}
 .shelf,.launcher,.episode-list{overflow-anchor:none!important}
 
 .shelf-atmosphere,

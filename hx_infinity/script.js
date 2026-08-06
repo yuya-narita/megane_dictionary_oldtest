@@ -75,20 +75,20 @@ if("scrollRestoration" in history){
 }
 
 let shelfResetToken=0;
+let shelfUnlockTimer=null;
 
 function resetShelfToTop(){
-  // iOS Safari can restore the inner fixed panel's scroll position well after
-  // pageshow and after late image/font layout. Keep the shelf pinned briefly,
-  // but stop immediately when the user actually touches or wheels the shelf.
   const token=++shelfResetToken;
-  const started=Date.now();
+  clearTimeout(shelfUnlockTimer);
+
+  // iOS Safari can restore an overflow element after pageshow/load and even
+  // after a hidden screen is shown again. Lock scrolling while forcing the
+  // position to zero, then release it only after Safari has finished restoring.
+  shelf.classList.add("is-resetting-scroll");
+
   const reset=()=>{
     if(token!==shelfResetToken||shelf.hidden)return;
     try{document.activeElement?.blur?.()}catch{}
-
-    // Direct assignment is intentional. Some iOS Safari versions accept
-    // scrollTo({ behavior: "instant" }) without throwing, but do not
-    // actually move a fixed overflow panel.
     try{
       shelf.scrollTop=0;
       shelf.scrollLeft=0;
@@ -98,27 +98,22 @@ function resetShelfToTop(){
       document.documentElement.scrollTop=0;
       document.body.scrollTop=0;
       if(document.scrollingElement)document.scrollingElement.scrollTop=0;
+      window.scrollTo(0,0);
     }catch{}
-    try{scrollTo(0,0)}catch{}
   };
 
   reset();
   requestAnimationFrame(()=>requestAnimationFrame(reset));
-
-  const pin=setInterval(()=>{
-    if(token!==shelfResetToken||shelf.hidden||Date.now()-started>3200){
-      clearInterval(pin);
-      return;
-    }
-    reset();
-  },100);
-
-  [80,220,500,900,1400,2200,3200].forEach(delay=>setTimeout(reset,delay));
+  [60,140,260,420,700,1000].forEach(delay=>setTimeout(reset,delay));
 
   const logo=shelf.querySelector(".series-logo");
-  if(logo&&!logo.complete){
-    logo.addEventListener("load",reset,{once:true});
-  }
+  if(logo&&!logo.complete)logo.addEventListener("load",reset,{once:true});
+
+  shelfUnlockTimer=setTimeout(()=>{
+    if(token!==shelfResetToken||shelf.hidden)return;
+    reset();
+    shelf.classList.remove("is-resetting-scroll");
+  },1100);
 }
 
 function show(target){
@@ -1508,10 +1503,6 @@ modeBtn.addEventListener("click",toggleAuto);
 soundBtn.addEventListener("click",toggleSound);
 
 let lastPointerAdvance=0;
-
-["pointerdown","touchstart","wheel"].forEach(type=>{
-  shelf.addEventListener(type,()=>{shelfResetToken++},{passive:true});
-});
 
 stage.addEventListener("pointerdown",e=>{
   ensureAudioGraph();
