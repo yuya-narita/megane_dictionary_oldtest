@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 700" role="img" aria-label="H(x) infinity">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="46%" r="60%">
+      <stop offset="0" stop-color="#d5b06c"/>
+      <stop offset="1" stop-color="#8f6630"/>
+    </radialGradient>
+  </defs>
+  <g fill="none" stroke="url(#g)" stroke-width="5" opacity=".95">
+    <circle cx="350" cy="350" r="250"/>
+    <circle cx="350" cy="350" r="218"/>
+    <path d="M350 74l28 48h-56zM350 626l-28-48h56zM74 350l48-28v56zM626 350l-48 28v-56z"/>
+    <path d="M350 105v72M350 523v72M105 350h72M523 350h72"/>
+  </g>
+  <text x="350" y="385" text-anchor="middle" fill="url(#g)"
+        font-family="Georgia, serif" font-size="150" font-weight="500">H(x)∞</text>
+</svg>
