@@ -666,6 +666,25 @@ async function playEffect(direction){
   }
 }
 
+async function seekAudioToStart(audio){
+  if(!audio)return;
+
+  if(audio.readyState<1){
+    await new Promise(resolve=>{
+      const done=()=>resolve();
+      audio.addEventListener("loadedmetadata",done,{once:true});
+      setTimeout(done,1200);
+    });
+  }
+
+  try{
+    audio.currentTime=0;
+  }catch{
+    await new Promise(resolve=>setTimeout(resolve,0));
+    try{audio.currentTime=0}catch{}
+  }
+}
+
 async function primeAmbienceTrack(src){
   if(!src)return false;
   if(!await ensureAudioGraph())return false;
@@ -682,10 +701,22 @@ async function primeAmbienceTrack(src){
   try{
     ambienceGain.gain.cancelScheduledValues(audioContext.currentTime);
     ambienceGain.gain.setValueAtTime(0,audioContext.currentTime);
+
+    await seekAudioToStart(ambience);
     await ambience.play();
+
+    // iOS audio unlock only needs a successful play.
+    // Do not let the hidden priming playback advance before its Scene.
+    ambience.pause();
+    await seekAudioToStart(ambience);
+
     ambienceUnlocked=true;
     return true;
   }catch{
+    try{
+      ambience.pause();
+      await seekAudioToStart(ambience);
+    }catch{}
     ambienceUnlocked=false;
     return false;
   }
@@ -721,36 +752,59 @@ function animateVolume(target,duration=800){
 
 async function playAmbience(direction){
   if(!direction)return;
+
   clearTimeout(ambienceStopTimer);
   ambienceStopTimer=null;
+
   const action=direction.action||"start";
+
   if(action==="stop"){
     stopAmbience(direction.fadeOut??900);
     return;
   }
+
   if(!direction.src)return;
   if(!await ensureAudioGraph())return;
+
   const absolute=new URL(direction.src,location.href).href;
   const shouldRestart=direction.restart!==false;
+
   if(ambience.src!==absolute){
+    try{ambience.pause()}catch{}
     ambience.src=direction.src;
     ambience.load();
     ambiencePrimedSrc=direction.src;
   }
+
   try{
-    if(shouldRestart){try{ambience.currentTime=0}catch{}}
     ambience.loop=direction.loop!==false;
+
+    if(shouldRestart){
+      try{ambience.pause()}catch{}
+      await seekAudioToStart(ambience);
+    }
+
     ambienceGain.gain.cancelScheduledValues(audioContext.currentTime);
     ambienceGain.gain.setValueAtTime(0,audioContext.currentTime);
+
     await ambience.play();
     ambienceUnlocked=true;
-    rampGain(ambienceGain,direction.volume??.5,direction.fadeIn??700);
+
+    rampGain(
+      ambienceGain,
+      direction.volume??.5,
+      direction.fadeIn??700
+    );
   }catch(error){
     console.warn("[Scene Player] track failed:",direction.src,error);
     return;
   }
+
   if(direction.stopAfter){
-    ambienceStopTimer=managedTimeout(()=>stopAmbience(direction.fadeOut??1200),direction.stopAfter);
+    ambienceStopTimer=managedTimeout(
+      ()=>stopAmbience(direction.fadeOut??1200),
+      direction.stopAfter
+    );
   }
 }
 
