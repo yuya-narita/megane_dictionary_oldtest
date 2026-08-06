@@ -3,7 +3,7 @@ window.SHINO_EPISODES["ep006"]={
   "id":"ep006",
   "number":6,
   "title":"この感じを持っていく",
-  "description":"終わりではなく、持ち運ぶ物語。",
+  "description":"何も起きないまま、この感じを持っていく。",
   "ending":"誰にも見えないけど、確かにここにある。",
   "story":[
     {
