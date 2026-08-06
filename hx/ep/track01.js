@@ -1,6 +1,6 @@
 window.SHINO_EPISODES = window.SHINO_EPISODES || {};
-window.SHINO_EPISODES["track01"] = {
-  "id": "track01",
+window.SHINO_EPISODES["ep001"] = {
+  "id": "ep001",
   "number": 1,
   "title": "世界バグ報告書：NIX_LOG_∞",
   "description": "",
@@ -48,15 +48,6 @@ window.SHINO_EPISODES["track01"] = {
       "pause": 1300,
       "view": "world",
       "textColor": "white",
-      "ambience": {
-        "action": "start",
-        "src": "./audio/hx_000/track01.mp3",
-        "volume": 0.5,
-        "fadeIn": 700,
-        "fadeOut": 1200,
-        "loop": true,
-        "restart": true
-      },
       "effectAudio": {
         "src": "./audio/hx_000/004.mp3",
         "volume": 0.65,
@@ -110,7 +101,7 @@ window.SHINO_EPISODES["track01"] = {
         "action": "start",
         "src": "./audio/hx_000/track01.mp3",
         "volume": 0.5,
-        "fadeIn": 700,
+        "fadeIn": 0,
         "fadeOut": 235000,
         "loop": true,
         "restart": true
