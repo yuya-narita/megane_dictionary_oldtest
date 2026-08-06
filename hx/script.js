@@ -70,50 +70,8 @@ const LARGE_GAP=68;
 const SOUND_GAP=80;
 const SAVE_KEY="hx_infinity_unified_progress_v04";
 
-if("scrollRestoration" in history){
-  history.scrollRestoration="manual";
-}
-
-let shelfResetToken=0;
-
-function resetShelfToTop(){
-  // iOS Safari can restore the inner fixed panel's scroll position well after
-  // pageshow and after late image/font layout. Keep the shelf pinned briefly,
-  // but stop immediately when the user actually touches or wheels the shelf.
-  const token=++shelfResetToken;
-  const started=Date.now();
-  const reset=()=>{
-    if(token!==shelfResetToken||shelf.hidden)return;
-    try{document.activeElement?.blur?.()}catch{}
-    try{shelf.scrollTo({top:0,left:0,behavior:"instant"})}catch{
-      try{shelf.scrollTop=0}catch{}
-    }
-    try{document.scrollingElement.scrollTop=0}catch{}
-    try{scrollTo(0,0)}catch{}
-  };
-
-  reset();
-  requestAnimationFrame(()=>requestAnimationFrame(reset));
-
-  const pin=setInterval(()=>{
-    if(token!==shelfResetToken||shelf.hidden||Date.now()-started>3200){
-      clearInterval(pin);
-      return;
-    }
-    reset();
-  },100);
-
-  [80,220,500,900,1400,2200,3200].forEach(delay=>setTimeout(reset,delay));
-
-  const logo=shelf.querySelector(".series-logo");
-  if(logo&&!logo.complete){
-    logo.addEventListener("load",reset,{once:true});
-  }
-}
-
 function show(target){
   screens.forEach(node=>node.hidden=node!==target);
-  if(target!==shelf)shelfResetToken++;
 }
 
 function savedProgress(){
@@ -689,25 +647,6 @@ async function playEffect(direction){
   }
 }
 
-async function seekAudioToStart(audio){
-  if(!audio)return;
-
-  if(audio.readyState<1){
-    await new Promise(resolve=>{
-      const done=()=>resolve();
-      audio.addEventListener("loadedmetadata",done,{once:true});
-      setTimeout(done,1200);
-    });
-  }
-
-  try{
-    audio.currentTime=0;
-  }catch{
-    await new Promise(resolve=>setTimeout(resolve,0));
-    try{audio.currentTime=0}catch{}
-  }
-}
-
 async function primeAmbienceTrack(src){
   if(!src)return false;
   if(!await ensureAudioGraph())return false;
@@ -724,22 +663,10 @@ async function primeAmbienceTrack(src){
   try{
     ambienceGain.gain.cancelScheduledValues(audioContext.currentTime);
     ambienceGain.gain.setValueAtTime(0,audioContext.currentTime);
-
-    await seekAudioToStart(ambience);
     await ambience.play();
-
-    // iOS audio unlock only needs a successful play.
-    // Do not let the hidden priming playback advance before its Scene.
-    ambience.pause();
-    await seekAudioToStart(ambience);
-
     ambienceUnlocked=true;
     return true;
   }catch{
-    try{
-      ambience.pause();
-      await seekAudioToStart(ambience);
-    }catch{}
     ambienceUnlocked=false;
     return false;
   }
@@ -775,59 +702,36 @@ function animateVolume(target,duration=800){
 
 async function playAmbience(direction){
   if(!direction)return;
-
   clearTimeout(ambienceStopTimer);
   ambienceStopTimer=null;
-
   const action=direction.action||"start";
-
   if(action==="stop"){
     stopAmbience(direction.fadeOut??900);
     return;
   }
-
   if(!direction.src)return;
   if(!await ensureAudioGraph())return;
-
   const absolute=new URL(direction.src,location.href).href;
   const shouldRestart=direction.restart!==false;
-
   if(ambience.src!==absolute){
-    try{ambience.pause()}catch{}
     ambience.src=direction.src;
     ambience.load();
     ambiencePrimedSrc=direction.src;
   }
-
   try{
+    if(shouldRestart){try{ambience.currentTime=0}catch{}}
     ambience.loop=direction.loop!==false;
-
-    if(shouldRestart){
-      try{ambience.pause()}catch{}
-      await seekAudioToStart(ambience);
-    }
-
     ambienceGain.gain.cancelScheduledValues(audioContext.currentTime);
     ambienceGain.gain.setValueAtTime(0,audioContext.currentTime);
-
     await ambience.play();
     ambienceUnlocked=true;
-
-    rampGain(
-      ambienceGain,
-      direction.volume??.5,
-      direction.fadeIn??700
-    );
+    rampGain(ambienceGain,direction.volume??.5,direction.fadeIn??700);
   }catch(error){
     console.warn("[Scene Player] track failed:",direction.src,error);
     return;
   }
-
   if(direction.stopAfter){
-    ambienceStopTimer=managedTimeout(
-      ()=>stopAmbience(direction.fadeOut??1200),
-      direction.stopAfter
-    );
+    ambienceStopTimer=managedTimeout(()=>stopAmbience(direction.fadeOut??1200),direction.stopAfter);
   }
 }
 
@@ -1040,37 +944,6 @@ function applyBackgroundTextures(fx,cut){
   }
 }
 
-function cancelBackgroundFx(){
-  for(const animation of [
-    backgroundRevealAnimation,
-    backgroundMotionAnimation,
-    backgroundGlitchAnimation
-  ]){
-    try{animation?.cancel()}catch{}
-  }
-
-  backgroundRevealAnimation=null;
-  backgroundMotionAnimation=null;
-  backgroundGlitchAnimation=null;
-
-  if(sceneBackground){
-    sceneBackground.style.opacity="0";
-  }
-  if(sceneBackgroundMotion){
-    sceneBackgroundMotion.style.transform="translate3d(0,0,0) scale(1)";
-  }
-  if(sceneBackgroundImage){
-    sceneBackgroundImage.style.transform="translateX(0)";
-    sceneBackgroundImage.style.clipPath="inset(0)";
-    sceneBackgroundImage.style.filter="none";
-  }
-  if(sceneBackgroundTexture){
-    sceneBackgroundTexture.style.backgroundImage="none";
-    sceneBackgroundTexture.style.backgroundSize="auto";
-    sceneBackgroundTexture.style.opacity="0";
-  }
-}
-
 function applyVisual(cut){
   const view=cut.view||"world";
   stage.dataset.view=view;
@@ -1183,27 +1056,6 @@ async function startEpisode(fromSaved=false){
   hardStopAudio({resetPosition:false,suspendContext:false});
   show(player);
 
-  // Do not make scene rendering wait for iOS audio loading/unlocking.
-  // Missing or slow audio must never leave the player at 0 / N.
-  if(startAt>0){
-    const begin=Math.max(0,startAt-MAX_VISIBLE);
-    visibleItems=[];
-    lines.innerHTML="";
-    for(let idx=begin;idx<startAt;idx++){
-      const cut=story[idx];
-      const node=createLine(cut);
-      node.classList.remove("entering");
-      node.classList.add("visible");
-      visibleItems.push({node,type:cut.type||"narration"});
-    }
-    positionLines(0);
-    progress();
-  }else{
-    timer=setTimeout(()=>{
-      if(session===playbackSession&&!player.hidden)next();
-    },180);
-  }
-
   theme.src=episode?.musicSrc||SERIES.themeSrc||"";
   theme.playbackRate=1;
   theme.defaultPlaybackRate=1;
@@ -1288,6 +1140,24 @@ async function startEpisode(fromSaved=false){
     if(session===playbackSession&&!player.hidden)saveProgress();
   },1000);
 
+  if(startAt>0){
+    const begin=Math.max(0,startAt-MAX_VISIBLE);
+    visibleItems=[];
+    lines.innerHTML="";
+    for(let idx=begin;idx<startAt;idx++){
+      const cut=story[idx];
+      const node=createLine(cut);
+      node.classList.remove("entering");
+      node.classList.add("visible");
+      visibleItems.push({node,type:cut.type||"narration"});
+    }
+    positionLines(0);
+    progress();
+  }else{
+    timer=setTimeout(()=>{
+      if(session===playbackSession&&!player.hidden)next();
+    },650);
+  }
 }
 
 function finish(){
@@ -1354,7 +1224,6 @@ async function backToShelf(){
 
   renderShelf();
   show(shelf);
-  resetShelfToTop();
 
   // The UI responds immediately; BGM/ambience/SE gently leave the room.
   await softStopAudio({
@@ -1486,12 +1355,6 @@ continueButton.addEventListener("click",()=>{
 modeBtn.addEventListener("click",toggleAuto);
 soundBtn.addEventListener("click",toggleSound);
 
-let lastPointerAdvance=0;
-
-["pointerdown","touchstart","wheel"].forEach(type=>{
-  shelf.addEventListener(type,()=>{shelfResetToken++},{passive:true});
-});
-
 stage.addEventListener("pointerdown",e=>{
   ensureAudioGraph();
   down={x:e.clientX,y:e.clientY,t:Date.now()};
@@ -1508,14 +1371,7 @@ stage.addEventListener("pointerup",e=>{
   const distance=Math.hypot(e.clientX-down.x,e.clientY-down.y);
   const elapsed=Date.now()-down.t;
   down=null;
-  if(distance<18&&elapsed<700){
-    lastPointerAdvance=Date.now();
-    next();
-  }
-});
-stage.addEventListener("click",()=>{
-  // Fallback for iOS builds that occasionally lose pointerup.
-  if(Date.now()-lastPointerAdvance>450)next();
+  if(distance<18&&elapsed<700)next();
 });
 stage.addEventListener("pointercancel",()=>{down=null;stage.classList.remove("is-pressed")});
 stage.addEventListener("touchmove",e=>e.preventDefault(),{passive:false});
@@ -1556,17 +1412,6 @@ addEventListener("keydown",e=>{
   if(e.key==="Escape")backToCover();
 });
 
-addEventListener("pageshow",event=>{
-  if(!shelf.hidden){
-    resetShelfToTop();
-  }
-});
-
-addEventListener("load",()=>{
-  if(!shelf.hidden)resetShelfToTop();
-});
-
 renderShelf();
 show(shelf);
-resetShelfToTop();
 })();
