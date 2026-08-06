@@ -106,6 +106,7 @@ function show(target){
   // The archive is the only long, scrollable screen. Let the document itself
   // scroll there instead of asking iOS Safari to remember the scrollTop of a
   // fixed overflow panel. Cover/player/ending remain fixed app screens.
+  document.documentElement.classList.toggle("shelf-mode",isShelf);
   document.body.classList.toggle("shelf-mode",isShelf);
   screens.forEach(node=>node.hidden=node!==target);
 
