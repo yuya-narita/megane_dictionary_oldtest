@@ -1,7 +1,7 @@
 window.SHINO_EPISODES=window.SHINO_EPISODES||{};
-window.SHINO_EPISODES["ep001"]={
-  "id": "ep001",
-  "number": 1,
+window.SHINO_EPISODES["ep002"]={
+  "id": "ep002",
+  "number": 2,
   "title": "校門の前",
   "description": "急がない朝に、少しだけ残るもの。",
   "ending": "今日も、まだ。",
@@ -72,7 +72,7 @@ window.SHINO_EPISODES["ep001"]={
     {
       "type": "dialogue",
       "text": "「うん。でも、まだ」",
-      "pause": 1700,
+      "pause": 2100,
       "view": "world",
       "effect": "fade",
       "textColor": "custom",
@@ -190,21 +190,14 @@ window.SHINO_EPISODES["ep001"]={
     },
     {
       "type": "narration",
-      "text": "行かなきゃ。\n間に合わなきゃ。\n遅れると困る。",
-      "pause": 1900,
+      "text": "行かなきゃ。\n間に合わなきゃ。\n遅れると困る。\n\nその圧が、見えないのに、確かにあった。",
+      "pause": 2600,
       "view": "world",
       "effect": "fade",
       "textColor": "custom",
-      "customColor": "#4f4a43"
-    },
-    {
-      "type": "narration",
-      "text": "その圧が、見えないのに、確かにあった。",
-      "pause": 1900,
-      "view": "world",
-      "effect": "fade",
-      "textColor": "custom",
-      "customColor": "#4f4a43"
+      "customColor": "#4f4a43",
+      "clear": true,
+      "fontSize": "large"
     },
     {
       "type": "narration",
@@ -283,7 +276,7 @@ window.SHINO_EPISODES["ep001"]={
     {
       "type": "narration",
       "text": "でも、その顔は\n少しだけ\n羨ましそうだった。",
-      "pause": 1900,
+      "pause": 2300,
       "view": "world",
       "effect": "fade",
       "textColor": "custom",
