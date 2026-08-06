@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#050403">
   <title>H(x)∞ origin｜世界バグ報告書</title>
-  <link rel="stylesheet" href="./style.css?v=20260806-scroll3">
+  <link rel="stylesheet" href="./style.css">
 </head>
 <body>
 <main>
@@ -137,7 +137,7 @@
 <audio id="theme" loop preload="auto" playsinline></audio>
 <audio id="ambience" loop preload="auto" playsinline></audio>
 <audio id="effectAudio" preload="auto" playsinline></audio>
-<script src="./series.js?v=20260806-scroll3"></script>
+<script src="./series.js"></script>
 <script>
 (async function bootScenePlayer(){
   const manifest=window.SHINO_SERIES||{episodes:[]};
@@ -159,7 +159,7 @@
     }
 
     const app=document.createElement("script");
-    app.src="./script.js?v=20260806-scroll3";
+    app.src="./script.js";
     document.body.appendChild(app);
   }catch(error){
     console.error(error);
