@@ -4,7 +4,7 @@ window.SHINO_EPISODES["ep004"]={
   "number":4,
   "title":"跳ねなかった日",
   "description":"何も起きない一日にも、形は残る。",
-  "ending":"それも、通り過ぎていく。",
+  "ending":"それも通り過ぎていく。",
   "story":[
     {
       "type":"narration",
