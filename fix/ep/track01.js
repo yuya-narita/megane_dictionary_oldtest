@@ -1,6 +1,6 @@
 window.SHINO_EPISODES = window.SHINO_EPISODES || {};
-window.SHINO_EPISODES["track01"] = {
-  "id": "track01",
+window.SHINO_EPISODES["ep001"] = {
+  "id": "ep001",
   "number": 1,
   "title": "世界バグ報告書：NIX_LOG_∞",
   "description": "",
@@ -101,8 +101,8 @@ window.SHINO_EPISODES["track01"] = {
       "ambience": {
         "action": "start",
         "src": "./audio/hx_000/track01.mp3",
-        "volume": 0.10,
-        "fadeIn": 1500,
+        "volume": 0.5,
+        "fadeIn": 1000,
         "fadeOut": 1500,
         "loop": true,
         "restart": true
@@ -180,56 +180,96 @@ window.SHINO_EPISODES["track01"] = {
       "effect": "whisper",
       "view": "warning",
       "textColor": "white",
-      "bgTransition": "glitch"
+      "bgTransition": "glitch",
+      "effectAudio": {
+        "src": "./audio/hx_000/014.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
       "text": "「考えるなよ？」→ 考える。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/hx_000/015.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
       "text": "「触るなよ？」→ 触る。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/hx_000/016.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
       "text": "世界は禁止を理解できない。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/hx_000/017.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
       "text": "禁止は、対象の観測強度を上げる。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/hx_000/018",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "dialogue",
       "text": "逆だよな？",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/hx_000/019.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
       "text": "でも世界は逆の方が落ち着くんだよ。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/hx_000/020.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "dialogue",
       "text": "狂ってるよ。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/hx_000/021.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "dialogue",
