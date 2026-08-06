@@ -75,45 +75,42 @@ if("scrollRestoration" in history){
 }
 
 let shelfResetToken=0;
-let shelfUnlockTimer=null;
 
 function resetShelfToTop(){
   const token=++shelfResetToken;
-  clearTimeout(shelfUnlockTimer);
 
-  // iOS Safari can restore an overflow element after pageshow/load and even
-  // after a hidden screen is shown again. Lock scrolling while forcing the
-  // position to zero, then release it only after Safari has finished restoring.
-  shelf.classList.add("is-resetting-scroll");
-
-  const reset=()=>{
+  const forceTop=()=>{
     if(token!==shelfResetToken||shelf.hidden)return;
-    try{document.activeElement?.blur?.()}catch{}
-    try{
-      shelf.scrollTop=0;
-      shelf.scrollLeft=0;
-    }catch{}
+
+    // Freeze the scroll container first. iOS Safari otherwise restores the
+    // previous inner-scroll position after layout and overwrites scrollTop=0.
+    const oldOverflow=shelf.style.overflow;
+    shelf.style.overflow="hidden";
+
+    try{shelf.scrollTop=0}catch{}
+    try{shelf.scrollLeft=0}catch{}
     try{shelf.scrollTo(0,0)}catch{}
-    try{
-      document.documentElement.scrollTop=0;
-      document.body.scrollTop=0;
-      if(document.scrollingElement)document.scrollingElement.scrollTop=0;
-      window.scrollTo(0,0);
-    }catch{}
+    try{document.documentElement.scrollTop=0}catch{}
+    try{document.body.scrollTop=0}catch{}
+    try{window.scrollTo(0,0)}catch{}
+
+    requestAnimationFrame(()=>{
+      if(token!==shelfResetToken||shelf.hidden)return;
+      try{shelf.scrollTop=0}catch{}
+      shelf.style.overflow=oldOverflow||"auto";
+      requestAnimationFrame(()=>{
+        if(token!==shelfResetToken||shelf.hidden)return;
+        try{shelf.scrollTop=0}catch{}
+      });
+    });
   };
 
-  reset();
-  requestAnimationFrame(()=>requestAnimationFrame(reset));
-  [60,140,260,420,700,1000].forEach(delay=>setTimeout(reset,delay));
+  forceTop();
+  [50,150,350,700,1200,2000,3200].forEach(delay=>setTimeout(forceTop,delay));
 
   const logo=shelf.querySelector(".series-logo");
-  if(logo&&!logo.complete)logo.addEventListener("load",reset,{once:true});
-
-  shelfUnlockTimer=setTimeout(()=>{
-    if(token!==shelfResetToken||shelf.hidden)return;
-    reset();
-    shelf.classList.remove("is-resetting-scroll");
-  },1100);
+  if(logo&&!logo.complete)logo.addEventListener("load",forceTop,{once:true});
+  if(document.fonts?.ready)document.fonts.ready.then(forceTop).catch(()=>{});
 }
 
 function show(target){
@@ -1188,15 +1185,8 @@ async function startEpisode(fromSaved=false){
   hardStopAudio({resetPosition:false,suspendContext:false});
   show(player);
 
-  let initialSceneScheduled=false;
-  const scheduleInitialScene=()=>{
-    if(startAt>0||initialSceneScheduled)return;
-    initialSceneScheduled=true;
-    timer=setTimeout(()=>{
-      if(session===playbackSession&&!player.hidden)next();
-    },80);
-  };
-
+  // Do not make scene rendering wait for iOS audio loading/unlocking.
+  // Missing or slow audio must never leave the player at 0 / N.
   if(startAt>0){
     const begin=Math.max(0,startAt-MAX_VISIBLE);
     visibleItems=[];
@@ -1210,6 +1200,10 @@ async function startEpisode(fromSaved=false){
     }
     positionLines(0);
     progress();
+  }else{
+    timer=setTimeout(()=>{
+      if(session===playbackSession&&!player.hidden)next();
+    },180);
   }
 
   theme.src=episode?.musicSrc||SERIES.themeSrc||"";
@@ -1234,20 +1228,15 @@ async function startEpisode(fromSaved=false){
     await ensureAudioGraph();
     if(session!==playbackSession)return;
 
-    // Prime the first voice/SE before Scene 1 is shown. Previously Scene 1
-    // could begin while priming was still running; the priming routine then
-    // paused the same audio element, making 「静かだな。」 intermittent.
-    const effectSrc=firstEffectSrc();
-    if(effectSrc){
-      await primeEffectTrack(effectSrc);
-      if(session!==playbackSession)return;
-    }
-
-    scheduleInitialScene();
-
     const ambienceSrc=firstAmbienceSrc();
     if(ambienceSrc){
       await primeAmbienceTrack(ambienceSrc);
+      if(session!==playbackSession)return;
+    }
+
+    const effectSrc=firstEffectSrc();
+    if(effectSrc){
+      await primeEffectTrack(effectSrc);
       if(session!==playbackSession)return;
     }
 
@@ -1290,10 +1279,7 @@ async function startEpisode(fromSaved=false){
     }
   }catch(error){
     console.warn("[Scene Player] audio start failed",error);
-    // Audio failure must not prevent the first text Scene from starting.
-    scheduleInitialScene();
   }finally{
-    scheduleInitialScene();
     if(session===playbackSession)startingEpisode=false;
   }
 
