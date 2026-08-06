@@ -2,8 +2,8 @@ window.SHINO_EPISODES=window.SHINO_EPISODES||{};
 window.SHINO_EPISODES["ep003"]={
   "id":"ep003",
   "number":3,
-  "title":"名前をつける",
-  "description":"名前の前にあるもの。",
+  "title":"名前をつけない",
+  "description":"名前をつけると消える気がする。",
   "ending":"つけない。まだ。",
   "story":[
     {
