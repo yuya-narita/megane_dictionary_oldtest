@@ -1429,3 +1429,77 @@ header,footer{
 .ending-card h2{
   color:var(--accent)!important;
 }
+
+
+/* =========================================================
+   H(x)∞ Player v0.5 — Layered Background FX
+   Compatible with Scene Studio v0.9.2 backgroundFx output.
+   ========================================================= */
+
+#sceneBackground{
+  position:absolute!important;
+  inset:-16px!important;
+  z-index:-3!important;
+  overflow:hidden;
+  display:block;
+  background:none!important;
+  opacity:1;
+  filter:none!important;
+  transform:none!important;
+  transition:opacity .65s ease;
+  pointer-events:none;
+}
+
+#sceneBackgroundMotion{
+  position:absolute;
+  inset:-4%;
+  transform-origin:center;
+  will-change:transform;
+}
+
+#sceneBackgroundImage{
+  position:absolute;
+  inset:0;
+  background-repeat:no-repeat;
+  background-position:center center;
+  background-size:cover;
+  transform-origin:center;
+  will-change:transform,filter,clip-path;
+}
+
+#sceneBackgroundTexture{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background-repeat:repeat;
+  mix-blend-mode:screen;
+  will-change:opacity;
+}
+
+/* The old transition classes now affect the layered wrapper. */
+#stage.bg-cut #sceneBackground{
+  transition:none!important;
+}
+
+#stage.bg-fade #sceneBackground{
+  animation:hxLayerFade .55s ease;
+}
+
+@keyframes hxLayerFade{
+  from{opacity:0}
+}
+
+/* Keep the H(x) image visible in console/system when explicitly supplied. */
+#stage[data-view="console"] #sceneBackground,
+#stage[data-view="system"] #sceneBackground{
+  opacity:var(--scene-background-opacity,1);
+}
+
+/* Text and UI always stay above image FX. */
+#lines,#focusGuide,#hint,#gestureHint{
+  position:absolute;
+  z-index:3;
+}
+#scanlines{
+  z-index:4;
+}

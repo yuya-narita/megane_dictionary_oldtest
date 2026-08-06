@@ -18,6 +18,13 @@ const shelf=g("shelf"),cover=g("cover"),player=g("player"),ending=g("ending");
 const episodeList=g("episodeList"),continueButton=g("continueButton");
 const lines=g("lines"),stage=g("stage"),theme=g("theme"),ambience=g("ambience"),effectAudio=g("effectAudio");
 const sceneBackground=g("sceneBackground");
+const sceneBackgroundMotion=g("sceneBackgroundMotion");
+const sceneBackgroundImage=g("sceneBackgroundImage");
+const sceneBackgroundTexture=g("sceneBackgroundTexture");
+
+let backgroundRevealAnimation=null;
+let backgroundMotionAnimation=null;
+let backgroundGlitchAnimation=null;
 const count=g("count"),bar=g("bar"),modeBtn=g("mode"),soundBtn=g("sound");
 const gestureHint=g("gestureHint"),endingActions=g("endingActions");
 const previousEpisodeButton=g("previousEpisode"),nextEpisodeButton=g("nextEpisode");
@@ -754,6 +761,215 @@ function stopAmbience(fade=900){
 }
 
 
+function cancelBackgroundFx(){
+  for(const animation of [
+    backgroundRevealAnimation,
+    backgroundMotionAnimation,
+    backgroundGlitchAnimation
+  ]){
+    try{animation?.cancel()}catch{}
+  }
+  backgroundRevealAnimation=null;
+  backgroundMotionAnimation=null;
+  backgroundGlitchAnimation=null;
+}
+
+function clamp01(value,fallback=0){
+  const number=Number(value);
+  return Number.isFinite(number)
+    ?Math.max(0,Math.min(1,number))
+    :fallback;
+}
+
+function backgroundTransform(scale,x=0,y=0){
+  return `translate3d(${x}%,${y}%,0) scale(${scale})`;
+}
+
+function runBackgroundReveal(fx,finalOpacity){
+  const type=fx.reveal||"none";
+  const duration=Math.max(50,Number(fx.revealDuration)||900);
+  const hold=Math.max(0,Number(fx.hold)||0);
+  const total=Math.max(50,duration+hold);
+
+  sceneBackground.style.opacity=String(finalOpacity);
+
+  if(!sceneBackground.animate||type==="none"){
+    return;
+  }
+
+  let frames=null;
+  let options={duration:total,easing:"ease",fill:"forwards"};
+
+  if(type==="still"){
+    frames=[
+      {opacity:0,offset:0},
+      {opacity:finalOpacity,offset:1}
+    ];
+  }else if(type==="intro"){
+    const holdOffset=Math.min(.82,Math.max(.08,hold/total));
+    frames=[
+      {opacity:1,offset:0},
+      {opacity:1,offset:holdOffset},
+      {opacity:finalOpacity,offset:1}
+    ];
+  }else if(type==="memory"){
+    const peak=Math.min(.58,Math.max(.18,duration/total*.34));
+    frames=[
+      {opacity:0,offset:0},
+      {opacity:1,offset:peak},
+      {opacity:finalOpacity,offset:1}
+    ];
+  }else if(type==="ghost"){
+    frames=[
+      {opacity:finalOpacity*.45,offset:0},
+      {opacity:finalOpacity,offset:1}
+    ];
+    options={
+      duration:Math.max(2400,duration*4),
+      easing:"ease-in-out",
+      iterations:Infinity,
+      direction:"alternate"
+    };
+  }else if(type==="flash"){
+    frames=[
+      {opacity:0,offset:0},
+      {opacity:1,offset:.45},
+      {opacity:0,offset:1}
+    ];
+    options={duration:Math.min(500,duration),easing:"steps(2,end)",fill:"forwards"};
+    sceneBackground.style.opacity="0";
+  }
+
+  if(frames){
+    backgroundRevealAnimation=sceneBackground.animate(frames,options);
+  }
+}
+
+function runBackgroundMotion(fx){
+  const type=fx.motion||"none";
+  if(type==="none"||!sceneBackgroundMotion.animate)return;
+
+  const duration=Math.max(500,Number(fx.motionDuration)||9000);
+  const fromScale=Math.max(.5,Math.min(2,Number(fx.scaleFrom||108)/100));
+  const toScale=Math.max(.5,Math.min(2,Number(fx.scaleTo||102)/100));
+  const pan=Math.max(0,Math.min(30,Number(fx.panAmount)||3));
+
+  let frames=null;
+  let options={
+    duration,
+    easing:"ease-in-out",
+    iterations:Infinity,
+    direction:"alternate"
+  };
+
+  if(type==="parallax"){
+    frames=[
+      {transform:backgroundTransform(fromScale,-pan,0)},
+      {transform:backgroundTransform(toScale,pan,0)}
+    ];
+  }else if(type==="breath"){
+    frames=[
+      {transform:backgroundTransform(toScale,0,0)},
+      {transform:backgroundTransform(fromScale,0,0)},
+      {transform:backgroundTransform(toScale,0,0)}
+    ];
+    options.direction="normal";
+  }else if(type==="slowZoom"){
+    frames=[
+      {transform:backgroundTransform(fromScale,0,0)},
+      {transform:backgroundTransform(toScale,0,0)}
+    ];
+  }else if(type==="panLeft"){
+    frames=[
+      {transform:backgroundTransform(fromScale,0,0)},
+      {transform:backgroundTransform(toScale,-pan,0)}
+    ];
+  }else if(type==="panRight"){
+    frames=[
+      {transform:backgroundTransform(fromScale,0,0)},
+      {transform:backgroundTransform(toScale,pan,0)}
+    ];
+  }else if(type==="panUp"){
+    frames=[
+      {transform:backgroundTransform(fromScale,0,0)},
+      {transform:backgroundTransform(toScale,0,-pan)}
+    ];
+  }else if(type==="panDown"){
+    frames=[
+      {transform:backgroundTransform(fromScale,0,0)},
+      {transform:backgroundTransform(toScale,0,pan)}
+    ];
+  }
+
+  if(frames){
+    backgroundMotionAnimation=sceneBackgroundMotion.animate(frames,options);
+  }
+}
+
+function applyBackgroundTextures(fx,cut){
+  const textures=new Set(Array.isArray(fx.textures)?fx.textures:[]);
+  const blur=textures.has("blur")
+    ?Math.max(2,Number(cut.blur||0))
+    :Math.max(0,Number(cut.blur||0));
+  const monochrome=textures.has("monochrome")
+    ?Math.max(.35,clamp01(fx.monochrome,.75))
+    :clamp01(fx.monochrome,0);
+
+  sceneBackgroundImage.style.filter=
+    `blur(${blur}px) grayscale(${monochrome})`;
+
+  const grain=textures.has("grain")
+    ?clamp01(fx.grain,.12)
+    :0;
+  const vignette=textures.has("vignette")
+    ?clamp01(fx.vignette,.28)
+    :0;
+
+  const textureLayers=[];
+
+  if(textures.has("grain")){
+    textureLayers.push(
+      `radial-gradient(rgba(255,255,255,${Math.min(.65,grain+.18)}) .35px,transparent .6px)`
+    );
+    sceneBackgroundTexture.style.backgroundSize="4px 4px";
+  }else{
+    sceneBackgroundTexture.style.backgroundSize="auto";
+  }
+
+  if(textures.has("scanline")){
+    textureLayers.push(
+      "repeating-linear-gradient(0deg,transparent 0 3px,rgba(255,255,255,.035) 3px 4px)"
+    );
+  }
+
+  if(vignette>0){
+    textureLayers.push(
+      `radial-gradient(circle at center,transparent 0 30%,rgba(0,0,0,${Math.min(.92,vignette)}) 100%)`
+    );
+  }
+
+  sceneBackgroundTexture.style.backgroundImage=
+    textureLayers.length?textureLayers.join(","):"none";
+  sceneBackgroundTexture.style.opacity=String(
+    Math.max(grain,textures.has("scanline")?.22:0,vignette)
+  );
+
+  if(textures.has("glitch")&&sceneBackgroundImage.animate){
+    backgroundGlitchAnimation=sceneBackgroundImage.animate([
+      {transform:"translateX(0)",clipPath:"inset(0)",offset:0},
+      {transform:"translateX(0)",clipPath:"inset(0)",offset:.91},
+      {transform:"translateX(-5px)",clipPath:"inset(12% 0 58% 0)",offset:.93},
+      {transform:"translateX(4px)",clipPath:"inset(63% 0 14% 0)",offset:.95},
+      {transform:"translateX(-2px)",clipPath:"inset(34% 0 39% 0)",offset:.97},
+      {transform:"translateX(0)",clipPath:"inset(0)",offset:1}
+    ],{
+      duration:2800,
+      iterations:Infinity,
+      easing:"steps(2,end)"
+    });
+  }
+}
+
 function applyVisual(cut){
   const view=cut.view||"world";
   stage.dataset.view=view;
@@ -763,16 +979,44 @@ function applyVisual(cut){
   void stage.offsetWidth;
   stage.classList.add(`bg-${transition}`);
 
-  sceneBackground.style.backgroundSize=cut.bgFit||"cover";
-
   if(cut.display==="solo"||cut.clear){
     lines.innerHTML="";
     visibleItems=[];
   }
+
+  cancelBackgroundFx();
+
   const bg=cut.background||"";
-  sceneBackground.style.backgroundImage=bg?`url(${JSON.stringify(bg)})`:"";
-  sceneBackground.style.opacity=String(1-Math.max(0,Math.min(.9,Number(cut.dim??.48))));
-  sceneBackground.style.filter=`blur(${Math.max(0,Number(cut.blur||0))}px)`;
+  const fx=cut.backgroundFx||{};
+  const hasFx=Boolean(
+    fx.reveal&&fx.reveal!=="none"||
+    fx.motion&&fx.motion!=="none"||
+    Array.isArray(fx.textures)&&fx.textures.length
+  );
+
+  sceneBackgroundImage.style.backgroundImage=
+    bg?`url(${JSON.stringify(bg)})`:"none";
+  sceneBackgroundImage.style.backgroundSize=cut.bgFit||"cover";
+  sceneBackgroundImage.style.backgroundPosition=fx.position||"center center";
+  sceneBackgroundMotion.style.transform="translate3d(0,0,0) scale(1)";
+  sceneBackgroundImage.style.transform="translateX(0)";
+  sceneBackgroundImage.style.clipPath="inset(0)";
+
+  const legacyOpacity=
+    1-Math.max(0,Math.min(.9,Number(cut.dim??.48)));
+  const finalOpacity=hasFx
+    ?clamp01(fx.finalOpacity,legacyOpacity)
+    :legacyOpacity;
+
+  sceneBackground.style.opacity=String(finalOpacity);
+  sceneBackground.style.display=bg?"block":"none";
+
+  applyBackgroundTextures(fx,cut);
+
+  if(bg){
+    runBackgroundReveal(fx,finalOpacity);
+    runBackgroundMotion(fx);
+  }
 }
 
 function applyMusic(cut){
