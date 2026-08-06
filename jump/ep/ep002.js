@@ -2,9 +2,9 @@ window.SHINO_EPISODES=window.SHINO_EPISODES||{};
 window.SHINO_EPISODES["ep002"]={
   "id": "ep002",
   "number": 2,
-  "title": "校門の前",
-  "description": "急がない朝に、少しだけ残るもの。",
-  "ending": "今日も、まだ。",
+  "title": "みんな急いでる",
+  "description": "友だちは何かに追われてる。ミオだけが立ち止まる。",
+  "ending": "まだ。",
   "story": [
     {
       "type": "narration",
