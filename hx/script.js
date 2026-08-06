@@ -77,19 +77,33 @@ if("scrollRestoration" in history){
 let shelfResetToken=0;
 
 function resetShelfToTop(){
-  // The episode cards and logo change the overflow height after first paint.
-  // Disable scroll anchoring and keep resetting only while the shelf is opening.
+  // iOS Safari can restore the inner fixed panel's scroll position well after
+  // pageshow and after late image/font layout. Keep the shelf pinned briefly,
+  // but stop immediately when the user actually touches or wheels the shelf.
   const token=++shelfResetToken;
+  const started=Date.now();
   const reset=()=>{
     if(token!==shelfResetToken||shelf.hidden)return;
-    try{shelf.scrollTop=0}catch{}
+    try{document.activeElement?.blur?.()}catch{}
+    try{shelf.scrollTo({top:0,left:0,behavior:"instant"})}catch{
+      try{shelf.scrollTop=0}catch{}
+    }
     try{document.scrollingElement.scrollTop=0}catch{}
     try{scrollTo(0,0)}catch{}
   };
 
   reset();
   requestAnimationFrame(()=>requestAnimationFrame(reset));
-  [80,220,500,900].forEach(delay=>setTimeout(reset,delay));
+
+  const pin=setInterval(()=>{
+    if(token!==shelfResetToken||shelf.hidden||Date.now()-started>3200){
+      clearInterval(pin);
+      return;
+    }
+    reset();
+  },100);
+
+  [80,220,500,900,1400,2200,3200].forEach(delay=>setTimeout(reset,delay));
 
   const logo=shelf.querySelector(".series-logo");
   if(logo&&!logo.complete){
@@ -1026,6 +1040,37 @@ function applyBackgroundTextures(fx,cut){
   }
 }
 
+function cancelBackgroundFx(){
+  for(const animation of [
+    backgroundRevealAnimation,
+    backgroundMotionAnimation,
+    backgroundGlitchAnimation
+  ]){
+    try{animation?.cancel()}catch{}
+  }
+
+  backgroundRevealAnimation=null;
+  backgroundMotionAnimation=null;
+  backgroundGlitchAnimation=null;
+
+  if(sceneBackground){
+    sceneBackground.style.opacity="0";
+  }
+  if(sceneBackgroundMotion){
+    sceneBackgroundMotion.style.transform="translate3d(0,0,0) scale(1)";
+  }
+  if(sceneBackgroundImage){
+    sceneBackgroundImage.style.transform="translateX(0)";
+    sceneBackgroundImage.style.clipPath="inset(0)";
+    sceneBackgroundImage.style.filter="none";
+  }
+  if(sceneBackgroundTexture){
+    sceneBackgroundTexture.style.backgroundImage="none";
+    sceneBackgroundTexture.style.backgroundSize="auto";
+    sceneBackgroundTexture.style.opacity="0";
+  }
+}
+
 function applyVisual(cut){
   const view=cut.view||"world";
   stage.dataset.view=view;
@@ -1515,6 +1560,10 @@ addEventListener("pageshow",event=>{
   if(!shelf.hidden){
     resetShelfToTop();
   }
+});
+
+addEventListener("load",()=>{
+  if(!shelf.hidden)resetShelfToTop();
 });
 
 renderShelf();
