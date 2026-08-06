@@ -1,6 +1,6 @@
 window.SHINO_EPISODES = window.SHINO_EPISODES || {};
-window.SHINO_EPISODES["ep001"] = {
-  "id": "ep001",
+window.SHINO_EPISODES["track01"] = {
+  "id": "track01",
   "number": 1,
   "title": "世界バグ報告書：NIX_LOG_∞",
   "description": "",
@@ -101,7 +101,7 @@ window.SHINO_EPISODES["ep001"] = {
       "ambience": {
         "action": "start",
         "src": "./audio/hx_000/track01.mp3",
-        "volume": 0.5,
+        "volume": 0.1,
         "fadeIn": 1000,
         "fadeOut": 1500,
         "loop": true,
