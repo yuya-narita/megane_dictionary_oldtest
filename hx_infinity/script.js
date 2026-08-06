@@ -70,34 +70,23 @@ const LARGE_GAP=68;
 const SOUND_GAP=80;
 const SAVE_KEY="hx_infinity_unified_progress_v04";
 
-if("scrollRestoration" in history){
-  history.scrollRestoration="manual";
-}
-
-let shelfResetToken=0;
-
-function resetShelfToTop(){
-  // The archive now uses the document scroll, not an inner fixed panel.
-  // Reset only the real page scroll position.
-  shelfResetToken++;
-  try{document.activeElement?.blur?.()}catch{}
-  window.scrollTo(0,0);
-  document.documentElement.scrollTop=0;
-  document.body.scrollTop=0;
-  requestAnimationFrame(()=>window.scrollTo(0,0));
-}
-
 function show(target){
-  screens.forEach(node=>node.hidden=node!==target);
+  const archiveOpen=target===shelf;
 
-  const archiveMode=target===shelf;
-  document.documentElement.classList.toggle("archive-mode",archiveMode);
-  document.body.classList.toggle("archive-mode",archiveMode);
+  screens.forEach(node=>{
+    node.hidden=node!==target;
+  });
 
-  if(archiveMode){
-    resetShelfToTop();
-  }else{
-    shelfResetToken++;
+  document.documentElement.classList.toggle("archive-open",archiveOpen);
+  document.body.classList.toggle("archive-open",archiveOpen);
+
+  if(archiveOpen){
+    // The archive is a normal document page now. No nested scroll container,
+    // no position restoration and no repeated scroll locking.
+    requestAnimationFrame(()=>{
+      window.scrollTo(0,0);
+      requestAnimationFrame(()=>window.scrollTo(0,0));
+    });
   }
 }
 
@@ -1339,7 +1328,6 @@ async function backToShelf(){
 
   renderShelf();
   show(shelf);
-  resetShelfToTop();
 
   // The UI responds immediately; BGM/ambience/SE gently leave the room.
   await softStopAudio({
@@ -1537,17 +1525,6 @@ addEventListener("keydown",e=>{
   if(e.key==="Escape")backToCover();
 });
 
-addEventListener("pageshow",event=>{
-  if(!shelf.hidden){
-    resetShelfToTop();
-  }
-});
-
-addEventListener("load",()=>{
-  if(!shelf.hidden)resetShelfToTop();
-});
-
 renderShelf();
 show(shelf);
-resetShelfToTop();
 })();
