@@ -70,6 +70,25 @@ const LARGE_GAP=68;
 const SOUND_GAP=80;
 const SAVE_KEY="hx_infinity_unified_progress_v04";
 
+if("scrollRestoration" in history){
+  history.scrollRestoration="manual";
+}
+
+function resetShelfToTop(){
+  // iOS Safari may restore an overflow container after the first paint.
+  // Repeat across a few frames so the launcher always opens from its logo.
+  const reset=()=>{
+    try{shelf.scrollTop=0}catch{}
+    try{document.scrollingElement.scrollTop=0}catch{}
+    try{scrollTo(0,0)}catch{}
+  };
+
+  reset();
+  requestAnimationFrame(reset);
+  setTimeout(reset,60);
+  setTimeout(reset,220);
+}
+
 function show(target){
   screens.forEach(node=>node.hidden=node!==target);
 }
@@ -701,77 +720,51 @@ function animateVolume(target,duration=800){
 }
 
 async function playAmbience(direction){
-  if(!direction?.src)return;
-  console.info("[Scene Player] ambience requested:", direction.src);
-
+  if(!direction)return;
   clearTimeout(ambienceStopTimer);
   ambienceStopTimer=null;
-
-  if(!await ensureAudioGraph())return;
-
-  const absolute=new URL(direction.src,location.href).href;
-
-  if(ambience.src!==absolute){
-    const switched=await primeAmbienceTrack(direction.src);
-    if(!switched)return;
-  }else if(ambience.paused){
-    try{
-      await ambience.play();
-      ambienceUnlocked=true;
-    }catch{
-      return;
-    }
+  const action=direction.action||"start";
+  if(action==="stop"){
+    stopAmbience(direction.fadeOut??900);
+    return;
   }
-
-  rampGain(
-    ambienceGain,
-    direction.volume??.5,
-    direction.fadeIn??700
-  );
-
+  if(!direction.src)return;
+  if(!await ensureAudioGraph())return;
+  const absolute=new URL(direction.src,location.href).href;
+  const shouldRestart=direction.restart!==false;
+  if(ambience.src!==absolute){
+    ambience.src=direction.src;
+    ambience.load();
+    ambiencePrimedSrc=direction.src;
+  }
+  try{
+    if(shouldRestart){try{ambience.currentTime=0}catch{}}
+    ambience.loop=direction.loop!==false;
+    ambienceGain.gain.cancelScheduledValues(audioContext.currentTime);
+    ambienceGain.gain.setValueAtTime(0,audioContext.currentTime);
+    await ambience.play();
+    ambienceUnlocked=true;
+    rampGain(ambienceGain,direction.volume??.5,direction.fadeIn??700);
+  }catch(error){
+    console.warn("[Scene Player] track failed:",direction.src,error);
+    return;
+  }
   if(direction.stopAfter){
-    ambienceStopTimer=managedTimeout(()=>{
-      rampGain(ambienceGain,0,direction.fadeOut??1200);
-
-      // Keep the track running silently on iPhone so later scenes
-      // do not need a new play() permission.
-      ambienceStopTimer=managedTimeout(()=>{
-        if(ambienceGain&&audioContext){
-          ambienceGain.gain.cancelScheduledValues(audioContext.currentTime);
-          ambienceGain.gain.setValueAtTime(0,audioContext.currentTime);
-        }
-      },(direction.fadeOut??1200)+40);
-    },direction.stopAfter);
+    ambienceStopTimer=managedTimeout(()=>stopAmbience(direction.fadeOut??1200),direction.stopAfter);
   }
 }
 
 function stopAmbience(fade=900){
-  if(!audioGraphReady){
+  clearTimeout(ambienceStopTimer);
+  ambienceStopTimer=null;
+  if(!audioGraphReady||!ambienceGain||!audioContext){
+    try{ambience.pause()}catch{}
     return;
   }
-
   rampGain(ambienceGain,0,fade);
-
-  managedTimeout(()=>{
-    if(ambienceGain&&audioContext){
-      ambienceGain.gain.cancelScheduledValues(audioContext.currentTime);
-      ambienceGain.gain.setValueAtTime(0,audioContext.currentTime);
-    }
-  },fade+40);
-}
-
-
-function cancelBackgroundFx(){
-  for(const animation of [
-    backgroundRevealAnimation,
-    backgroundMotionAnimation,
-    backgroundGlitchAnimation
-  ]){
-    try{animation?.cancel()}catch{}
-  }
-  backgroundRevealAnimation=null;
-  backgroundMotionAnimation=null;
-  backgroundGlitchAnimation=null;
+  ambienceStopTimer=managedTimeout(()=>{
+    try{ambience.pause();ambience.currentTime=0}catch{}
+  },Math.max(0,Number(fade)||0)+50);
 }
 
 function clamp01(value,fallback=0){
@@ -1250,6 +1243,7 @@ async function backToShelf(){
 
   renderShelf();
   show(shelf);
+  resetShelfToTop();
 
   // The UI responds immediately; BGM/ambience/SE gently leave the room.
   await softStopAudio({
@@ -1438,6 +1432,13 @@ addEventListener("keydown",e=>{
   if(e.key==="Escape")backToCover();
 });
 
+addEventListener("pageshow",event=>{
+  if(!shelf.hidden){
+    resetShelfToTop();
+  }
+});
+
 renderShelf();
 show(shelf);
+resetShelfToTop();
 })();
