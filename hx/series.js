@@ -2,7 +2,7 @@ window.SHINO_SERIES = {
   "id": "hx-infinity-origin",
   "title": "H(x)∞ origin",
   "subtitle": "世界バグ報告書：NIX_LOG_∞",
-  "themeSrc": "./audio/tracks/track01.mp3",
+  "themeSrc": "",
   "defaultVolume": 0.58,
   "episodes": [
     {
