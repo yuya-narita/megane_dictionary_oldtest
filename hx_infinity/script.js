@@ -74,43 +74,49 @@ if("scrollRestoration" in history){
   history.scrollRestoration="manual";
 }
 
-let shelfResetToken=0;
+let shelfScrollTop=0;
+let shelfPositionToken=0;
 
-function resetShelfToTop(){
-  const token=++shelfResetToken;
+function setShelfPosition(top=0){
+  const token=++shelfPositionToken;
+  const y=Math.max(0,Number(top)||0);
 
-  const forceTop=()=>{
-    if(token!==shelfResetToken||shelf.hidden)return;
+  // iOS Safari may scroll a focused episode button back into view when the
+  // shelf becomes visible. Remove that focus before restoring the position.
+  try{
+    const active=document.activeElement;
+    if(active&&typeof active.blur==="function")active.blur();
+  }catch{}
 
-    // Freeze the scroll container first. iOS Safari otherwise restores the
-    // previous inner-scroll position after layout and overwrites scrollTop=0.
-    const oldOverflow=shelf.style.overflow;
-    shelf.style.overflow="hidden";
-
-    try{shelf.scrollTop=0}catch{}
-    try{shelf.scrollLeft=0}catch{}
-    try{shelf.scrollTo(0,0)}catch{}
+  const apply=()=>{
+    if(token!==shelfPositionToken||shelf.hidden)return;
+    try{shelf.scrollTop=y}catch{}
+    try{shelf.scrollTo({top:y,left:0,behavior:"auto"})}catch{
+      try{shelf.scrollTo(0,y)}catch{}
+    }
     try{document.documentElement.scrollTop=0}catch{}
     try{document.body.scrollTop=0}catch{}
     try{window.scrollTo(0,0)}catch{}
-
-    requestAnimationFrame(()=>{
-      if(token!==shelfResetToken||shelf.hidden)return;
-      try{shelf.scrollTop=0}catch{}
-      shelf.style.overflow=oldOverflow||"auto";
-      requestAnimationFrame(()=>{
-        if(token!==shelfResetToken||shelf.hidden)return;
-        try{shelf.scrollTop=0}catch{}
-      });
-    });
   };
 
-  forceTop();
-  [50,150,350,700,1200,2000,3200].forEach(delay=>setTimeout(forceTop,delay));
+  // Do not change overflow here. On iOS, hidden -> auto can restore the old
+  // inner-scroll offset and was the likely cause of the fixed middle position.
+  apply();
+  requestAnimationFrame(()=>{
+    apply();
+    requestAnimationFrame(apply);
+  });
+  setTimeout(apply,80);
+  setTimeout(apply,240);
+}
 
-  const logo=shelf.querySelector(".series-logo");
-  if(logo&&!logo.complete)logo.addEventListener("load",forceTop,{once:true});
-  if(document.fonts?.ready)document.fonts.ready.then(forceTop).catch(()=>{});
+function resetShelfToTop(){
+  shelfScrollTop=0;
+  setShelfPosition(0);
+}
+
+function restoreShelfPosition(){
+  setShelfPosition(shelfScrollTop);
 }
 
 function show(target){
@@ -339,6 +345,11 @@ function openAdjacentEpisode(offset){
 }
 
 function openCover(id){
+  if(!shelf.hidden){
+    shelfScrollTop=shelf.scrollTop;
+    try{document.activeElement?.blur?.()}catch{}
+  }
+
   episode=SERIES.episodes.find(ep=>ep.id===id)||SERIES.episodes[0];
   if(!episode)return;
   story=episode.story||[];
@@ -1356,7 +1367,7 @@ async function backToShelf(){
 
   renderShelf();
   show(shelf);
-  resetShelfToTop();
+  restoreShelfPosition();
 
   // The UI responds immediately; BGM/ambience/SE gently leave the room.
   await softStopAudio({
@@ -1556,7 +1567,9 @@ addEventListener("keydown",e=>{
 
 addEventListener("pageshow",event=>{
   if(!shelf.hidden){
-    resetShelfToTop();
+    // Fresh navigation starts at the top; bfcache restores the last archive position.
+    if(event.persisted)restoreShelfPosition();
+    else resetShelfToTop();
   }
 });
 
