@@ -70,24 +70,50 @@ const LARGE_GAP=68;
 const SOUND_GAP=80;
 const SAVE_KEY="hx_infinity_unified_progress_v04";
 
-function show(target){
-  const archiveOpen=target===shelf;
+if("scrollRestoration" in history){
+  history.scrollRestoration="manual";
+}
 
-  screens.forEach(node=>{
-    node.hidden=node!==target;
-  });
+let shelfResetToken=0;
 
-  document.documentElement.classList.toggle("archive-open",archiveOpen);
-  document.body.classList.toggle("archive-open",archiveOpen);
+function resetShelfToTop(){
+  // iOS Safari can restore the inner fixed panel's scroll position well after
+  // pageshow and after late image/font layout. Keep the shelf pinned briefly,
+  // but stop immediately when the user actually touches or wheels the shelf.
+  const token=++shelfResetToken;
+  const started=Date.now();
+  const reset=()=>{
+    if(token!==shelfResetToken||shelf.hidden)return;
+    try{document.activeElement?.blur?.()}catch{}
+    try{shelf.scrollTo({top:0,left:0,behavior:"instant"})}catch{
+      try{shelf.scrollTop=0}catch{}
+    }
+    try{document.scrollingElement.scrollTop=0}catch{}
+    try{scrollTo(0,0)}catch{}
+  };
 
-  if(archiveOpen){
-    // The archive is a normal document page now. No nested scroll container,
-    // no position restoration and no repeated scroll locking.
-    requestAnimationFrame(()=>{
-      window.scrollTo(0,0);
-      requestAnimationFrame(()=>window.scrollTo(0,0));
-    });
+  reset();
+  requestAnimationFrame(()=>requestAnimationFrame(reset));
+
+  const pin=setInterval(()=>{
+    if(token!==shelfResetToken||shelf.hidden||Date.now()-started>3200){
+      clearInterval(pin);
+      return;
+    }
+    reset();
+  },100);
+
+  [80,220,500,900,1400,2200,3200].forEach(delay=>setTimeout(reset,delay));
+
+  const logo=shelf.querySelector(".series-logo");
+  if(logo&&!logo.complete){
+    logo.addEventListener("load",reset,{once:true});
   }
+}
+
+function show(target){
+  screens.forEach(node=>node.hidden=node!==target);
+  if(target!==shelf)shelfResetToken++;
 }
 
 function savedProgress(){
@@ -1328,6 +1354,7 @@ async function backToShelf(){
 
   renderShelf();
   show(shelf);
+  resetShelfToTop();
 
   // The UI responds immediately; BGM/ambience/SE gently leave the room.
   await softStopAudio({
@@ -1461,6 +1488,10 @@ soundBtn.addEventListener("click",toggleSound);
 
 let lastPointerAdvance=0;
 
+["pointerdown","touchstart","wheel"].forEach(type=>{
+  shelf.addEventListener(type,()=>{shelfResetToken++},{passive:true});
+});
+
 stage.addEventListener("pointerdown",e=>{
   ensureAudioGraph();
   down={x:e.clientX,y:e.clientY,t:Date.now()};
@@ -1525,6 +1556,17 @@ addEventListener("keydown",e=>{
   if(e.key==="Escape")backToCover();
 });
 
+addEventListener("pageshow",event=>{
+  if(!shelf.hidden){
+    resetShelfToTop();
+  }
+});
+
+addEventListener("load",()=>{
+  if(!shelf.hidden)resetShelfToTop();
+});
+
 renderShelf();
 show(shelf);
+resetShelfToTop();
 })();
