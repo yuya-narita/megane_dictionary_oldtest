@@ -77,53 +77,42 @@ if("scrollRestoration" in history){
 let shelfResetToken=0;
 
 function resetShelfToTop(){
-  // iOS Safari can restore the inner fixed panel's scroll position well after
-  // pageshow and after late image/font layout. Keep the shelf pinned briefly,
-  // but stop immediately when the user actually touches or wheels the shelf.
+  // The shelf now uses normal document scrolling. This avoids Safari restoring
+  // an arbitrary scrollTop on a fixed overflow container.
   const token=++shelfResetToken;
-  const started=Date.now();
   const reset=()=>{
     if(token!==shelfResetToken||shelf.hidden)return;
     try{document.activeElement?.blur?.()}catch{}
-
-    // Direct assignment is intentional. Some iOS Safari versions accept
-    // scrollTo({ behavior: "instant" }) without throwing, but do not
-    // actually move a fixed overflow panel.
-    try{
-      shelf.scrollTop=0;
-      shelf.scrollLeft=0;
-    }catch{}
-    try{shelf.scrollTo(0,0)}catch{}
+    try{shelf.scrollTop=0}catch{}
     try{
       document.documentElement.scrollTop=0;
       document.body.scrollTop=0;
       if(document.scrollingElement)document.scrollingElement.scrollTop=0;
     }catch{}
-    try{scrollTo(0,0)}catch{}
+    try{window.scrollTo(0,0)}catch{}
   };
 
   reset();
   requestAnimationFrame(()=>requestAnimationFrame(reset));
-
-  const pin=setInterval(()=>{
-    if(token!==shelfResetToken||shelf.hidden||Date.now()-started>3200){
-      clearInterval(pin);
-      return;
-    }
-    reset();
-  },100);
-
-  [80,220,500,900,1400,2200,3200].forEach(delay=>setTimeout(reset,delay));
+  [80,240,700].forEach(delay=>setTimeout(reset,delay));
 
   const logo=shelf.querySelector(".series-logo");
-  if(logo&&!logo.complete){
-    logo.addEventListener("load",reset,{once:true});
-  }
+  if(logo&&!logo.complete)logo.addEventListener("load",reset,{once:true});
 }
 
 function show(target){
+  const isShelf=target===shelf;
+
+  // The archive is the only long, scrollable screen. Let the document itself
+  // scroll there instead of asking iOS Safari to remember the scrollTop of a
+  // fixed overflow panel. Cover/player/ending remain fixed app screens.
+  document.body.classList.toggle("shelf-mode",isShelf);
   screens.forEach(node=>node.hidden=node!==target);
-  if(target!==shelf)shelfResetToken++;
+
+  if(!isShelf){
+    shelfResetToken++;
+    try{document.scrollingElement.scrollTop=0}catch{}
+  }
 }
 
 function savedProgress(){

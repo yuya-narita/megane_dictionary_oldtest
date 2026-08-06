@@ -1504,3 +1504,32 @@ header,footer{
 #scanlines{
   z-index:4;
 }
+
+
+/* =========================================================
+   Safari archive scroll fix — document scrolling
+   ========================================================= */
+body.shelf-mode{
+  height:auto!important;
+  min-height:100%;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  touch-action:pan-y!important;
+  overscroll-behavior-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+body.shelf-mode main{
+  min-height:100dvh;
+}
+body.shelf-mode .shelf{
+  position:relative!important;
+  inset:auto!important;
+  width:100%;
+  min-height:100dvh;
+  height:auto!important;
+  overflow:visible!important;
+  touch-action:pan-y!important;
+}
+body:not(.shelf-mode){
+  overflow:hidden!important;
+}
