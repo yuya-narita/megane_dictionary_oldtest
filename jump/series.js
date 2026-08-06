@@ -49,3 +49,4 @@ window.SHINO_SERIES = {
     }
   ]
 };
+
