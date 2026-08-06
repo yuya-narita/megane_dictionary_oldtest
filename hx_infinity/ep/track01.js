@@ -56,38 +56,39 @@ window.SHINO_EPISODES["track01"] = {
     },
     {
       "type": "narration",
-      "text": "バグは、全部でいくつもある。",
+      "text": "バグは、全部でいくつもある。\nでも今日は 致命的なやつ だけ拾う。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/hx_000/005.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
-      "text": "でも今日は 致命的なやつ だけ拾う。",
+      "text": "ひとつずつ説明するけど、覚悟しとけよ。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
-    },
-    {
-      "type": "narration",
-      "text": "ひとつずつ説明するけど、",
-      "pause": 1300,
-      "view": "world",
-      "textColor": "white"
-    },
-    {
-      "type": "narration",
-      "text": "覚悟しとけよ。",
-      "pause": 1300,
-      "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/hx_000/006.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
       "text": "これは、もう人間側の話じゃねぇ。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/hx_000/007.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "dialogue",
@@ -105,6 +106,11 @@ window.SHINO_EPISODES["track01"] = {
         "fadeOut": 235000,
         "loop": true,
         "restart": true
+      },
+      "effectAudio": {
+        "src": "./audio/hx_000/008.mp3",
+        "volume": 0.65,
+        "loop": false
       }
     },
     {
@@ -112,42 +118,60 @@ window.SHINO_EPISODES["track01"] = {
       "text": "「落ち着いて？」",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/hx_000/009.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
-      "text": "あれは命令じゃない。",
+      "text": "あれは命令じゃない。\n跳ねの反転スイッチ だ。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
-    },
-    {
-      "type": "narration",
-      "text": "跳ねの反転スイッチ だ。",
-      "pause": 1300,
-      "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/hx_000/010.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
       "text": "落ち着けと言われた時点で、落ち着いてないという意味が侵入する。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/hx_000/011.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "narration",
       "text": "世界の構文上、否定は否定した概念を強化する。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/hx_000/012.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
-      "type": "sound",
+      "type": "dialogue",
       "text": "……まぁ、最悪だな。",
       "pause": 1300,
       "view": "world",
-      "textColor": "white"
+      "textColor": "white",
+      "effectAudio": {
+        "src": "./audio/hx_000/013.mp3",
+        "volume": 0.65,
+        "loop": false
+      }
     },
     {
       "type": "dialogue",
