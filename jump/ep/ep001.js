@@ -2,7 +2,7 @@ window.SHINO_EPISODES = window.SHINO_EPISODES || {};
 window.SHINO_EPISODES["ep001"] = {
   "id": "ep001",
   "number": 1,
-  "title": "校門の前",
+  "title": "まだ起きてない",
   "description": "",
   "story": [
     {
