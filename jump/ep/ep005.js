@@ -3,7 +3,7 @@ window.SHINO_EPISODES["ep005"]={
   "id":"ep005",
   "number":5,
   "title":"誰かが跳ねる",
-  "description":"今日は、自分ではなく誰かが跳ねる日。",
+  "description":"友だちが突然動き出す。",
   "ending":"それでいい。",
   "story":[
     {
