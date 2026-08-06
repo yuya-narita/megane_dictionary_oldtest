@@ -77,53 +77,28 @@ if("scrollRestoration" in history){
 let shelfResetToken=0;
 
 function resetShelfToTop(){
-  // iOS Safari can restore the inner fixed panel's scroll position well after
-  // pageshow and after late image/font layout. Keep the shelf pinned briefly,
-  // but stop immediately when the user actually touches or wheels the shelf.
-  const token=++shelfResetToken;
-  const started=Date.now();
-  const reset=()=>{
-    if(token!==shelfResetToken||shelf.hidden)return;
-    try{document.activeElement?.blur?.()}catch{}
-
-    // Direct assignment is intentional. Some iOS Safari versions accept
-    // scrollTo({ behavior: "instant" }) without throwing, but do not
-    // actually move a fixed overflow panel.
-    try{
-      shelf.scrollTop=0;
-      shelf.scrollLeft=0;
-    }catch{}
-    try{shelf.scrollTo(0,0)}catch{}
-    try{
-      document.documentElement.scrollTop=0;
-      document.body.scrollTop=0;
-      if(document.scrollingElement)document.scrollingElement.scrollTop=0;
-    }catch{}
-    try{scrollTo(0,0)}catch{}
-  };
-
-  reset();
-  requestAnimationFrame(()=>requestAnimationFrame(reset));
-
-  const pin=setInterval(()=>{
-    if(token!==shelfResetToken||shelf.hidden||Date.now()-started>3200){
-      clearInterval(pin);
-      return;
-    }
-    reset();
-  },100);
-
-  [80,220,500,900,1400,2200,3200].forEach(delay=>setTimeout(reset,delay));
-
-  const logo=shelf.querySelector(".series-logo");
-  if(logo&&!logo.complete){
-    logo.addEventListener("load",reset,{once:true});
-  }
+  // The archive now uses the document scroll, not an inner fixed panel.
+  // Reset only the real page scroll position.
+  shelfResetToken++;
+  try{document.activeElement?.blur?.()}catch{}
+  window.scrollTo(0,0);
+  document.documentElement.scrollTop=0;
+  document.body.scrollTop=0;
+  requestAnimationFrame(()=>window.scrollTo(0,0));
 }
 
 function show(target){
   screens.forEach(node=>node.hidden=node!==target);
-  if(target!==shelf)shelfResetToken++;
+
+  const archiveMode=target===shelf;
+  document.documentElement.classList.toggle("archive-mode",archiveMode);
+  document.body.classList.toggle("archive-mode",archiveMode);
+
+  if(archiveMode){
+    resetShelfToTop();
+  }else{
+    shelfResetToken++;
+  }
 }
 
 function savedProgress(){
@@ -1193,15 +1168,8 @@ async function startEpisode(fromSaved=false){
   hardStopAudio({resetPosition:false,suspendContext:false});
   show(player);
 
-  let initialSceneScheduled=false;
-  const scheduleInitialScene=()=>{
-    if(startAt>0||initialSceneScheduled)return;
-    initialSceneScheduled=true;
-    timer=setTimeout(()=>{
-      if(session===playbackSession&&!player.hidden)next();
-    },80);
-  };
-
+  // Do not make scene rendering wait for iOS audio loading/unlocking.
+  // Missing or slow audio must never leave the player at 0 / N.
   if(startAt>0){
     const begin=Math.max(0,startAt-MAX_VISIBLE);
     visibleItems=[];
@@ -1215,6 +1183,10 @@ async function startEpisode(fromSaved=false){
     }
     positionLines(0);
     progress();
+  }else{
+    timer=setTimeout(()=>{
+      if(session===playbackSession&&!player.hidden)next();
+    },180);
   }
 
   theme.src=episode?.musicSrc||SERIES.themeSrc||"";
@@ -1239,20 +1211,15 @@ async function startEpisode(fromSaved=false){
     await ensureAudioGraph();
     if(session!==playbackSession)return;
 
-    // Prime the first voice/SE before Scene 1 is shown. Previously Scene 1
-    // could begin while priming was still running; the priming routine then
-    // paused the same audio element, making 「静かだな。」 intermittent.
-    const effectSrc=firstEffectSrc();
-    if(effectSrc){
-      await primeEffectTrack(effectSrc);
-      if(session!==playbackSession)return;
-    }
-
-    scheduleInitialScene();
-
     const ambienceSrc=firstAmbienceSrc();
     if(ambienceSrc){
       await primeAmbienceTrack(ambienceSrc);
+      if(session!==playbackSession)return;
+    }
+
+    const effectSrc=firstEffectSrc();
+    if(effectSrc){
+      await primeEffectTrack(effectSrc);
       if(session!==playbackSession)return;
     }
 
@@ -1295,10 +1262,7 @@ async function startEpisode(fromSaved=false){
     }
   }catch(error){
     console.warn("[Scene Player] audio start failed",error);
-    // Audio failure must not prevent the first text Scene from starting.
-    scheduleInitialScene();
   }finally{
-    scheduleInitialScene();
     if(session===playbackSession)startingEpisode=false;
   }
 
@@ -1508,10 +1472,6 @@ modeBtn.addEventListener("click",toggleAuto);
 soundBtn.addEventListener("click",toggleSound);
 
 let lastPointerAdvance=0;
-
-["pointerdown","touchstart","wheel"].forEach(type=>{
-  shelf.addEventListener(type,()=>{shelfResetToken++},{passive:true});
-});
 
 stage.addEventListener("pointerdown",e=>{
   ensureAudioGraph();

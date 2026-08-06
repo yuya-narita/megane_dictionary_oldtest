@@ -1504,3 +1504,55 @@ header,footer{
 #scanlines{
   z-index:4;
 }
+
+/* =========================================================
+   H(x)∞ ARCHIVE REBUILD — document-scroll edition
+   The archive is a normal top-to-bottom page. Cover/player/
+   ending remain fixed overlays. No inner shelf scroll state.
+   ========================================================= */
+html.archive-mode,
+body.archive-mode{
+  height:auto!important;
+  min-height:100%!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior-y:auto!important;
+  touch-action:pan-y!important;
+  background:#020202!important;
+}
+body.archive-mode main{
+  min-height:100dvh;
+}
+body.archive-mode .shelf{
+  position:relative!important;
+  inset:auto!important;
+  width:100%!important;
+  min-height:100dvh!important;
+  height:auto!important;
+  overflow:visible!important;
+  touch-action:pan-y!important;
+  display:block!important;
+  padding:
+    calc(46px + env(safe-area-inset-top))
+    22px
+    calc(34px + env(safe-area-inset-bottom))!important;
+}
+body.archive-mode .shelf[hidden]{
+  display:none!important;
+}
+body.archive-mode .shelf-atmosphere{
+  position:fixed!important;
+}
+body.archive-mode .launcher{
+  min-height:calc(100dvh - 100px)!important;
+}
+body:not(.archive-mode){
+  overflow:hidden!important;
+  touch-action:none!important;
+}
+body:not(.archive-mode) .cover,
+body:not(.archive-mode) .player,
+body:not(.archive-mode) .ending{
+  position:fixed!important;
+  inset:0!important;
+}
