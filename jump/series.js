@@ -2,7 +2,7 @@ window.SHINO_SERIES = {
   id: "jump-before",
   title: "跳ねる前のこの感じ",
   subtitle: "立ち止まるように、読む。",
-  themeSrc: "./audio/jump_before_theme.mp3",
+  themeSrc: "",
   defaultVolume: 0.12,
   episodes: [
     {
