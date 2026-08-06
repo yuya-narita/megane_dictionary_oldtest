@@ -1,6 +1,6 @@
 window.SHINO_EPISODES = window.SHINO_EPISODES || {};
-window.SHINO_EPISODES["ep001"] = {
-  "id": "ep001",
+window.SHINO_EPISODES["track01"] = {
+  "id": "track01",
   "number": 1,
   "title": "世界バグ報告書：NIX_LOG_∞",
   "description": "",
@@ -13,7 +13,7 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world",
       "textColor": "white",
       "effectAudio": {
-        "src": "./audio/audio/hx_000/001.mp3",
+        "src": "./audio/hx_000/001.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -25,7 +25,7 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world",
       "textColor": "white",
       "effectAudio": {
-        "src": "./audio/audio/hx_000/002.mp3",
+        "src": "./audio/hx_000/002.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -37,7 +37,7 @@ window.SHINO_EPISODES["ep001"] = {
       "view": "world",
       "textColor": "white",
       "effectAudio": {
-        "src": "./audio/audio/hx_000/003.mp3",
+        "src": "./audio/hx_000/003.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -50,7 +50,7 @@ window.SHINO_EPISODES["ep001"] = {
       "textColor": "white",
       "ambience": {
         "action": "start",
-        "src": "./audio/audio/hx_000/track01.mp3",
+        "src": "./audio/hx_000/track01.mp3",
         "volume": 0.5,
         "fadeIn": 700,
         "fadeOut": 1200,
@@ -58,7 +58,7 @@ window.SHINO_EPISODES["ep001"] = {
         "restart": true
       },
       "effectAudio": {
-        "src": "./audio/audio/hx_000/004.mp3",
+        "src": "./audio/hx_000/004.mp3",
         "volume": 0.65,
         "loop": false
       }
@@ -108,7 +108,7 @@ window.SHINO_EPISODES["ep001"] = {
       "bgTransition": "glitch",
       "ambience": {
         "action": "start",
-        "src": "./audio/audio/hx_000/track01.mp3",
+        "src": "./audio/hx_000/track01.mp3",
         "volume": 0.5,
         "fadeIn": 700,
         "fadeOut": 235000,
