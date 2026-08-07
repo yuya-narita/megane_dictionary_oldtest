@@ -63,22 +63,37 @@ const SOUND_GAP=80;
 const SAVE_KEY="shino_scene_player_progress_v04";
 let shelfScrollY=0;
 let shelfScrollToken=0;
+let initialShelfPinActive=true;
 
 if("scrollRestoration" in history){
   history.scrollRestoration="manual";
 }
 
-function setShelfScrollTop(target){
+function setShelfScrollTop(target,{pinMs=0}={}){
   const token=++shelfScrollToken;
   const y=Math.max(0,Number(target)||0);
+  const started=Date.now();
   const apply=()=>{
     if(token!==shelfScrollToken||shelf.hidden)return;
     try{shelf.scrollTop=y}catch{}
+    try{shelf.scrollTo(0,y)}catch{}
   };
 
   apply();
   requestAnimationFrame(()=>requestAnimationFrame(apply));
-  [80,220,500,900,1500,2400].forEach(delay=>setTimeout(apply,delay));
+  [80,220,500,900,1400,2200,3200].forEach(delay=>setTimeout(apply,delay));
+
+  let pin=null;
+  if(pinMs>0){
+    pin=setInterval(()=>{
+      if(token!==shelfScrollToken||shelf.hidden||Date.now()-started>pinMs){
+        clearInterval(pin);
+        if(token===shelfScrollToken)initialShelfPinActive=false;
+        return;
+      }
+      apply();
+    },100);
+  }
 
   const logo=shelf.querySelector(".series-logo");
   if(logo&&!logo.complete)logo.addEventListener("load",apply,{once:true});
@@ -86,10 +101,12 @@ function setShelfScrollTop(target){
 
 function resetShelfToTop(){
   shelfScrollY=0;
-  setShelfScrollTop(0);
+  initialShelfPinActive=true;
+  setShelfScrollTop(0,{pinMs:3400});
 }
 
 function restoreShelfPosition(){
+  initialShelfPinActive=false;
   setShelfScrollTop(shelfScrollY);
 }
 
@@ -1050,7 +1067,11 @@ addEventListener("keydown",e=>{
 });
 
 ["pointerdown","touchstart","wheel"].forEach(type=>{
-  shelf.addEventListener(type,()=>{shelfScrollToken++},{passive:true});
+  shelf.addEventListener(type,()=>{
+    // Do not let the opening tap cancel the initial Safari top-position pin.
+    // Once the pin has finished, real user interaction cancels any delayed restore.
+    if(!initialShelfPinActive)shelfScrollToken++;
+  },{passive:true});
 });
 
 addEventListener("pageshow",()=>{
