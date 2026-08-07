@@ -1461,13 +1461,15 @@ header,footer{background:rgba(3,3,7,.84)!important;border-color:#262334!importan
 }
 
 /* =========================================================
-   Safari blur text effect flicker fix
-   Prevent the base opacity/filter transition from competing
-   with the dedicated blur animation.
+   Safari blur text effect — stable entry + preserved fade-out
+   Keep opacity on the normal line transition and animate only
+   the blur amount. This avoids Safari's opacity flicker.
    ========================================================= */
 .line.effect-blur,
 .line.blur{
-  transition:transform .68s cubic-bezier(.16,.82,.18,1)!important;
+  transition:
+    transform .68s cubic-bezier(.16,.82,.18,1),
+    opacity .5s ease!important;
   will-change:transform,opacity,filter;
 }
 
@@ -1479,16 +1481,23 @@ header,footer{background:rgba(3,3,7,.84)!important;border-color:#262334!importan
 
 .line.effect-blur.visible,
 .line.blur.visible{
-  animation:spFxBlur 1.05s ease-out both!important;
+  opacity:1;
+  animation:spFxBlurStable 1.05s ease-out both!important;
 }
 
-@keyframes spFxBlur{
-  0%{
-    opacity:.12;
-    filter:blur(10px);
-  }
-  100%{
-    opacity:1;
-    filter:blur(0);
-  }
+@keyframes spFxBlurStable{
+  from{filter:blur(10px)}
+  to{filter:blur(0)}
+}
+
+/* A disappearing line must stop the entrance animation first.
+   Otherwise the animation fill state overrides disappearFade. */
+.line.effect-blur.scene-disappearing,
+.line.blur.scene-disappearing{
+  animation:none!important;
+  opacity:0!important;
+  filter:blur(4px)!important;
+  transition:
+    opacity var(--scene-disappear-fade,700ms) ease,
+    filter var(--scene-disappear-fade,700ms) ease!important;
 }
