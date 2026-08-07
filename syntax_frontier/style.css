@@ -1460,11 +1460,14 @@ header,footer{background:rgba(3,3,7,.84)!important;border-color:#262334!importan
   overflow-y:auto!important;
 }
 
+
 /* =========================================================
-   Safari blur text effect — stable entry + preserved fade-out
-   Keep opacity on the normal line transition and animate only
-   the blur amount. This avoids Safari's opacity flicker.
+   Safari text-effect stability v4
+   Entry effects must not override the player's age fading.
    ========================================================= */
+
+/* ---- BLUR: animate only blur on entry; opacity stays under
+   the normal line/age system after the entering class is removed. ---- */
 .line.effect-blur,
 .line.blur{
   transition:
@@ -1481,32 +1484,28 @@ header,footer{background:rgba(3,3,7,.84)!important;border-color:#262334!importan
 
 .line.effect-blur.visible,
 .line.blur.visible{
-  opacity:1;
-  animation:spFxBlurStable 1.05s ease-out both!important;
+  animation:spFxBlurStableV4 1.05s ease-out both!important;
 }
 
-@keyframes spFxBlurStable{
+@keyframes spFxBlurStableV4{
   from{filter:blur(10px)}
   to{filter:blur(0)}
 }
 
-/* A disappearing line must stop the entrance animation first.
-   Otherwise the animation fill state overrides disappearFade. */
-.line.effect-blur.scene-disappearing,
-.line.blur.scene-disappearing{
+/* Once a blur line becomes older, stop the entrance animation so
+   age-1 / age-2 / age-3 can fully own its appearance. */
+.line.effect-blur.age-1,
+.line.effect-blur.age-2,
+.line.effect-blur.age-3,
+.line.blur.age-1,
+.line.blur.age-2,
+.line.blur.age-3{
   animation:none!important;
-  opacity:0!important;
-  filter:blur(4px)!important;
-  transition:
-    opacity var(--scene-disappear-fade,700ms) ease,
-    filter var(--scene-disappear-fade,700ms) ease!important;
+  filter:blur(0);
 }
 
-
-/* =========================================================
-   Safari fade text effect — remove duplicate opacity animation
-   The normal entering -> visible transition handles the fade.
-   ========================================================= */
+/* ---- FADE: use only the normal opacity transition.
+   Do not force opacity:1 on visible lines. ---- */
 .line.effect-fade,
 .line.fade{
   animation:none!important;
@@ -1524,14 +1523,44 @@ header,footer{background:rgba(3,3,7,.84)!important;border-color:#262334!importan
 
 .line.effect-fade.visible,
 .line.fade.visible{
-  opacity:1!important;
-  filter:blur(0)!important;
   animation:none!important;
+  filter:blur(0)!important;
 }
 
-/* Preserve Studio disappearFade for fade-effect lines. */
+/* Explicitly restore the player's normal age fade values.
+   These match the base player rules. */
+.line.effect-fade.age-1,
+.line.fade.age-1,
+.line.effect-blur.age-1,
+.line.blur.age-1{
+  opacity:.88!important;
+}
+.line.effect-fade.age-2,
+.line.fade.age-2,
+.line.effect-blur.age-2,
+.line.blur.age-2{
+  opacity:.68!important;
+}
+.line.effect-fade.age-3,
+.line.fade.age-3,
+.line.effect-blur.age-3,
+.line.blur.age-3{
+  opacity:.46!important;
+}
+
+/* Newest text remains fully visible. */
+.line.effect-fade.newest,
+.line.fade.newest,
+.line.effect-blur.newest,
+.line.blur.newest{
+  opacity:1!important;
+}
+
+/* Studio disappearFade remains authoritative. */
 .line.effect-fade.scene-disappearing,
-.line.fade.scene-disappearing{
+.line.fade.scene-disappearing,
+.line.effect-blur.scene-disappearing,
+.line.blur.scene-disappearing{
   animation:none!important;
   opacity:0!important;
   filter:blur(4px)!important;
