@@ -72,8 +72,80 @@ const LARGE_GAP=68;
 const SOUND_GAP=80;
 const SAVE_KEY="jump_before_player_progress_v013";
 
+if("scrollRestoration" in history){
+  history.scrollRestoration="manual";
+}
+
+let shelfResetToken=0;
+let shelfScrollPosition=0;
+
+function getDocumentScrollTop(){
+  return Math.max(
+    0,
+    Number(window.scrollY)||0,
+    Number(document.scrollingElement?.scrollTop)||0,
+    Number(document.documentElement.scrollTop)||0,
+    Number(document.body.scrollTop)||0
+  );
+}
+
+function rememberShelfPosition(){
+  if(shelf.hidden)return;
+  shelfScrollPosition=getDocumentScrollTop();
+}
+
+function restoreShelfPosition(){
+  const token=++shelfResetToken;
+  const target=Math.max(0,Number(shelfScrollPosition)||0);
+  const restore=()=>{
+    if(token!==shelfResetToken||shelf.hidden)return;
+    try{document.documentElement.scrollTop=target}catch{}
+    try{document.body.scrollTop=target}catch{}
+    try{if(document.scrollingElement)document.scrollingElement.scrollTop=target}catch{}
+    try{window.scrollTo(0,target)}catch{}
+  };
+
+  restore();
+  requestAnimationFrame(()=>requestAnimationFrame(restore));
+  [80,240,700].forEach(delay=>setTimeout(restore,delay));
+
+  const logo=shelf.querySelector(".shelf-title-logo");
+  if(logo&&!logo.complete)logo.addEventListener("load",restore,{once:true});
+}
+
+function resetShelfToTop(){
+  const token=++shelfResetToken;
+  shelfScrollPosition=0;
+  const reset=()=>{
+    if(token!==shelfResetToken||shelf.hidden)return;
+    try{document.activeElement?.blur?.()}catch{}
+    try{shelf.scrollTop=0}catch{}
+    try{
+      document.documentElement.scrollTop=0;
+      document.body.scrollTop=0;
+      if(document.scrollingElement)document.scrollingElement.scrollTop=0;
+    }catch{}
+    try{window.scrollTo(0,0)}catch{}
+  };
+
+  reset();
+  requestAnimationFrame(()=>requestAnimationFrame(reset));
+  [80,240,700].forEach(delay=>setTimeout(reset,delay));
+
+  const logo=shelf.querySelector(".shelf-title-logo");
+  if(logo&&!logo.complete)logo.addEventListener("load",reset,{once:true});
+}
+
 function show(target){
+  const isShelf=target===shelf;
+  document.documentElement.classList.toggle("shelf-mode",isShelf);
+  document.body.classList.toggle("shelf-mode",isShelf);
   screens.forEach(node=>node.hidden=node!==target);
+
+  if(!isShelf){
+    shelfResetToken++;
+    try{if(document.scrollingElement)document.scrollingElement.scrollTop=0}catch{}
+  }
 }
 
 function savedProgress(){
@@ -273,6 +345,9 @@ async function openAdjacentEpisode(offset){
 }
 
 function openCover(id){
+  // Keep the archive position so returning from a moment feels continuous.
+  rememberShelfPosition();
+
   episode=SERIES.episodes.find(ep=>ep.id===id)||SERIES.episodes[0];
   if(!episode)return;
   story=episode.story||[];
@@ -1054,6 +1129,7 @@ async function backToShelf(){
 
   renderShelf();
   show(shelf);
+  restoreShelfPosition();
 
   // The UI responds immediately; BGM/ambience/SE gently leave the room.
   await softStopAudio({
@@ -1250,6 +1326,15 @@ addEventListener("keydown",e=>{
   if(e.key==="Escape")backToCover();
 });
 
+addEventListener("pageshow",()=>{
+  if(!shelf.hidden)resetShelfToTop();
+});
+
+addEventListener("load",()=>{
+  if(!shelf.hidden)resetShelfToTop();
+});
+
 renderShelf();
 show(shelf);
+resetShelfToTop();
 })();

@@ -465,3 +465,39 @@ footer button{border:0;background:none;color:var(--muted)}
   opacity:1;
   transform:translateY(0);
 }
+
+
+/* =========================================================
+   Safari archive scroll fix — document scrolling
+   ========================================================= */
+html.shelf-mode,
+body.shelf-mode{
+  height:auto!important;
+  min-height:100%;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  touch-action:pan-y!important;
+  overscroll-behavior-y:auto!important;
+}
+html.shelf-mode{
+  -webkit-overflow-scrolling:touch;
+}
+body.shelf-mode main{
+  position:relative;
+  min-height:100dvh;
+  overflow:visible!important;
+  touch-action:pan-y!important;
+}
+body.shelf-mode .shelf{
+  position:relative!important;
+  inset:auto!important;
+  width:100%;
+  min-height:100dvh;
+  height:auto!important;
+  overflow:visible!important;
+  touch-action:pan-y!important;
+}
+html:not(.shelf-mode),
+body:not(.shelf-mode){
+  overflow:hidden!important;
+}

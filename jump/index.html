@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <meta name="theme-color" content="#efe8dc">
   <title>跳ねる前のこの感じ — Jump Before Player v0.1.1</title>
-  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./style.css?v=2">
 </head>
 
-<body>
+<body class="shelf-mode">
 <main>
   <section id="shelf" class="screen shelf">
     <div class="shelf-art" aria-hidden="true"></div>
@@ -100,7 +100,7 @@
 <audio id="ambience" loop preload="auto" playsinline></audio>
 <audio id="effectAudio" preload="auto" playsinline></audio>
 
-<script src="./series.js"></script>
+<script src="./series.js?v=2"></script>
 <script>
 (async function bootScenePlayer(){
   const manifest=window.SHINO_SERIES||{episodes:[]};
@@ -121,7 +121,7 @@
       await loadScript(episode.src);
     }
     const app=document.createElement("script");
-    app.src="./script.js";
+    app.src="./script.js?v=2";
     document.body.appendChild(app);
   }catch(error){
     console.error(error);
