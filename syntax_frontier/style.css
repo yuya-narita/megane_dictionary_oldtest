@@ -1459,3 +1459,36 @@ header,footer{background:rgba(3,3,7,.84)!important;border-color:#262334!importan
   overflow-x:hidden!important;
   overflow-y:auto!important;
 }
+
+/* =========================================================
+   Safari blur text effect flicker fix
+   Prevent the base opacity/filter transition from competing
+   with the dedicated blur animation.
+   ========================================================= */
+.line.effect-blur,
+.line.blur{
+  transition:transform .68s cubic-bezier(.16,.82,.18,1)!important;
+  will-change:transform,opacity,filter;
+}
+
+.line.effect-blur.entering,
+.line.blur.entering{
+  opacity:0;
+  filter:blur(10px);
+}
+
+.line.effect-blur.visible,
+.line.blur.visible{
+  animation:spFxBlur 1.05s ease-out both!important;
+}
+
+@keyframes spFxBlur{
+  0%{
+    opacity:.12;
+    filter:blur(10px);
+  }
+  100%{
+    opacity:1;
+    filter:blur(0);
+  }
+}
