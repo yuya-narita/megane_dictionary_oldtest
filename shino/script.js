@@ -61,6 +61,7 @@ const BASE_GAP=36;
 const LARGE_GAP=68;
 const SOUND_GAP=80;
 const SAVE_KEY="shino_scene_player_progress_v04";
+let shelfScrollY=0;
 
 function show(target){
   screens.forEach(node=>node.hidden=node!==target);
@@ -222,7 +223,10 @@ function renderShelf(){
       <span class="number">EP.${String(ep.number).padStart(2,"0")}</span>
       <span><strong>${ep.title}</strong><small>${ep.description||""}</small></span>
       <span class="arrow">›</span>`;
-    button.addEventListener("click",()=>openCover(ep.id));
+    button.addEventListener("click",()=>{
+      shelfScrollY=shelf.scrollTop;
+      openCover(ep.id);
+    });
     episodeList.appendChild(button);
   });
 
@@ -826,6 +830,7 @@ async function backToShelf(){
 
   renderShelf();
   show(shelf);
+  requestAnimationFrame(()=>{ shelf.scrollTop=shelfScrollY; });
 
   // The UI responds immediately; BGM/ambience/SE gently leave the room.
   await softStopAudio({
@@ -1016,4 +1021,6 @@ addEventListener("keydown",e=>{
 
 renderShelf();
 show(shelf);
+shelfScrollY=0;
+shelf.scrollTop=0;
 })();

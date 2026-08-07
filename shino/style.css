@@ -801,3 +801,28 @@ button,.episode-card,.ending-nav-button,.replay-link,.cover-back{
 }
 
 .series-logo{width:min(92vw,420px);height:auto;display:block;margin:18px auto 12px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.08));}
+
+
+/* v0.5 — iPhone Safari shelf scroll fix */
+.shelf{
+  background:transparent;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  overflow-x:hidden;
+  overflow-y:auto;
+}
+.shelf::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 50% 20%,rgba(255,255,255,.95),transparent 36%),
+    linear-gradient(#f8f6ef,#ebe3d5);
+}
+.shelf > *{
+  position:relative;
+  z-index:1;
+}
