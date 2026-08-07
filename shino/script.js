@@ -62,6 +62,36 @@ const LARGE_GAP=68;
 const SOUND_GAP=80;
 const SAVE_KEY="shino_scene_player_progress_v04";
 let shelfScrollY=0;
+let shelfScrollToken=0;
+
+if("scrollRestoration" in history){
+  history.scrollRestoration="manual";
+}
+
+function setShelfScrollTop(target){
+  const token=++shelfScrollToken;
+  const y=Math.max(0,Number(target)||0);
+  const apply=()=>{
+    if(token!==shelfScrollToken||shelf.hidden)return;
+    try{shelf.scrollTop=y}catch{}
+  };
+
+  apply();
+  requestAnimationFrame(()=>requestAnimationFrame(apply));
+  [80,220,500,900,1500,2400].forEach(delay=>setTimeout(apply,delay));
+
+  const logo=shelf.querySelector(".series-logo");
+  if(logo&&!logo.complete)logo.addEventListener("load",apply,{once:true});
+}
+
+function resetShelfToTop(){
+  shelfScrollY=0;
+  setShelfScrollTop(0);
+}
+
+function restoreShelfPosition(){
+  setShelfScrollTop(shelfScrollY);
+}
 
 function show(target){
   screens.forEach(node=>node.hidden=node!==target);
@@ -830,7 +860,7 @@ async function backToShelf(){
 
   renderShelf();
   show(shelf);
-  requestAnimationFrame(()=>{ shelf.scrollTop=shelfScrollY; });
+  restoreShelfPosition();
 
   // The UI responds immediately; BGM/ambience/SE gently leave the room.
   await softStopAudio({
@@ -1019,8 +1049,19 @@ addEventListener("keydown",e=>{
   if(e.key==="Escape")backToCover();
 });
 
+["pointerdown","touchstart","wheel"].forEach(type=>{
+  shelf.addEventListener(type,()=>{shelfScrollToken++},{passive:true});
+});
+
+addEventListener("pageshow",()=>{
+  if(!shelf.hidden)resetShelfToTop();
+});
+
+addEventListener("load",()=>{
+  if(!shelf.hidden)resetShelfToTop();
+});
+
 renderShelf();
 show(shelf);
-shelfScrollY=0;
-shelf.scrollTop=0;
+resetShelfToTop();
 })();
