@@ -31,63 +31,63 @@ window.SHINO_SERIES = {
       "number": 4,
       "title": "仮タイトル 04",
       "description": "スクロール確認用",
-      "src": "./ep/_episode_template.js"
+      "src": "./ep/test004.js"
     },
     {
       "id": "test005",
       "number": 5,
       "title": "仮タイトル 05",
       "description": "スクロール確認用",
-      "src": "./ep/_episode_template.js"
+      "src": "./ep/test005.js"
     },
     {
       "id": "test006",
       "number": 6,
       "title": "仮タイトル 06",
       "description": "スクロール確認用",
-      "src": "./ep/_episode_template.js"
+      "src": "./ep/test006.js"
     },
     {
       "id": "test007",
       "number": 7,
       "title": "仮タイトル 07",
       "description": "スクロール確認用",
-      "src": "./ep/_episode_template.js"
+      "src": "./ep/test007.js"
     },
     {
       "id": "test008",
       "number": 8,
       "title": "仮タイトル 08",
       "description": "スクロール確認用",
-      "src": "./ep/_episode_template.js"
+      "src": "./ep/test008.js"
     },
     {
       "id": "test009",
       "number": 9,
       "title": "仮タイトル 09",
       "description": "スクロール確認用",
-      "src": "./ep/_episode_template.js"
+      "src": "./ep/test009.js"
     },
     {
       "id": "test010",
       "number": 10,
       "title": "仮タイトル 10",
       "description": "スクロール確認用",
-      "src": "./ep/_episode_template.js"
+      "src": "./ep/test010.js"
     },
     {
       "id": "test011",
       "number": 11,
       "title": "仮タイトル 11",
       "description": "スクロール確認用",
-      "src": "./ep/_episode_template.js"
+      "src": "./ep/test011.js"
     },
     {
       "id": "test012",
       "number": 12,
       "title": "仮タイトル 12",
       "description": "スクロール確認用",
-      "src": "./ep/_episode_template.js"
+      "src": "./ep/test012.js"
     }
   ]
 };
