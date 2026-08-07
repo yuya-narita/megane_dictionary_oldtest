@@ -1430,3 +1430,22 @@ header,footer{background:rgba(3,3,7,.84)!important;border-color:#262334!importan
 #hint{
   bottom:58px!important;
 }
+
+
+/* =========================================================
+   Safari shelf scroll fix — shared player behavior
+   ========================================================= */
+.shelf{
+  overscroll-behavior-y:contain!important;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y!important;
+  scroll-behavior:auto!important;
+}
+.shelf .launcher{
+  margin-top:0!important;
+  align-self:auto!important;
+}
+.shelf-atmosphere{
+  position:fixed!important;
+  inset:0!important;
+}

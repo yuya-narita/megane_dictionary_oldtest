@@ -63,6 +63,39 @@ const LARGE_GAP=68;
 const SOUND_GAP=80;
 const SAVE_KEY="shino_scene_player_progress_v04";
 
+// Safari shelf scroll handling
+let shelfScrollPosition=0;
+let initialShelfResetActive=true;
+let initialShelfResetTimers=[];
+try{ history.scrollRestoration="manual"; }catch{}
+
+function stopInitialShelfReset(){
+  initialShelfResetActive=false;
+  initialShelfResetTimers.forEach(clearTimeout);
+  initialShelfResetTimers=[];
+}
+
+function forceInitialShelfTop(){
+  if(!initialShelfResetActive)return;
+  shelf.scrollTop=0;
+  // Safari may restore an inner scroller shortly after first paint.
+  [0,60,160,320,500].forEach(delay=>{
+    const id=setTimeout(()=>{
+      if(initialShelfResetActive)shelf.scrollTop=0;
+    },delay);
+    initialShelfResetTimers.push(id);
+  });
+}
+
+function rememberShelfPosition(){
+  shelfScrollPosition=shelf.scrollTop||0;
+}
+
+function restoreShelfPosition(){
+  const y=shelfScrollPosition;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>shelf.scrollTop=y));
+}
+
 function show(target){
   screens.forEach(node=>node.hidden=node!==target);
 }
@@ -234,7 +267,10 @@ function renderShelf(){
       </span>
       <span class="arrow" aria-hidden="true">→</span>`;
 
-    button.addEventListener("click",()=>openCover(ep.id));
+    button.addEventListener("click",()=>{
+      rememberShelfPosition();
+      openCover(ep.id);
+    });
     episodeList.appendChild(button);
   });
 
@@ -1045,6 +1081,7 @@ async function backToShelf(){
 
   renderShelf();
   show(shelf);
+  restoreShelfPosition();
 
   // The UI responds immediately; BGM/ambience/SE gently leave the room.
   await softStopAudio({
@@ -1170,6 +1207,7 @@ previousEpisodeButton.addEventListener("click",()=>openAdjacentEpisode(-1));
 nextEpisodeButton.addEventListener("click",()=>openAdjacentEpisode(1));
 g("episodes").addEventListener("click",backToShelf);
 continueButton.addEventListener("click",()=>{
+  rememberShelfPosition();
   const saved=savedProgress();
   if(saved){openCover(saved.episodeId);startEpisode(true)}
 });
@@ -1233,6 +1271,11 @@ addEventListener("keydown",e=>{
   if(e.key==="Escape")backToCover();
 });
 
+// Initial page entry/reload always starts at the launcher top.
+// The first real touch immediately releases the guard so scrolling never fights the user.
+shelf.addEventListener("touchstart",stopInitialShelfReset,{passive:true,once:true});
+shelf.addEventListener("pointerdown",stopInitialShelfReset,{passive:true,once:true});
 renderShelf();
 show(shelf);
+forceInitialShelfTop();
 })();
