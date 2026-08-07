@@ -75,6 +75,41 @@ if("scrollRestoration" in history){
 }
 
 let shelfResetToken=0;
+let shelfScrollPosition=0;
+
+function getDocumentScrollTop(){
+  return Math.max(
+    0,
+    Number(window.scrollY)||0,
+    Number(document.scrollingElement?.scrollTop)||0,
+    Number(document.documentElement.scrollTop)||0,
+    Number(document.body.scrollTop)||0
+  );
+}
+
+function rememberShelfPosition(){
+  if(shelf.hidden)return;
+  shelfScrollPosition=getDocumentScrollTop();
+}
+
+function restoreShelfPosition(){
+  const token=++shelfResetToken;
+  const target=Math.max(0,Number(shelfScrollPosition)||0);
+  const restore=()=>{
+    if(token!==shelfResetToken||shelf.hidden)return;
+    try{document.documentElement.scrollTop=target}catch{}
+    try{document.body.scrollTop=target}catch{}
+    try{if(document.scrollingElement)document.scrollingElement.scrollTop=target}catch{}
+    try{window.scrollTo(0,target)}catch{}
+  };
+
+  restore();
+  requestAnimationFrame(()=>requestAnimationFrame(restore));
+  [80,240,700].forEach(delay=>setTimeout(restore,delay));
+
+  const logo=shelf.querySelector(".series-logo");
+  if(logo&&!logo.complete)logo.addEventListener("load",restore,{once:true});
+}
 
 function resetShelfToTop(){
   // The shelf now uses normal document scrolling. This avoids Safari restoring
@@ -337,6 +372,10 @@ function openAdjacentEpisode(offset){
 }
 
 function openCover(id){
+  // Remember where the reader was in the archive before switching to a
+  // fixed screen. ARCHIVE will return to this exact position.
+  rememberShelfPosition();
+
   episode=SERIES.episodes.find(ep=>ep.id===id)||SERIES.episodes[0];
   if(!episode)return;
   story=episode.story||[];
@@ -1365,7 +1404,7 @@ async function backToShelf(){
 
   renderShelf();
   show(shelf);
-  resetShelfToTop();
+  restoreShelfPosition();
 
   // The UI responds immediately; BGM/ambience/SE gently leave the room.
   await softStopAudio({
