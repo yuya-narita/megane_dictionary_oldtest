@@ -65,26 +65,46 @@ const SAVE_KEY="shino_scene_player_progress_v04";
 
 // Safari shelf scroll handling
 let shelfScrollPosition=0;
-let initialShelfResetActive=true;
-let initialShelfResetTimers=[];
-try{ history.scrollRestoration="manual"; }catch{}
+let shelfScrollToken=0;
+let shelfUserInteracted=false;
 
-function stopInitialShelfReset(){
-  initialShelfResetActive=false;
-  initialShelfResetTimers.forEach(clearTimeout);
-  initialShelfResetTimers=[];
+if("scrollRestoration" in history){
+  history.scrollRestoration="manual";
 }
 
-function forceInitialShelfTop(){
-  if(!initialShelfResetActive)return;
-  shelf.scrollTop=0;
-  // Safari may restore an inner scroller shortly after first paint.
-  [0,60,160,320,500].forEach(delay=>{
-    const id=setTimeout(()=>{
-      if(initialShelfResetActive)shelf.scrollTop=0;
-    },delay);
-    initialShelfResetTimers.push(id);
-  });
+function setShelfScrollTop(target,{pinMs=0}={}){
+  const token=++shelfScrollToken;
+  const y=Math.max(0,Number(target)||0);
+  const started=Date.now();
+
+  const apply=()=>{
+    if(token!==shelfScrollToken||shelf.hidden||shelfUserInteracted)return;
+    try{shelf.scrollTop=y}catch{}
+    try{shelf.scrollTo(0,y)}catch{}
+  };
+
+  apply();
+  requestAnimationFrame(()=>requestAnimationFrame(apply));
+  [80,220,420].forEach(delay=>setTimeout(apply,delay));
+
+  if(pinMs>0){
+    const pin=setInterval(()=>{
+      if(token!==shelfScrollToken||shelf.hidden||shelfUserInteracted||Date.now()-started>pinMs){
+        clearInterval(pin);
+        return;
+      }
+      apply();
+    },80);
+  }
+
+  const logo=shelf.querySelector(".series-logo");
+  if(logo&&!logo.complete)logo.addEventListener("load",apply,{once:true});
+}
+
+function resetShelfToTop(){
+  shelfScrollPosition=0;
+  shelfUserInteracted=false;
+  setShelfScrollTop(0,{pinMs:900});
 }
 
 function rememberShelfPosition(){
@@ -92,8 +112,8 @@ function rememberShelfPosition(){
 }
 
 function restoreShelfPosition(){
-  const y=shelfScrollPosition;
-  requestAnimationFrame(()=>requestAnimationFrame(()=>shelf.scrollTop=y));
+  shelfUserInteracted=false;
+  setShelfScrollTop(shelfScrollPosition);
 }
 
 function show(target){
@@ -1271,11 +1291,23 @@ addEventListener("keydown",e=>{
   if(e.key==="Escape")backToCover();
 });
 
-// Initial page entry/reload always starts at the launcher top.
-// The first real touch immediately releases the guard so scrolling never fights the user.
-shelf.addEventListener("touchstart",stopInitialShelfReset,{passive:true,once:true});
-shelf.addEventListener("pointerdown",stopInitialShelfReset,{passive:true,once:true});
+["pointerdown","touchstart","wheel"].forEach(type=>{
+  shelf.addEventListener(type,()=>{
+    // Stop every delayed Safari correction as soon as the user starts scrolling.
+    shelfUserInteracted=true;
+    shelfScrollToken++;
+  },{passive:true});
+});
+
+addEventListener("pageshow",()=>{
+  if(!shelf.hidden&&!shelfUserInteracted)resetShelfToTop();
+});
+
+addEventListener("load",()=>{
+  if(!shelf.hidden&&!shelfUserInteracted)resetShelfToTop();
+});
+
 renderShelf();
 show(shelf);
-forceInitialShelfTop();
+resetShelfToTop();
 })();

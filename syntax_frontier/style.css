@@ -1449,3 +1449,13 @@ header,footer{background:rgba(3,3,7,.84)!important;border-color:#262334!importan
   position:fixed!important;
   inset:0!important;
 }
+
+
+/* Safari shelf top-range correction v2 */
+.shelf{
+  justify-content:flex-start!important;
+  align-content:normal!important;
+  place-content:normal!important;
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+}
