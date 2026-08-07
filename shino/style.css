@@ -826,3 +826,10 @@ button,.episode-card,.ending-nav-button,.replay-link,.cover-back{
   position:relative;
   z-index:1;
 }
+
+/* v0.5.1 — keep the beginning of a long shelf inside the scroll range */
+.shelf{
+  justify-content:flex-start!important;
+  align-content:normal!important;
+  place-content:normal!important;
+}
