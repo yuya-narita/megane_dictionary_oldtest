@@ -1501,3 +1501,41 @@ header,footer{background:rgba(3,3,7,.84)!important;border-color:#262334!importan
     opacity var(--scene-disappear-fade,700ms) ease,
     filter var(--scene-disappear-fade,700ms) ease!important;
 }
+
+
+/* =========================================================
+   Safari fade text effect — remove duplicate opacity animation
+   The normal entering -> visible transition handles the fade.
+   ========================================================= */
+.line.effect-fade,
+.line.fade{
+  animation:none!important;
+  transition:
+    transform .68s cubic-bezier(.16,.82,.18,1),
+    opacity 1.2s ease!important;
+  will-change:transform,opacity;
+}
+
+.line.effect-fade.entering,
+.line.fade.entering{
+  opacity:0!important;
+  filter:blur(0)!important;
+}
+
+.line.effect-fade.visible,
+.line.fade.visible{
+  opacity:1!important;
+  filter:blur(0)!important;
+  animation:none!important;
+}
+
+/* Preserve Studio disappearFade for fade-effect lines. */
+.line.effect-fade.scene-disappearing,
+.line.fade.scene-disappearing{
+  animation:none!important;
+  opacity:0!important;
+  filter:blur(4px)!important;
+  transition:
+    opacity var(--scene-disappear-fade,700ms) ease,
+    filter var(--scene-disappear-fade,700ms) ease!important;
+}
