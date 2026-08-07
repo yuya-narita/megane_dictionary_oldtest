@@ -79,19 +79,9 @@ if("scrollRestoration" in history){
 let shelfResetToken=0;
 let shelfScrollPosition=0;
 
-function getDocumentScrollTop(){
-  return Math.max(
-    0,
-    Number(window.scrollY)||0,
-    Number(document.scrollingElement?.scrollTop)||0,
-    Number(document.documentElement.scrollTop)||0,
-    Number(document.body.scrollTop)||0
-  );
-}
-
 function rememberShelfPosition(){
   if(shelf.hidden)return;
-  shelfScrollPosition=getDocumentScrollTop();
+  shelfScrollPosition=Math.max(0,Number(shelf.scrollTop)||0);
 }
 
 function restoreShelfPosition(){
@@ -99,10 +89,8 @@ function restoreShelfPosition(){
   const target=Math.max(0,Number(shelfScrollPosition)||0);
   const restore=()=>{
     if(token!==shelfResetToken||shelf.hidden)return;
-    try{document.documentElement.scrollTop=target}catch{}
-    try{document.body.scrollTop=target}catch{}
-    try{if(document.scrollingElement)document.scrollingElement.scrollTop=target}catch{}
-    try{window.scrollTo(0,target)}catch{}
+    try{shelf.scrollTop=target}catch{}
+    try{shelf.scrollTo(0,target)}catch{}
   };
 
   restore();
@@ -120,12 +108,7 @@ function resetShelfToTop(){
     if(token!==shelfResetToken||shelf.hidden)return;
     try{document.activeElement?.blur?.()}catch{}
     try{shelf.scrollTop=0}catch{}
-    try{
-      document.documentElement.scrollTop=0;
-      document.body.scrollTop=0;
-      if(document.scrollingElement)document.scrollingElement.scrollTop=0;
-    }catch{}
-    try{window.scrollTo(0,0)}catch{}
+    try{shelf.scrollTo(0,0)}catch{}
   };
 
   reset();
@@ -142,10 +125,7 @@ function show(target){
   document.body.classList.toggle("shelf-mode",isShelf);
   screens.forEach(node=>node.hidden=node!==target);
 
-  if(!isShelf){
-    shelfResetToken++;
-    try{if(document.scrollingElement)document.scrollingElement.scrollTop=0}catch{}
-  }
+  if(!isShelf)shelfResetToken++;
 }
 
 function savedProgress(){
