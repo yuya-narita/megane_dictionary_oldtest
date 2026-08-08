@@ -525,3 +525,106 @@ body:not(.shelf-mode){
   overflow:hidden!important;
   touch-action:none!important;
 }
+
+
+/* =========================================================
+   Shared launcher geometry — preview spec v1
+   Same shell as the Shino common-spec preview.
+   Title-specific artwork / typography stay intact.
+   ========================================================= */
+
+body.shelf-mode .shelf-inner{
+  width:min(calc(100% - 44px),620px)!important;
+  min-height:100dvh;
+  margin:0 auto;
+  padding:
+    0
+    0
+    calc(34px + env(safe-area-inset-bottom))!important;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start!important;
+  align-items:center;
+}
+
+.shelf-hero{
+  flex:0 0 auto;
+  width:100%;
+  min-height:52dvh;
+  padding:
+    calc(30px + env(safe-area-inset-top))
+    0
+    24px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+.shelf-hero .eyebrow{
+  margin:0 0 clamp(28px,5vh,48px);
+}
+
+.shelf-hero .shelf-title-logo{
+  width:min(86vw,530px);
+  max-height:220px;
+  object-fit:contain;
+  margin:0 auto clamp(30px,5vh,48px);
+}
+
+.shelf-hero .shelf-copy{
+  margin:0!important;
+  font-size:clamp(16px,4vw,21px);
+  line-height:1.7;
+}
+
+/* Resume lives between cover and archive, matching the shared shell. */
+body.shelf-mode .resume-button{
+  flex:0 0 auto;
+  width:min(420px,100%);
+  min-height:58px;
+  margin:0 0 22px!important;
+}
+
+/* Shared archive/card geometry. */
+body.shelf-mode .episode-list{
+  flex:0 0 auto;
+  width:100%;
+  margin:0!important;
+  gap:11px;
+}
+
+body.shelf-mode .episode-card{
+  min-height:112px;
+  padding:17px 16px;
+  grid-template-columns:54px minmax(0,1fr) 28px;
+  gap:14px;
+}
+
+body.shelf-mode .episode-card strong{
+  font-size:clamp(17px,4.5vw,21px);
+  line-height:1.35;
+}
+
+body.shelf-mode .episode-card small{
+  font-size:12px;
+  line-height:1.55;
+}
+
+body.shelf-mode .shelf-note{
+  display:block;
+  margin:28px 0 0;
+}
+
+@media(max-width:420px){
+  body.shelf-mode .shelf-inner{
+    width:calc(100% - 40px)!important;
+  }
+  .shelf-hero{
+    min-height:52dvh;
+  }
+  body.shelf-mode .episode-card{
+    min-height:108px;
+  }
+}
