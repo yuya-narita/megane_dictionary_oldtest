@@ -27,7 +27,7 @@ window.SHINO_EPISODES["ep001"] = {
     },
     {
       "type": "dialogue",
-      "text": "「今日もいい天気ですね」\nパン屋の店主が、窯の前で。",
+      "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
       "textColor": "lavender",
@@ -35,11 +35,14 @@ window.SHINO_EPISODES["ep001"] = {
         "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.65,
         "loop": false
-      }
+      },
+      "subText": "パン屋の店主が、窯の前で。",
+      "subTextColor": "white",
+      "subTextSize": "small"
     },
     {
       "type": "dialogue",
-      "text": "「今日もいい天気ですね」\n郵便配達の男が、サドルから片足を下ろしながら。",
+      "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
       "textColor": "lavender",
@@ -47,11 +50,14 @@ window.SHINO_EPISODES["ep001"] = {
         "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.65,
         "loop": false
-      }
+      },
+      "subText": "郵便配達の男が、サドルから片足を下ろしながら。",
+      "subTextColor": "white",
+      "subTextSize": "small"
     },
     {
       "type": "dialogue",
-      "text": "「今日もいい天気ですね」\nランドセルの子どもが、横断歩道の端で。",
+      "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
       "textColor": "lavender",
@@ -59,7 +65,10 @@ window.SHINO_EPISODES["ep001"] = {
         "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.65,
         "loop": false
-      }
+      },
+      "subText": "ランドセルの子どもが、横断歩道の端で。",
+      "subTextColor": "white",
+      "subTextSize": "small"
     },
     {
       "type": "narration",
@@ -89,7 +98,7 @@ window.SHINO_EPISODES["ep001"] = {
     },
     {
       "type": "dialogue",
-      "text": "「今日もいい天気ですね」\n理髪店の鏡越しに、白いケープの男が口だけ動かす。",
+      "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
       "textColor": "lavender",
@@ -97,11 +106,14 @@ window.SHINO_EPISODES["ep001"] = {
         "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.6,
         "loop": false
-      }
+      },
+      "subText": "理髪店の鏡越しに、白いケープの男が口だけ動かす。",
+      "subTextColor": "white",
+      "subTextSize": "small"
     },
     {
       "type": "dialogue",
-      "text": "「今日もいい天気ですね」\nベビーカーを押す母親が、笑いもしない眼差しで。",
+      "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
       "textColor": "lavender",
@@ -109,11 +121,14 @@ window.SHINO_EPISODES["ep001"] = {
         "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.6,
         "loop": false
-      }
+      },
+      "subText": "ベビーカーを押す母親が、笑いもしない眼差しで。",
+      "subTextColor": "white",
+      "subTextSize": "small"
     },
     {
       "type": "dialogue",
-      "text": "「今日もいい天気ですね」\n新聞の販売員が、束の角を揃えながら。",
+      "text": "「今日もいい天気ですね」",
       "pause": 1300,
       "view": "world",
       "textColor": "lavender",
@@ -121,7 +136,10 @@ window.SHINO_EPISODES["ep001"] = {
         "src": "./audio/ep001/aisathu.mp3",
         "volume": 0.6,
         "loop": false
-      }
+      },
+      "subText": "新聞の販売員が、束の角を揃えながら。",
+      "subTextColor": "white",
+      "subTextSize": "small"
     },
     {
       "type": "narration",
@@ -571,7 +589,7 @@ window.SHINO_EPISODES["ep001"] = {
     },
     {
       "type": "dialogue",
-      "text": "「今日もいい天気ですね」\n\n「今日もいい天気ですね」\n\n「今日もいい天気ですね」",
+      "text": "「今日もいい天気ですね」",
       "pause": 1700,
       "effect": "whisper",
       "view": "world",
@@ -587,7 +605,10 @@ window.SHINO_EPISODES["ep001"] = {
         "src": "./audio/ep001/3ai.mp3",
         "volume": 0.65,
         "loop": false
-      }
+      },
+      "subText": "\n「今日もいい天気ですね」\n\n「今日もいい天気ですね」",
+      "subTextColor": "white",
+      "subTextSize": "small"
     },
     {
       "type": "narration",
