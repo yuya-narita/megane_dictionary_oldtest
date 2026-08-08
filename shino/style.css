@@ -843,3 +843,106 @@ button,.episode-card,.ending-nav-button,.replay-link,.cover-back{
 .shelf .episode-list{
   margin-top:22px;
 }
+
+
+/* =========================================================
+   Shared launcher geometry — preview spec v1
+   Artwork / typography remain title-specific.
+   ========================================================= */
+
+/* One common horizontal gutter and a predictable scroll surface. */
+.shelf{
+  padding:
+    0
+    22px
+    calc(34px + env(safe-area-inset-bottom))!important;
+  align-items:center!important;
+}
+
+/* Common "cover" zone.
+   All title-specific hero artwork lives inside the same viewport share. */
+.shelf-hero{
+  flex:0 0 auto;
+  width:min(620px,100%);
+  min-height:52dvh;
+  padding:
+    calc(30px + env(safe-area-inset-top))
+    0
+    24px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+/* Keep the Shino artwork visually strong without changing the common shell. */
+.shelf-hero .eyebrow{
+  margin:0 0 clamp(28px,5vh,48px);
+}
+.shelf-hero .series-logo{
+  width:min(84vw,390px);
+  max-height:220px;
+  object-fit:contain;
+  margin:0 auto clamp(30px,5vh,48px);
+}
+.shelf-hero .shelf-copy{
+  margin:0!important;
+  font-size:clamp(16px,4vw,21px);
+  line-height:1.7;
+}
+
+/* Resume always sits between cover and archive. */
+.shelf .shelf-continue{
+  flex:0 0 auto;
+  width:min(420px,100%);
+  min-height:58px;
+  margin:0 0 22px!important;
+}
+
+/* Shared archive/card geometry. */
+.shelf .episode-list{
+  flex:0 0 auto;
+  width:min(620px,100%);
+  margin:0!important;
+  gap:11px;
+}
+
+.shelf .episode-card{
+  min-height:112px;
+  padding:17px 16px;
+  grid-template-columns:54px minmax(0,1fr) 28px;
+  gap:14px;
+}
+
+.shelf .episode-card strong{
+  font-size:clamp(17px,4.5vw,21px);
+  line-height:1.35;
+}
+.shelf .episode-card small{
+  font-size:12px;
+  line-height:1.55;
+}
+
+.shelf-footer-copy{
+  display:block;
+  margin:28px 0 0;
+  color:var(--muted);
+  letter-spacing:.08em;
+}
+
+@media(max-width:420px){
+  .shelf{
+    padding-left:20px!important;
+    padding-right:20px!important;
+  }
+  .shelf-hero{
+    min-height:52dvh;
+  }
+  .shelf-hero .series-logo{
+    width:min(86vw,360px);
+  }
+  .shelf .episode-card{
+    min-height:108px;
+  }
+}
