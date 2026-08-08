@@ -2,7 +2,7 @@ window.SHINO_EPISODES = window.SHINO_EPISODES || {};
 window.SHINO_EPISODES["track01"] = {
   "id": "track01",
   "number": 1,
-  "title": "世界バグ報告書：NIX_LOG_∞",
+  "title": "世界バグ報告書",
   "description": "",
   "story": [
     {
