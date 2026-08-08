@@ -1649,3 +1649,126 @@ body:not(.shelf-mode){
     min-height:108px!important;
   }
 }
+
+
+/* =========================================================
+   Shared Scene Player Controls v1
+   Common geometry only. Title-specific colors, wording and fonts remain.
+   ========================================================= */
+
+/* Story header: common 44px hit areas with restrained visual icon size. */
+.player header{
+  grid-template-columns:44px minmax(0,1fr) 44px!important;
+}
+.player header #back,
+.player header #sound{
+  width:44px!important;
+  min-width:44px!important;
+  height:44px!important;
+  min-height:44px!important;
+  margin:0!important;
+  padding:0!important;
+  display:grid!important;
+  place-items:center!important;
+  border:0!important;
+  background:transparent!important;
+  line-height:1!important;
+}
+.player header #back{
+  font-size:24px!important;
+}
+.player header #sound{
+  font-size:18px!important;
+}
+
+/* Episode-cover return control: same minimum touch target across titles. */
+.cover .cover-back{
+  min-height:44px!important;
+  min-width:44px!important;
+}
+
+/* Ending controls: same position, width, button geometry and reveal timing. */
+.ending .ending-actions{
+  position:absolute!important;
+  left:50%!important;
+  right:auto!important;
+  bottom:calc(34px + env(safe-area-inset-bottom))!important;
+  width:min(620px,calc(100% - 44px))!important;
+  margin:0!important;
+  padding:0!important;
+  opacity:0!important;
+  transform:translate(-50%,10px)!important;
+  transition:
+    opacity .85s ease,
+    transform .85s cubic-bezier(.18,.8,.18,1)!important;
+}
+.ending .ending-actions.is-visible{
+  opacity:1!important;
+  transform:translate(-50%,0)!important;
+}
+
+.ending .episode-nav{
+  width:100%!important;
+  display:flex!important;
+  align-items:stretch!important;
+  justify-content:center!important;
+  gap:12px!important;
+}
+
+.ending .ending-nav-button{
+  flex:0 1 202px!important;
+  width:auto!important;
+  min-width:0!important;
+  max-width:202px!important;
+  min-height:72px!important;
+  margin:0!important;
+  padding:10px 12px!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:7px!important;
+  box-sizing:border-box!important;
+}
+
+/* If three controls are present, keep all of them inside the same shell. */
+.ending .episode-nav > .ending-nav-button:nth-child(1):not([hidden]),
+.ending .episode-nav > .ending-nav-button:nth-child(1):not([hidden]) ~ .ending-nav-button{
+  flex-basis:190px!important;
+}
+
+.ending .nav-kicker{
+  font-size:9px!important;
+  line-height:1!important;
+}
+.ending .nav-label{
+  font-size:15px!important;
+  line-height:1.25!important;
+}
+
+.ending .replay-link{
+  min-height:44px!important;
+  margin:18px auto 0!important;
+  padding:0 16px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border:0!important;
+  background:transparent!important;
+  box-sizing:border-box!important;
+}
+
+/* iPhone narrow width */
+@media(max-width:420px){
+  .ending .ending-actions{
+    width:calc(100% - 44px)!important;
+  }
+  .ending .episode-nav{
+    gap:10px!important;
+  }
+  .ending .ending-nav-button{
+    flex:1 1 0!important;
+    max-width:none!important;
+    min-height:72px!important;
+  }
+}
