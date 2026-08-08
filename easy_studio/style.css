@@ -76,3 +76,195 @@
   from{opacity:0}
   to{opacity:1}
 }
+
+
+/* =========================================================
+   Easy Studio v0.1 FINAL
+   Shared player geometry / scene rhythm / CINEMA image
+   ========================================================= */
+
+:root{
+  --easy-player-header-h: 120px;
+  --easy-player-footer-h: 86px;
+  --easy-player-side: 28px;
+}
+
+/* Shared header geometry */
+.player-header{
+  height:var(--easy-player-header-h);
+  min-height:var(--easy-player-header-h);
+  padding:
+    calc(18px + env(safe-area-inset-top))
+    var(--easy-player-side)
+    16px;
+  box-sizing:border-box;
+  display:grid;
+  grid-template-columns:44px minmax(0,1fr) 44px;
+  align-items:end;
+}
+.player-head-center{
+  align-self:end;
+  min-width:0;
+  padding:0 8px;
+}
+.player-author{
+  min-height:18px;
+  margin-bottom:5px;
+  line-height:1.15;
+}
+.player-title{
+  line-height:1.2;
+}
+.icon-button{
+  width:44px;
+  height:44px;
+  display:grid;
+  place-items:center;
+  align-self:end;
+}
+
+/* CINEMA image sits behind the normal theme. */
+.player-background,
+.player-background-veil{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+.player-background{
+  z-index:0;
+  background-position:center;
+  background-size:cover;
+  background-repeat:no-repeat;
+  opacity:0;
+  transform:scale(1.015);
+}
+.player-background-veil{
+  z-index:1;
+  opacity:0;
+  background:rgba(14,17,19,.78);
+}
+.player-header,
+.player-stage,
+.player-footer,
+.player-menu,
+.ending-screen{
+  position:relative;
+  z-index:2;
+}
+.theme-cinema .player-background.has-image{
+  opacity:.34;
+}
+.theme-cinema .player-background-veil{
+  opacity:1;
+}
+/* Keep text readable without asking the creator to tune anything. */
+.theme-cinema{
+  --p-bg:#252b2e;
+  --p-text:#f7f6f1;
+  --p-sub:rgba(247,246,241,.58);
+  --p-line:rgba(247,246,241,.18);
+}
+
+/* More air between scenes. */
+.scene-stack{
+  gap:clamp(34px,5.2vh,58px);
+}
+
+/* Long/multi-line scenes are fitted automatically by JS. */
+.scene-line.fit-medium{
+  font-size:clamp(22px,5.5vw,31px);
+  line-height:1.78;
+}
+.scene-line.fit-compact{
+  font-size:clamp(19px,4.9vw,27px);
+  line-height:1.62;
+}
+.scene-line.fit-tight{
+  font-size:clamp(17px,4.35vw,24px);
+  line-height:1.48;
+}
+
+/* Keep the newest scene around the visual center; blank lower space is intentional. */
+.player-stage{
+  box-sizing:border-box;
+  padding-top:clamp(44px,8vh,92px);
+  padding-bottom:clamp(118px,17vh,180px);
+}
+.scene-stack{
+  min-height:100%;
+  justify-content:center;
+}
+
+/* CINEMA picker only appears for CINEMA. */
+.cinema-background-panel{
+  margin:14px 0 18px;
+  padding:16px;
+  border:1px solid var(--line,#dfe2e8);
+  border-radius:18px;
+  background:#fff;
+}
+.cinema-background-copy{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  margin-bottom:12px;
+}
+.cinema-background-copy strong{font-size:14px}
+.cinema-background-copy span{
+  color:#8b9099;
+  font-size:12px;
+}
+.cinema-background-button,
+.cinema-background-clear{
+  min-height:44px;
+  border-radius:13px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 15px;
+  font-size:13px;
+  font-weight:800;
+  cursor:pointer;
+}
+.cinema-background-button{
+  border:0;
+  background:#17191d;
+  color:#fff;
+}
+.cinema-background-clear{
+  margin-left:8px;
+  border:1px solid #dfe2e8;
+  background:#fff;
+  color:#34373d;
+}
+.cinema-background-preview{
+  height:116px;
+  margin-top:12px;
+  border-radius:14px;
+  background-position:center;
+  background-size:cover;
+  overflow:hidden;
+  position:relative;
+}
+.cinema-background-preview::after{
+  content:"PLAYERでは自動的に薄く表示";
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  padding:12px;
+  background:rgba(14,17,19,.68);
+  color:#fff;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.04em;
+}
+
+@media (max-height:700px){
+  :root{ --easy-player-header-h:108px; }
+  .player-stage{
+    padding-top:34px;
+    padding-bottom:105px;
+  }
+  .scene-stack{gap:28px}
+}

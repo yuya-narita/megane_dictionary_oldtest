@@ -27,6 +27,7 @@
   let autoTimer = null;
   let ended = false;
   let touchAdvancedAt = 0;
+  let cinemaBackgroundUrl = "";
 
   const SAMPLE = `通りは朝から、よく整えられた録音室みたいだった。
 
@@ -108,6 +109,9 @@
       card.classList.toggle("is-selected", selected);
       card.setAttribute("aria-pressed", selected ? "true" : "false");
     });
+
+    const cinemaPanel = $("#cinemaBackgroundPanel");
+    if(cinemaPanel) cinemaPanel.hidden = theme !== "cinema";
   }
 
   function updateProgress(){
@@ -137,11 +141,36 @@
     updateProgress();
   }
 
+  function sceneFitClass(text){
+    const explicitLines = Math.max(1, text.split("\n").length);
+    const chars = [...text].length;
+
+    if(explicitLines >= 8 || chars >= 190) return "fit-tight";
+    if(explicitLines >= 6 || chars >= 145) return "fit-compact";
+    if(explicitLines >= 4 || chars >= 105) return "fit-medium";
+    return "";
+  }
+
+  function applyCinemaBackground(){
+    const bg = $("#playerBackground");
+    if(!bg) return;
+
+    if(selectedTheme === "cinema" && cinemaBackgroundUrl){
+      bg.style.backgroundImage = `url("${cinemaBackgroundUrl}")`;
+      bg.classList.add("has-image");
+    }else{
+      bg.style.backgroundImage = "";
+      bg.classList.remove("has-image");
+    }
+  }
+
   function renderCurrent(){
     if(current >= scenes.length) return false;
 
     const line = document.createElement("div");
     line.className = "scene-line";
+    const fitClass = sceneFitClass(scenes[current]);
+    if(fitClass) line.classList.add(fitClass);
     line.textContent = scenes[current];
     sceneStack.appendChild(line);
 
@@ -200,6 +229,7 @@
     playerAuthor.textContent = authorInput.value.trim();
 
     playerScreen.className = `screen player-screen theme-${selectedTheme}`;
+    applyCinemaBackground();
     editorScreen.hidden = true;
     playerScreen.hidden = false;
     document.body.style.overflow = "hidden";
@@ -289,6 +319,40 @@
 
   $("#endingRestartButton").addEventListener("click", restartReading);
   $("#endingEditButton").addEventListener("click", closePlayer);
+
+  const cinemaInput = $("#cinemaBackgroundInput");
+  const cinemaPreview = $("#cinemaBackgroundPreview");
+  const cinemaClear = $("#cinemaBackgroundClear");
+
+  if(cinemaInput){
+    cinemaInput.addEventListener("change", () => {
+      const file = cinemaInput.files && cinemaInput.files[0];
+      if(!file) return;
+
+      if(cinemaBackgroundUrl) URL.revokeObjectURL(cinemaBackgroundUrl);
+      cinemaBackgroundUrl = URL.createObjectURL(file);
+
+      if(cinemaPreview){
+        cinemaPreview.style.backgroundImage = `url("${cinemaBackgroundUrl}")`;
+        cinemaPreview.hidden = false;
+      }
+      if(cinemaClear) cinemaClear.hidden = false;
+    });
+  }
+
+  if(cinemaClear){
+    cinemaClear.addEventListener("click", () => {
+      if(cinemaBackgroundUrl) URL.revokeObjectURL(cinemaBackgroundUrl);
+      cinemaBackgroundUrl = "";
+      if(cinemaInput) cinemaInput.value = "";
+      if(cinemaPreview){
+        cinemaPreview.style.backgroundImage = "";
+        cinemaPreview.hidden = true;
+      }
+      cinemaClear.hidden = true;
+      applyCinemaBackground();
+    });
+  }
 
   applyTheme("light");
   updateCount();
