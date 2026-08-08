@@ -1568,3 +1568,114 @@ header,footer{background:rgba(3,3,7,.84)!important;border-color:#262334!importan
     opacity var(--scene-disappear-fade,700ms) ease,
     filter var(--scene-disappear-fade,700ms) ease!important;
 }
+
+
+/* =========================================================
+   Shared launcher geometry — common spec preview v1
+   Same outer shell used by Shino / Jump Before.
+   Syntax Frontier keeps its own artwork, colors and typography.
+   ========================================================= */
+
+/* Common horizontal gutter / scroll shell */
+.shelf{
+  padding:
+    0
+    22px
+    calc(34px + env(safe-area-inset-bottom))!important;
+}
+
+/* Common cover zone */
+.shelf .launcher{
+  width:min(620px,100%)!important;
+  min-height:100dvh;
+  margin:0 auto!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+}
+
+.shelf-hero{
+  flex:0 0 auto;
+  width:100%;
+  min-height:52dvh;
+  padding:
+    calc(30px + env(safe-area-inset-top))
+    0
+    24px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+/* Let the common hero own vertical spacing instead of the old launcher margin. */
+.shelf-hero .series-logo{
+  width:min(92%,520px);
+  max-height:230px;
+  object-fit:contain;
+  margin:0 auto!important;
+}
+.shelf-hero .shelf-copy{
+  margin:24px 0 0!important;
+}
+
+/* Resume always lives between cover and archive. */
+.shelf .continue-panel{
+  flex:0 0 auto;
+  width:min(420px,100%)!important;
+  min-height:58px;
+  margin:0 0 22px!important;
+}
+
+/* Shared archive spacing */
+.shelf .archive-label{
+  width:100%!important;
+  margin:0 0 14px!important;
+}
+
+/* Shared card geometry */
+.shelf .episode-list{
+  flex:0 0 auto;
+  width:100%!important;
+  margin:0!important;
+  gap:11px!important;
+}
+
+.shelf .episode-card{
+  min-height:112px!important;
+  padding:17px 16px!important;
+  grid-template-columns:54px minmax(0,1fr) 28px!important;
+  gap:14px!important;
+}
+
+.shelf .episode-card strong{
+  font-size:clamp(17px,4.5vw,21px)!important;
+  line-height:1.35;
+}
+.shelf .episode-card small{
+  font-size:12px!important;
+  line-height:1.55!important;
+}
+
+/* Footer remains after the archive, but no longer stretches the card area. */
+.shelf .launcher-footer{
+  margin:28px 0 0!important;
+  padding-top:0!important;
+}
+
+@media(max-width:420px){
+  .shelf{
+    padding-left:20px!important;
+    padding-right:20px!important;
+  }
+  .shelf-hero{
+    min-height:52dvh;
+  }
+  .shelf-hero .series-logo{
+    width:min(92vw,500px);
+  }
+  .shelf .episode-card{
+    min-height:108px!important;
+  }
+}
