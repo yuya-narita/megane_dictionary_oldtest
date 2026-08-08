@@ -833,3 +833,13 @@ button,.episode-card,.ending-nav-button,.replay-link,.cover-back{
   align-content:normal!important;
   place-content:normal!important;
 }
+
+
+/* v0.8 — shelf cover / resume placement */
+.shelf .shelf-continue{
+  margin-top:30px;
+  margin-bottom:0;
+}
+.shelf .episode-list{
+  margin-top:22px;
+}

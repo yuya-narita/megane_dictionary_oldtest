@@ -1,7 +1,7 @@
 window.SHINO_SERIES = {
   "id": "poor-glasses-shino",
   "title": "貧乏メガネのシノ",
-  "subtitle": "文字だけで、景色が浮かぶ。",
+  "subtitle": "貧乏は、景色を変える。",
   "themeSrc": "./audio/shino_theme.mp3",
   "defaultVolume": 0.24,
   "episodes": [
