@@ -1,0 +1,25 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#f7f8fb"><title>Easy Studio v0.1</title><link rel="stylesheet" href="./style.css"></head><body>
+<main id="app">
+<section id="editorScreen" class="screen editor-screen">
+<header class="topbar"><div><p class="brand-kicker">SCENE STUDIO</p><h1>Easy Studio</h1></div><span class="version">v0.1</span></header>
+<section class="intro"><h2>小説を貼るだけ。</h2><p>次の一文を、まだ見せない読書にします。</p></section>
+<div class="form-stack">
+<label class="field"><span class="field-label">作品タイトル</span><input id="titleInput" type="text" placeholder="例：声のそろう通り"></label>
+<label class="field"><span class="field-label">作者名 <small>任意</small></span><input id="authorInput" type="text" placeholder="例：Yuya Narita"></label>
+<label class="field body-field"><span class="field-label">本文</span><textarea id="bodyInput" placeholder="ここに小説を丸ごと貼り付けてください。"></textarea><div class="body-meta"><span id="charCount">0文字</span><button id="sampleButton" class="text-button" type="button">サンプルを入れる</button></div></label>
+<section class="theme-section"><div class="section-heading"><span>雰囲気</span><small>あとから変えられます</small></div><div class="theme-grid">
+<button class="theme-card is-selected" data-theme="light" type="button"><span class="theme-preview theme-preview-light">あ</span><strong>LIGHT</strong><small>小説・エッセイ</small></button>
+<button class="theme-card" data-theme="dark" type="button"><span class="theme-preview theme-preview-dark">あ</span><strong>DARK</strong><small>SF・ホラー</small></button>
+<button class="theme-card" data-theme="cinema" type="button"><span class="theme-preview theme-preview-cinema">あ</span><strong>CINEMA</strong><small>余白・映画的</small></button>
+</div></section>
+<details class="split-options"><summary>シーン分割を調整</summary><div class="split-panel"><label><span>1シーンの目安</span><select id="densitySelect"><option value="short">短め</option><option value="normal" selected>標準</option><option value="long">長め</option></select></label><p>空行を優先し、長い段落だけ自動で読みやすく分割します。</p></div></details>
+<button id="makeButton" class="primary-button" type="button"><span>プレイヤーにする</span><small>自動でシーンに分けます</small></button>
+<p class="footer-note">BGMやSEはなくても大丈夫。まずは文章だけで。</p>
+</div></section>
+<section id="playerScreen" class="screen player-screen" hidden>
+<header class="player-header"><button id="backButton" class="icon-button" type="button">‹</button><div class="player-title-wrap"><span id="playerAuthor" class="player-author"></span><strong id="playerTitle" class="player-title"></strong></div><button id="menuButton" class="icon-button" type="button">•••</button></header>
+<div id="playerStage" class="player-stage" role="button" tabindex="0"><div id="sceneStack" class="scene-stack"></div><span class="tap-hint">TAP</span></div>
+<footer class="player-footer"><div class="progress-row"><span id="progressText">1 / 1</span><div class="progress-track"><div id="progressBar" class="progress-bar"></div></div><button id="autoButton" class="auto-button" type="button">AUTO</button></div></footer>
+<div id="playerMenu" class="player-menu" hidden><button id="restartButton" type="button">最初から読む</button><button id="editButton" type="button">本文を編集する</button><button id="closeMenuButton" type="button">閉じる</button></div>
+</section>
+</main><script src="./script.js"></script></body></html>
