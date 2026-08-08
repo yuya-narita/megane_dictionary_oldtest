@@ -28,6 +28,7 @@
   let ended = false;
   let touchAdvancedAt = 0;
   let cinemaBackgroundUrl = "";
+  let cinemaTone = "dark";
 
   const SAMPLE = `通りは朝から、よく整えられた録音室みたいだった。
 
@@ -154,6 +155,11 @@
   function applyCinemaBackground(){
     const bg = $("#playerBackground");
     if(!bg) return;
+
+    playerScreen.classList.remove("cinema-tone-dark","cinema-tone-light");
+    if(selectedTheme === "cinema"){
+      playerScreen.classList.add(`cinema-tone-${cinemaTone}`);
+    }
 
     if(selectedTheme === "cinema" && cinemaBackgroundUrl){
       bg.style.backgroundImage = `url("${cinemaBackgroundUrl}")`;
@@ -353,6 +359,18 @@
       applyCinemaBackground();
     });
   }
+
+  $$(".cinema-tone-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      cinemaTone = button.dataset.tone || "dark";
+      $$(".cinema-tone-button").forEach((b) => {
+        const selected = b.dataset.tone === cinemaTone;
+        b.classList.toggle("is-selected", selected);
+        b.setAttribute("aria-pressed", selected ? "true" : "false");
+      });
+      applyCinemaBackground();
+    });
+  });
 
   applyTheme("light");
   updateCount();
