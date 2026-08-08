@@ -481,8 +481,9 @@ function createLine(cut){
   const wrapClass=cut.wrap==="nowrap"?" is-nowrap":"";
   const sizeClass=cut.fontSize&&cut.fontSize!=="auto"
     ?` size-${cut.fontSize}`:"";
+  const hasSubText=typeof cut.subText==="string"&&cut.subText.trim().length>0;
   node.className=
-    `line ${typeClass} view-${view}${effectClasses?" "+effectClasses:""}${wrapClass}${sizeClass} entering`;
+    `line ${typeClass} view-${view}${effectClasses?" "+effectClasses:""}${wrapClass}${sizeClass}${hasSubText?" has-subtext":""} entering`;
   if(cut.fontSize==="custom"&&Number(cut.fontPx)){
     node.style.fontSize=`${Number(cut.fontPx)}px`;
   }
@@ -490,7 +491,27 @@ function createLine(cut){
   const resolvedColor=resolvePlayerTextColor(cut);
   if(resolvedColor)node.style.setProperty("--scene-text-color",resolvedColor);
 
-  startTyping(node,cut);
+  if(hasSubText){
+    const main=document.createElement("div");
+    main.className="line-main";
+    const mainCut={...cut,text:cut.text||""};
+    startTyping(main,mainCut);
+
+    const sub=document.createElement("div");
+    sub.className="line-sub";
+    sub.textContent=cut.subText;
+    if(cut.subTextColor){
+      sub.style.setProperty("--scene-subtext-color",cut.subTextColor);
+    }
+    if(cut.subTextSize==="small"){
+      sub.classList.add("is-small");
+    }
+
+    node.append(main,sub);
+  }else{
+    startTyping(node,cut);
+  }
+
   node.dataset.type=cut.type||"narration";
   lines.appendChild(node);
   node.getBoundingClientRect();

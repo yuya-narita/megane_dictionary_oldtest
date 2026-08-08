@@ -1802,3 +1802,42 @@ header,footer{background:rgba(3,3,7,.84)!important;border-color:#262334!importan
     min-height:72px!important;
   }
 }
+
+
+/* =========================================================
+   Syntax Frontier subText preview v1
+   Optional second text layer inside the same scene/card.
+   ========================================================= */
+.line.has-subtext{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:13px;
+}
+
+.line.has-subtext .line-main{
+  width:100%;
+  color:var(--scene-text-color,currentColor);
+  font:inherit;
+  line-height:inherit;
+  letter-spacing:inherit;
+}
+
+.line.has-subtext .line-sub{
+  width:100%;
+  color:var(--scene-subtext-color,#fff);
+  font-size:.64em;
+  line-height:1.65;
+  letter-spacing:.04em;
+  opacity:.82;
+  font-weight:400;
+}
+
+.line.has-subtext .line-sub.is-small{
+  font-size:.58em;
+}
+
+/* Age fading remains owned by the parent line, so main/sub fade together. */
+.line.has-subtext.age-1 .line-sub{opacity:.78}
+.line.has-subtext.age-2 .line-sub{opacity:.72}
+.line.has-subtext.age-3 .line-sub{opacity:.64}
