@@ -139,6 +139,7 @@
     ended = false;
     current = 0;
     sceneStack.innerHTML = "";
+    sceneStack.style.setProperty("--latest-half", "0px");
     updateProgress();
   }
 
@@ -170,6 +171,18 @@
     }
   }
 
+
+  function updateLatestAnchor(){
+    const latest = sceneStack.lastElementChild;
+    if(!latest) return;
+
+    // Wait until font/layout has settled, then anchor newest line by its actual height.
+    requestAnimationFrame(() => {
+      const h = latest.getBoundingClientRect().height || 0;
+      sceneStack.style.setProperty("--latest-half", `${Math.max(0, h / 2)}px`);
+    });
+  }
+
   function renderCurrent(){
     if(current >= scenes.length) return false;
 
@@ -194,6 +207,8 @@
     while(sceneStack.children.length > 4){
       sceneStack.removeChild(sceneStack.firstElementChild);
     }
+
+    updateLatestAnchor();
 
     current += 1;
     updateProgress();

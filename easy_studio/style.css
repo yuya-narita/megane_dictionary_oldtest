@@ -421,3 +421,46 @@
     transform:translateY(5%)!important;
   }
 }
+
+
+/* =========================================================
+   Easy Studio v0.1.2 — newest scene center anchor
+   ========================================================= */
+
+.player-stage{
+  position:absolute!important;
+  overflow:hidden!important;
+  display:block!important;
+}
+
+.scene-stack{
+  --latest-half:0px;
+  position:absolute!important;
+  left:28px!important;
+  right:28px!important;
+  bottom:50%!important;
+  width:auto!important;
+  min-height:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:flex-start!important;
+  gap:clamp(30px,4.6vh,50px)!important;
+
+  /* bottom:50% places the bottom edge at center.
+     Shift down by half of the newest line so newest line CENTER sits at center. */
+  transform:translateY(var(--latest-half))!important;
+  transition:transform .28s ease!important;
+}
+
+.scene-line{
+  flex:0 0 auto!important;
+}
+
+/* Older scenes naturally extend upward from the center anchor. */
+@media(max-height:700px){
+  .scene-stack{
+    left:24px!important;
+    right:24px!important;
+    gap:24px!important;
+  }
+}
