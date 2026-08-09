@@ -150,7 +150,7 @@
 .sp-scene[data-effect="blur"].is-visible{filter:none}
 
 .sp-tap-hint{
-  position:fixed;right:20px;bottom:calc(var(--sp-footer-h) + 12px + env(safe-area-inset-bottom));
+  position:fixed;right:20px;bottom:calc(var(--sp-footer-h) + 4px + env(safe-area-inset-bottom));
   color:var(--sp-sub);font-size:9px;font-weight:800;letter-spacing:.22em;opacity:.5;pointer-events:none
 }
 .sp-no-footer .sp-tap-hint{bottom:calc(20px + env(safe-area-inset-bottom))}

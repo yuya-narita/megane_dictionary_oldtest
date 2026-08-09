@@ -492,18 +492,19 @@ body.easy-player-open{position:fixed;inset:0;}
 .easy-edit-return{
   position:absolute;
   z-index:30;
-  left:18px;
-  top:calc(92px + env(safe-area-inset-top));
-  min-height:30px;
-  padding:0 11px;
-  border:1px solid var(--sp-line,rgba(55,50,45,.14));
+  left:14px;
+  top:calc(70px + env(safe-area-inset-top));
+  min-height:28px;
+  padding:0 10px;
+  border:1px solid var(--sp-line,rgba(55,50,45,.12));
   border-radius:999px;
-  background:color-mix(in srgb,var(--sp-bg,#fbfaf5) 82%,transparent);
+  background:color-mix(in srgb,var(--sp-bg,#fbfaf5) 74%,transparent);
   color:var(--sp-sub,#8d877f);
   backdrop-filter:blur(10px);
-  font-size:10px;
+  font-size:9px;
   font-weight:700;
-  letter-spacing:.04em;
+  letter-spacing:.035em;
+  opacity:.82;
 }
 
 /* Keep the Easy Studio v0.1.2 reading rhythm while Core owns rendering. */
@@ -537,7 +538,7 @@ body.easy-player-open{position:fixed;inset:0;}
 }
 
 @media(max-width:520px){
-  .easy-edit-return{left:14px;top:calc(90px + env(safe-area-inset-top));}
+  .easy-edit-return{left:12px;top:calc(68px + env(safe-area-inset-top));}
 }
 
 
