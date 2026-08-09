@@ -638,3 +638,13 @@ body.easy-player-open{position:fixed;inset:0;}
   .advanced-right-actions{gap:4px}
   .advanced-preview-button{padding-left:5px;padding-right:5px}
 }
+
+/* v0.2.9.1 — i18n final: keep Preview/確認 on one line */
+.advanced-preview-button{
+  white-space:nowrap;
+  word-break:keep-all;
+  flex:0 0 auto;
+}
+.advanced-right-actions{
+  white-space:nowrap;
+}
