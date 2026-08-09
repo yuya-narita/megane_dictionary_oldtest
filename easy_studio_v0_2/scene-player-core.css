@@ -11,6 +11,8 @@
   --sp-line:rgba(55,50,45,.14);
   --sp-accent:#5f6df7;
   --sp-panel:rgba(255,255,255,.88);
+  --sp-header-h:68px;
+  --sp-footer-h:56px;
   position:relative;
   width:100%;
   height:100%;
@@ -51,8 +53,8 @@
 
 .sp-header{
   position:absolute;z-index:5;inset:0 0 auto;
-  height:calc(86px + env(safe-area-inset-top));
-  padding:calc(10px + env(safe-area-inset-top)) 18px 10px;
+  height:calc(var(--sp-header-h) + env(safe-area-inset-top));
+  padding:calc(4px + env(safe-area-inset-top)) 16px 4px;
   display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;
   border-bottom:1px solid var(--sp-line);
   backdrop-filter:blur(10px);
@@ -70,11 +72,11 @@
 .sp-button:hover:not(:disabled){background:var(--sp-line);color:var(--sp-text)}
 .sp-button:disabled{opacity:.22;cursor:default}
 .sp-meta{text-align:center;min-width:0}
-.sp-author{display:block;min-height:14px;margin-bottom:4px;color:var(--sp-sub);font-size:10px;letter-spacing:.03em}
-.sp-title{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--sp-font-serif);font-size:15px;font-weight:600}
+.sp-author{display:block;min-height:11px;margin-bottom:2px;color:var(--sp-sub);font-size:9px;line-height:1.1;letter-spacing:.03em}
+.sp-title{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--sp-font-serif);font-size:14px;line-height:1.2;font-weight:600}
 
 .sp-stage{
-  position:absolute;inset:calc(86px + env(safe-area-inset-top)) 0 calc(72px + env(safe-area-inset-bottom));
+  position:absolute;inset:calc(var(--sp-header-h) + env(safe-area-inset-top)) 0 calc(var(--sp-footer-h) + env(safe-area-inset-bottom));
   overflow:hidden;overscroll-behavior:none;scrollbar-width:none;
   padding:0;
   outline:none;cursor:pointer;
@@ -148,23 +150,23 @@
 .sp-scene[data-effect="blur"].is-visible{filter:none}
 
 .sp-tap-hint{
-  position:fixed;right:22px;bottom:calc(88px + env(safe-area-inset-bottom));
+  position:fixed;right:20px;bottom:calc(var(--sp-footer-h) + 12px + env(safe-area-inset-bottom));
   color:var(--sp-sub);font-size:9px;font-weight:800;letter-spacing:.22em;opacity:.5;pointer-events:none
 }
 .sp-no-footer .sp-tap-hint{bottom:calc(20px + env(safe-area-inset-bottom))}
 
 .sp-footer{
   position:absolute;z-index:5;inset:auto 0 0;
-  min-height:calc(72px + env(safe-area-inset-bottom));
-  padding:12px 20px calc(12px + env(safe-area-inset-bottom));
-  display:grid;grid-template-columns:auto minmax(80px,1fr) auto;gap:14px;align-items:center;
+  min-height:calc(var(--sp-footer-h) + env(safe-area-inset-bottom));
+  padding:7px 18px calc(7px + env(safe-area-inset-bottom));
+  display:grid;grid-template-columns:auto minmax(80px,1fr) auto;gap:12px;align-items:center;
   border-top:1px solid var(--sp-line);backdrop-filter:blur(10px)
 }
 .sp-no-footer .sp-footer{display:none}
-.sp-progress-label{min-width:48px;color:var(--sp-sub);font-size:11px;font-variant-numeric:tabular-nums}
+.sp-progress-label{min-width:44px;color:var(--sp-sub);font-size:10px;font-variant-numeric:tabular-nums}
 .sp-progress-track{height:2px;background:var(--sp-line);overflow:hidden}
 .sp-progress-bar{width:0;height:100%;background:var(--sp-text);transition:width .35s ease}
-.sp-auto{min-width:58px;height:36px;border:1px solid var(--sp-line);border-radius:999px;background:transparent;color:var(--sp-sub);font-size:10px;font-weight:800;letter-spacing:.06em}
+.sp-auto{min-width:56px;height:36px;border:1px solid var(--sp-line);border-radius:999px;background:transparent;color:var(--sp-sub);font-size:10px;font-weight:800;letter-spacing:.06em}
 .sp-auto.is-on{background:var(--sp-text);color:var(--sp-bg);border-color:var(--sp-text)}
 
 .sp-ending{
@@ -361,7 +363,7 @@
 .sp-history{
   position:absolute;
   z-index:14;
-  inset:calc(86px + env(safe-area-inset-top)) 0 calc(72px + env(safe-area-inset-bottom));
+  inset:calc(var(--sp-header-h) + env(safe-area-inset-top)) 0 calc(var(--sp-footer-h) + env(safe-area-inset-bottom));
   background:color-mix(in srgb,var(--sp-bg) 84%,transparent);
   backdrop-filter:blur(16px);
   -webkit-backdrop-filter:blur(16px);
@@ -573,4 +575,17 @@
 }
 @media (prefers-reduced-motion:reduce){
   .sp-core.sp-paper-press .sp-stage{translate:0 1px}
+}
+
+
+/* Core v1.8.6 — quiet Player chrome */
+@media (max-width:520px){
+  .sp-core{
+    --sp-header-h:64px;
+    --sp-footer-h:52px;
+  }
+  .sp-header{padding-left:12px;padding-right:12px}
+  .sp-footer{padding-left:15px;padding-right:15px}
+  .sp-title{font-size:13px}
+  .sp-author{font-size:8.5px}
 }
