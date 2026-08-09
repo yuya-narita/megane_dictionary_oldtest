@@ -83,32 +83,45 @@
 .sp-stage::-webkit-scrollbar{display:none}
 .sp-no-header .sp-stage{top:env(safe-area-inset-top)}
 .sp-no-footer .sp-stage{bottom:env(safe-area-inset-bottom)}
-/* Core reading rhythm: the newest Scene itself is anchored at the visual center.
-   Older Scenes accumulate upward; the lower half remains intentionally quiet. */
+/* Core v1.8.1 — Jump/Shino whitespace geometry.
+   Scenes are absolute-positioned inside the Stage. The newest Scene sits around
+   46%/48% of the Stage; earlier Scenes physically move upward when a new Scene arrives. */
 .sp-scenes{
-  --sp-latest-half:0px;
   position:absolute;
-  left:clamp(24px,7vw,72px);
-  right:clamp(24px,7vw,72px);
-  bottom:50%;
-  width:auto;
+  inset:0 clamp(24px,7vw,72px);
   max-width:760px;
   margin:0 auto;
-  display:flex;
-  flex-direction:column;
-  gap:clamp(18px,3.2vh,34px);
-  transform:translateY(var(--sp-latest-half));
-  transition:transform .26s ease;
+  pointer-events:none;
 }
-
-.sp-core[data-display="solo"] .sp-scenes{gap:0}
+.sp-scene{
+  position:absolute;
+  left:0;
+  top:0;
+  width:100%;
+  will-change:transform,opacity,filter;
+  transition:
+    transform .82s cubic-bezier(.16,.72,.17,1),
+    opacity .72s ease,
+    filter .72s ease;
+}
+.sp-scene.entering{
+  opacity:0!important;
+  transform:translateY(13px);
+  filter:blur(2px)!important;
+}
+.sp-scene.sp-layout-leaving{
+  opacity:0!important;
+  filter:blur(2px)!important;
+  pointer-events:none;
+}
+.sp-core[data-display="solo"] .sp-scenes{inset:0 clamp(24px,7vw,72px)}
 
 .sp-scene{
   opacity:0;transform:translateY(10px);filter:blur(3px);
   transition:opacity .42s ease,transform .42s ease,filter .42s ease;
   color:var(--sp-scene-color,var(--sp-text));
 }
-.sp-scene.is-visible{opacity:1;transform:none;filter:none}
+.sp-scene.is-visible{opacity:1;filter:none}
 .sp-scene:not(.is-active){opacity:.44}
 .sp-scene[data-age="1"]{opacity:.58}
 .sp-scene[data-age="2"]{opacity:.38}
@@ -127,7 +140,7 @@
 .sp-sound-mark{display:block;color:var(--sp-sub);font-size:28px;text-align:center}
 
 .sp-scene[data-effect="fade"]{transform:translateY(0)}
-.sp-scene[data-effect="pop"]{transform:scale(.96)}
+.sp-scene[data-effect="pop"] .sp-text{transform:scale(.96);transform-origin:left center;transition:transform .42s ease}.sp-scene[data-effect="pop"].is-visible .sp-text{transform:scale(1)}
 .sp-scene[data-effect="whisper"] .sp-text{font-size:.88em;letter-spacing:.08em}
 .sp-scene[data-effect="loud"] .sp-text{font-size:1.12em;font-weight:800}
 .sp-scene[data-effect="slow"]{transition-duration:.9s}
@@ -207,8 +220,8 @@
 .sp-scene[data-view="void"] .sp-text{letter-spacing:.12em}
 
 @keyframes sp-pulse{0%,100%{opacity:1}50%{opacity:.56}}
-@keyframes sp-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
-@keyframes sp-tilt{0%{transform:rotate(-1.2deg) translateY(5px)}100%{transform:rotate(0deg) translateY(0)}}
+@keyframes sp-shake{0%,100%{translate:0 0}20%{translate:-4px 0}40%{translate:4px 0}60%{translate:-2px 0}80%{translate:2px 0}}
+@keyframes sp-tilt{0%{rotate:-1.2deg;translate:0 5px}100%{rotate:0deg;translate:0 0}}
 .sp-scene[data-effect="pulse"].is-visible{animation:sp-pulse 1.6s ease-in-out 1}
 .sp-scene[data-effect="shake"].is-visible{animation:sp-shake .42s ease 1}
 .sp-scene[data-effect="tilt"].is-visible{animation:sp-tilt .55s ease-out 1}
@@ -519,31 +532,45 @@
 .sp-core[data-font="mono"] .sp-title{font-family:var(--sp-font-mono)}
 .sp-core[data-font="serif"] .sp-title{font-family:var(--sp-font-serif)}
 
-/* AUTO transition restored from the original players:
-   older text shifts slightly upward while the new Scene settles slightly downward.
-   The motion is deliberately tiny — spacing is the effect. */
-.sp-scene[data-auto-transition="true"]:not(.is-active){
-  transform:translateY(10px);
-}
-.sp-scene[data-auto-transition="true"].is-active{
-  transform:translateY(-12px);
-}
-.sp-scene[data-auto-transition="true"].is-visible{
-  transform:translateY(0);
-}
-.sp-scene[data-auto-transition="true"]:not(.is-active){
+/* AUTO motion is now driven by the shared Jump/Shino layout engine above.
+   Effect-specific opacity/filter behavior remains independent from geometry. */
+
+
+/* New text resolves on the same clock as the previous text.
+   No separate fast arrival path. */
+.sp-core.sp-whitespace-exhale .sp-scene.entering.sp-sync-landing{
   transition:
-    opacity .42s ease,
-    transform .46s cubic-bezier(.2,.75,.25,1),
-    filter .42s ease;
-}
-.sp-scene[data-auto-transition="true"].is-active{
-  transition:
-    opacity .44s ease,
-    transform .48s cubic-bezier(.2,.75,.25,1),
-    filter .44s ease;
+    transform 1.18s cubic-bezier(.18,.66,.18,1),
+    opacity 1.18s cubic-bezier(.18,.66,.18,1),
+    filter 1.18s cubic-bezier(.18,.66,.18,1)!important;
 }
 
+
+/* Core v1.8.4 — true Jump landing
+   The incoming Scene is painted in `entering` state for one frame before
+   layout transforms are applied. This restores the actual travel distance. */
+.sp-core.sp-whitespace-inhale .sp-scene,
+.sp-core.sp-whitespace-exhale .sp-scene{
+  transition:
+    transform .82s cubic-bezier(.16,.72,.17,1),
+    opacity .72s ease,
+    filter .72s ease!important;
+}
+
+
+/* Core v1.8.5 — paper press
+   At the exact reading tap, the paper/stage sinks by one physical CSS pixel
+   and returns immediately. Scene geometry itself is untouched. */
+.sp-stage{
+  translate:0 0;
+}
+.sp-core.sp-paper-press .sp-stage{
+  translate:0 1px;
+  transition:translate 45ms ease-out;
+}
+.sp-core:not(.sp-paper-press) .sp-stage{
+  transition:translate 70ms ease-out;
+}
 @media (prefers-reduced-motion:reduce){
-  .sp-scene[data-auto-transition="true"]{transform:none!important}
+  .sp-core.sp-paper-press .sp-stage{translate:0 1px}
 }

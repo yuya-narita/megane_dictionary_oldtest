@@ -10,6 +10,13 @@
     autoDelay: 2600,
     transitionMs: 420,
     maxStackVisible: 8,
+    focusYMobile: 0.46,
+    focusYDesktop: 0.48,
+    baseGap: 34,
+    dialogueGap: 56,
+    largeGap: 48,
+    soundGap: 60,
+    whitespaceBreath: 9,
     startAt: 0,
     showHeader: true,
     showFooter: true,
@@ -78,6 +85,7 @@
       this.destroyed = false;
       this._bound = [];
       this.presentationTimers = [];
+      this.layoutTimers = [];
       this.typingState = null;
       this.backgroundState = null;
       this.backgroundLayerIndex = 0;
@@ -194,7 +202,17 @@
 
     _bindControls() {
       // iOS/WebKit: the reading gesture unlocks Web Audio and arms playback.
-      const armFromStageGesture = () => this.unlockAudio(true);
+      const pressPaper = () => {
+        this.host.classList.remove('sp-paper-press');
+        // Force a restart even on rapid taps.
+        void this.host.offsetWidth;
+        this.host.classList.add('sp-paper-press');
+        this._layoutTimeout(() => this.host.classList.remove('sp-paper-press'), 115);
+      };
+      const armFromStageGesture = () => {
+        pressPaper();
+        this.unlockAudio(true);
+      };
       if ('PointerEvent' in global) this._on(this.els.stage, 'pointerdown', armFromStageGesture, { passive: true });
       else this._on(this.els.stage, 'touchstart', armFromStageGesture, { passive: true });
 
@@ -1117,19 +1135,171 @@
       }, delay);
     }
 
+
+    _clearLayoutTimers() {
+      this.layoutTimers.forEach((timer) => clearTimeout(timer));
+      this.layoutTimers.length = 0;
+    }
+
+    _layoutTimeout(fn, delay) {
+      const timer = setTimeout(() => {
+        const i = this.layoutTimers.indexOf(timer);
+        if (i >= 0) this.layoutTimers.splice(i, 1);
+        fn();
+      }, Math.max(0, delay));
+      this.layoutTimers.push(timer);
+      return timer;
+    }
+
+    _sceneGap(prevScene, nextScene) {
+      const prevType = prevScene?.type || 'text';
+      const nextType = nextScene?.type || 'text';
+      if (prevType === 'sound' || nextType === 'sound') return this.options.soundGap;
+      if (prevType !== nextType) return this.options.largeGap;
+      if (prevType === 'dialogue') return this.options.dialogueGap;
+      return this.options.baseGap;
+    }
+
+    _measureScenePositions(nodes, sceneEntries, extraGap = 0) {
+      if (!nodes.length) return [];
+      const stageHeight = this.els.stage.clientHeight;
+      const focusRatio = global.innerWidth <= 600 ? this.options.focusYMobile : this.options.focusYDesktop;
+      const focusY = stageHeight * focusRatio;
+
+      const metrics = nodes.map((node, i) => ({
+        node,
+        scene: sceneEntries[i].scene,
+        index: sceneEntries[i].index,
+        height: node.getBoundingClientRect().height
+      }));
+
+      const newest = metrics[metrics.length - 1];
+      let newestTop = focusY - newest.height / 2;
+      if (newest.scene.type === 'dialogue') newestTop -= 12;
+
+      const positions = new Array(metrics.length);
+      positions[metrics.length - 1] = newestTop;
+
+      for (let i = metrics.length - 2; i >= 0; i -= 1) {
+        const current = metrics[i];
+        const next = metrics[i + 1];
+        positions[i] =
+          positions[i + 1]
+          - this._sceneGap(current.scene, next.scene)
+          - extraGap
+          - current.height;
+      }
+
+      return metrics.map((item, i) => ({ ...item, y: positions[i] }));
+    }
+
+    _positionSceneNodes(nodes, sceneEntries, extraGap = 0) {
+      const measured = this._measureScenePositions(nodes, sceneEntries, extraGap);
+      measured.forEach(({ node, y }) => {
+        node.style.transform = `translate3d(0,${Math.round(y)}px,0)`;
+      });
+      return measured;
+    }
+
+    _updateSceneAges(nodes, sceneEntries) {
+      nodes.forEach((node, i) => {
+        const distance = sceneEntries.length - 1 - i;
+        node.dataset.age = String(distance);
+        node.classList.toggle('is-active', distance === 0);
+        if (distance > 0) node.classList.add('is-visible');
+      });
+    }
+
+
+    _renderStackWithBreathing(visible, active) {
+      const oldById = new Map(
+        [...this.els.scenes.querySelectorAll('.sp-scene')].map((node) => [node.dataset.sceneId, node])
+      );
+      const nodes = [];
+      let newestCreated = null;
+
+      visible.forEach(({ scene, index }) => {
+        let node = oldById.get(scene.id);
+        if (node) {
+          oldById.delete(scene.id);
+        } else {
+          node = this._sceneNode(scene, index === this.index, this.index - index);
+          node.classList.add('entering');
+          newestCreated = node;
+        }
+        nodes.push(node);
+        this.els.scenes.appendChild(node);
+      });
+
+      oldById.forEach((node) => {
+        node.classList.add('sp-layout-leaving');
+        this._layoutTimeout(() => node.remove(), 430);
+      });
+
+      this._updateSceneAges(nodes, visible);
+
+      // IMPORTANT: faithful Jump/Shino ordering.
+      // Leave the new Scene in its CSS entering position for one painted frame.
+      // Without this frame, the incoming Scene has almost no travel distance.
+      requestAnimationFrame(() => {
+        this.host.classList.remove('sp-whitespace-exhale');
+        this.host.classList.add('sp-whitespace-inhale');
+
+        // Phase 1: move all visible Scenes toward the expanded whitespace layout.
+        this._positionSceneNodes(nodes, visible, this.options.whitespaceBreath);
+
+        // Jump/Shino wait two frames before retargeting to the final geometry.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            this.host.classList.remove('sp-whitespace-inhale');
+            this.host.classList.add('sp-whitespace-exhale');
+
+            // Same transform clock for both previous and current text.
+            this._positionSceneNodes(nodes, visible, 0);
+
+            const newest = newestCreated || nodes[nodes.length - 1];
+            if (newest) {
+              newest.classList.remove('entering');
+              newest.classList.add('is-visible');
+              this._activatePresentation(active, newest);
+            }
+
+            this._layoutTimeout(() => this.host.classList.remove('sp-whitespace-exhale'), 860);
+            this._scheduleAuto();
+          });
+        });
+      });
+    }
+
+
     _render() {
       if (!this.document) return;
       this._resetPresentationRuntime();
+      this._clearLayoutTimers();
+
       const scenes = this.document.scenes;
       const active = scenes[this.index];
       const display = active?.presentation?.display || 'stack';
       const visible = this._visibleScenes(display);
+      const isForwardStack = this._audioRenderMode === 'advance' && display === 'stack';
 
-      this.els.scenes.innerHTML = '';
-      visible.forEach(({ scene, index }) => {
-        const node = this._sceneNode(scene, index === this.index, this.index - index);
-        this.els.scenes.appendChild(node);
-      });
+      if (isForwardStack) {
+        this._renderStackWithBreathing(visible, active);
+      } else {
+        // Restore/load/history jumps should be immediate and deterministic.
+        this.els.scenes.innerHTML = '';
+        const nodes = [];
+        visible.forEach(({ scene, index }) => {
+          const node = this._sceneNode(scene, index === this.index, this.index - index);
+          node.classList.add('is-visible');
+          this.els.scenes.appendChild(node);
+          nodes.push(node);
+        });
+        this._updateSceneAges(nodes, visible);
+        this._positionSceneNodes(nodes, visible, 0);
+        const newest = nodes[nodes.length - 1];
+        if (newest) this._activatePresentation(active, newest);
+      }
 
       this.els.current.textContent = String(this.index + 1);
       this.els.bar.style.width = `${this.progress * 100}%`;
@@ -1144,27 +1314,12 @@
         this._applySceneAudio(active, false);
       } else {
         const mode = this._audioRenderMode;
-        this._restoreAudioForIndex(this.index, mode);
-        // One-shots do not fire while browsing History, but do replay when the
-        // reader explicitly lands on a visited Scene. This recreates that Scene.
-        if (mode === 'load' || mode === 'history') this._queueInitialOneShots(active);
+        this._restoreAudioForIndex(this.index);
+        if (mode === 'load') this._queueInitialOneShots(active);
       }
       this._audioRenderMode = 'advance';
 
-      requestAnimationFrame(() => {
-        const newest = this.els.scenes.lastElementChild;
-        if (newest) {
-          // Anchor the newest Scene's CENTER to the Stage center.
-          // This recreates the v0.1 reading rhythm without Studio-specific layout code.
-          const latestHalf = Math.max(0, newest.getBoundingClientRect().height / 2);
-          this.els.scenes.style.setProperty('--sp-latest-half', `${latestHalf}px`);
-          newest.classList.add('is-visible');
-          this._activatePresentation(active, newest);
-        } else {
-          this.els.scenes.style.setProperty('--sp-latest-half', '0px');
-        }
-        this._scheduleAuto();
-      });
+      if (!isForwardStack) this._scheduleAuto();
     }
 
     _visibleScenes(display) {
