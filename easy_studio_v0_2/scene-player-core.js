@@ -1,5 +1,5 @@
 /*
- * Scene Player Core v1.6.0
+ * Scene Player Core v1.9.0
  * Runtime for Scene Format v1.0
  * No splitter / studio authoring logic lives here.
  */
@@ -24,7 +24,8 @@
     keyboard: true,
     swipe: true,
     swipeThreshold: 44,
-    endOnNextAction: true
+    endOnNextAction: true,
+    uiLanguage: 'ja'
   });
 
   const THEMES = new Set(['light', 'dark', 'cinema']);
@@ -186,12 +187,46 @@
         bar: q('.sp-progress-bar'),
         ending: q('.sp-ending'),
         endingTitle: q('.sp-ending-title'),
-        endingRestart: q('.sp-ending-restart')
+        endingRestart: q('.sp-ending-restart'),
+        endingText: q('.sp-ending-text'),
+        historyHelp: q('.sp-history-help'),
+        historyClose: q('.sp-history-close'),
+        tapHint: q('.sp-tap-hint')
       };
 
       this.host.classList.toggle('sp-no-header', !this.options.showHeader);
       this.host.classList.toggle('sp-no-footer', !this.options.showFooter);
       this.els.prev.hidden = !this.options.allowPrevious;
+      this.setUILanguage(this.options.uiLanguage || 'ja');
+    }
+
+    _uiText(key) {
+      const I = global.SceneStudioI18n;
+      if (I && typeof I.t === 'function' && I.getLocale?.() === this.uiLanguage) return I.t(key);
+      const fallback = {
+        ja:{
+          'player.previous':'過去Scene','player.restart':'最初から','player.history':'過去Sceneをスクロール','player.history.close':'履歴を閉じる',
+          'player.ending.title':'読了','player.ending.text':'最後まで読みました。','player.ending.restart':'最初から読む'
+        },
+        en:{
+          'player.previous':'Past Scenes','player.restart':'Restart','player.history':'Scroll past Scenes','player.history.close':'Close history',
+          'player.ending.title':'Finished','player.ending.text':'You reached the end.','player.ending.restart':'Read from start'
+        }
+      };
+      return fallback[this.uiLanguage]?.[key] || fallback.ja[key] || key;
+    }
+
+    setUILanguage(language='ja') {
+      this.uiLanguage = language === 'en' ? 'en' : 'ja';
+      if (!this.els) return this.uiLanguage;
+      this.els.prev.setAttribute('aria-label', this._uiText('player.previous'));
+      this.els.restart.setAttribute('aria-label', this._uiText('player.restart'));
+      this.els.historyHelp.textContent = this._uiText('player.history');
+      this.els.historyClose.setAttribute('aria-label', this._uiText('player.history.close'));
+      this.els.endingText.textContent = this._uiText('player.ending.text');
+      this.els.endingRestart.textContent = this._uiText('player.ending.restart');
+      if (!this.document) this.els.endingTitle.textContent = this._uiText('player.ending.title');
+      return this.uiLanguage;
     }
 
     _on(el, event, fn, options) {
@@ -854,7 +889,7 @@
       this.els.title.textContent = doc.title || '';
       this.els.author.textContent = doc.author || '';
       this.els.total.textContent = String(doc.scenes.length);
-      this.els.endingTitle.textContent = doc.title || '読了';
+      this.els.endingTitle.textContent = doc.title || this._uiText('player.ending.title');
       this.els.ending.hidden = true;
       this.backgroundState = null;
       this.backgroundLayerIndex = 0;

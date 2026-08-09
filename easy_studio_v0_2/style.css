@@ -616,3 +616,25 @@ body.easy-player-open{position:fixed;inset:0;}
   .work-font-card strong{font-size:14px}
   .work-font-card small{font-size:9.5px}
 }
+
+/* v0.2.9 — UI language switch */
+.topbar-actions{display:flex;align-items:center;gap:10px}
+.ui-language-switch{
+  display:inline-flex;align-items:center;padding:2px;
+  border:1px solid var(--line);border-radius:999px;background:var(--panel);
+}
+.ui-language-switch button{
+  min-width:34px;height:28px;padding:0 8px;border:0;border-radius:999px;
+  background:transparent;color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.06em;
+}
+.ui-language-switch button.is-selected{background:#17191d;color:#fff}
+.advanced-right-actions{display:flex;justify-content:flex-end;align-items:center;gap:7px}
+.ui-language-switch-advanced button{min-width:27px;height:25px;padding:0 5px;font-size:8px}
+@media(max-width:520px){
+  .topbar-actions{gap:7px}
+  .version{display:none}
+  .ui-language-switch button{min-width:32px}
+  .advanced-topbar{grid-template-columns:68px 1fr minmax(105px,auto)}
+  .advanced-right-actions{gap:4px}
+  .advanced-preview-button{padding-left:5px;padding-right:5px}
+}

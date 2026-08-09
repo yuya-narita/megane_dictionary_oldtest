@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#f7f8fb">
-  <title>Easy Studio v0.2.8</title>
+  <title>Scene Studio v0.2.9</title>
   <link rel="stylesheet" href="./scene-player-core.css">
   <link rel="stylesheet" href="./style.css">
 </head>
@@ -13,7 +13,7 @@
   <section id="editorScreen" class="screen editor-screen">
     <header class="topbar">
       <div><p class="brand-kicker">SCENE STUDIO</p><h1>Easy Studio</h1></div>
-      <span class="version">v0.2.8</span>
+      <div class="topbar-actions"><span class="version">v0.2.9</span><div class="ui-language-switch" role="group" aria-label="UI language"><button type="button" data-ui-lang="ja">JA</button><button type="button" data-ui-lang="en">EN</button></div></div>
     </header>
 
     <section class="intro">
@@ -90,7 +90,7 @@
     <header class="advanced-topbar">
       <button id="advancedBackButton" class="advanced-nav-button" type="button">‹ Easy</button>
       <div><p class="brand-kicker">SCENE STUDIO</p><h1>シーンを調整</h1></div>
-      <button id="advancedPreviewButton" class="advanced-preview-button" type="button">確認</button>
+      <div class="advanced-right-actions"><div class="ui-language-switch ui-language-switch-advanced" role="group" aria-label="UI language"><button type="button" data-ui-lang="ja">JA</button><button type="button" data-ui-lang="en">EN</button></div><button id="advancedPreviewButton" class="advanced-preview-button" type="button">確認</button></div>
     </header>
 
     <section class="advanced-policy">
@@ -202,6 +202,7 @@
     <button id="editReturnButton" class="easy-edit-return" type="button">編集に戻る</button>
   </section>
 </main>
+<script src="./scene-studio-i18n.js"></script>
 <script src="./scene-player-core.js"></script>
 <script src="./japanese-splitter.js"></script>
 <script src="./script.js"></script>

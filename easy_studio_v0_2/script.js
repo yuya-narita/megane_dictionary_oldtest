@@ -13,6 +13,104 @@
   const densitySelect = $('#densitySelect');
   const playerHost = $('#scenePlayer');
 
+  const I18N = window.SceneStudioI18n;
+  const t = (key, vars={}) => I18N?.t(key, vars) ?? key;
+  let uiLanguage = I18N?.getLocale?.() || 'ja';
+
+  const UI_BINDINGS = [
+    ['.intro h2','intro.title'],['.intro p','intro.body'],
+    ['label.field:nth-of-type(1) .field-label','field.title'],['#titleInput','field.title.ph','placeholder'],
+    ['label.field:nth-of-type(2) .field-label','field.author'],['#authorInput','field.author.ph','placeholder'],
+    ['.body-field .field-label','field.body'],['#bodyInput','field.body.ph','placeholder'],['#sampleButton','body.sample'],
+    ['.theme-section .section-heading span','theme.heading'],['.theme-section .section-heading small','theme.note'],
+    ['.theme-card[data-theme="light"] small','theme.light'],['.theme-card[data-theme="dark"] small','theme.dark'],['.theme-card[data-theme="cinema"] small','theme.cinema'],
+    ['.work-font-section .section-heading span','font.heading'],['.work-font-section .section-heading small','font.note'],
+    ['.work-font-card[data-font="serif"] strong','font.serif'],['.work-font-card[data-font="serif"] small','font.serif.note'],
+    ['.work-font-card[data-font="sans"] strong','font.sans'],['.work-font-card[data-font="sans"] small','font.sans.note'],
+    ['.work-font-card[data-font="mono"] strong','font.mono'],['.work-font-card[data-font="mono"] small','font.mono.note'],
+    ['.split-options summary','split.summary'],['.split-panel label span','split.guide'],['.split-panel p','split.note'],
+    ['#densitySelect option[value="short"]','density.short'],['#densitySelect option[value="normal"]','density.normal'],['#densitySelect option[value="long"]','density.long'],
+    ['.cinema-background-copy strong','cinema.bg'],['.cinema-background-copy span','cinema.bg.note'],
+    ['.cinema-tone-button[data-tone="dark"]','cinema.dark'],['.cinema-tone-button[data-tone="light"]','cinema.light'],
+    ['.cinema-background-button','cinema.choose'],['#cinemaBackgroundClear','cinema.remove'],
+    ['#makeButton span','make'],['#makeButton small','make.note'],['#advancedButton','advanced.open'],['.footer-note','footer.note'],
+    ['.advanced-topbar h1','advanced.title'],['#advancedPreviewButton','common.preview'],
+    ['.advanced-policy strong','nav.previous.policy'],['.advanced-policy small','nav.previous.note'],
+    ['#sceneTextInput','scene.text','aria-label'],['.scene-inspector > .adv-field:nth-of-type(1) > span','scene.text'],
+    ['.subtext-field > span','scene.subtext'],['#sceneSubTextInput','scene.subtext.ph','placeholder'],
+    ['#sceneTypeSelect','scene.type','aria-label'],['#sceneTypeSelect option[value="text"]','scene.type.text'],['#sceneTypeSelect option[value="dialogue"]','scene.type.dialogue'],['#sceneTypeSelect option[value="sound"]','scene.type.sound'],
+    ['#sceneDisplaySelect option[value="stack"]','scene.display.stack'],['#sceneDisplaySelect option[value="solo"]','scene.display.solo'],
+    ['#sceneEffectSelect option[value="auto"]','effect.auto'],['#sceneEffectSelect option[value="fade"]','effect.fade'],['#sceneEffectSelect option[value="pop"]','effect.pop'],['#sceneEffectSelect option[value="blur"]','effect.blur'],
+    ['#sceneEffectSelect option[value="whisper"]','effect.whisper'],['#sceneEffectSelect option[value="loud"]','effect.loud'],['#sceneEffectSelect option[value="pulse"]','effect.pulse'],['#sceneEffectSelect option[value="shake"]','effect.shake'],['#sceneEffectSelect option[value="tilt"]','effect.tilt'],['#sceneEffectSelect option[value="slow"]','effect.slow'],['#sceneEffectSelect option[value="none"]','effect.none'],
+    ['#sceneSizeSelect option[value="auto"]','size.auto'],['#sceneSizeSelect option[value="small"]','size.small'],['#sceneSizeSelect option[value="normal"]','size.normal'],['#sceneSizeSelect option[value="large"]','size.large'],['#sceneSizeSelect option[value="xl"]','size.xl'],
+    ['#sceneFontSelect option[value="inherit"]','font.inherit'],['#sceneFontSelect option[value="serif"]','font.serif'],['#sceneFontSelect option[value="sans"]','font.sans'],['#sceneFontSelect option[value="mono"]','font.mono'],
+    ['#mergePreviousButton','edit.merge'],['#splitSceneButton','edit.split'],['#deleteSceneButton','edit.delete'],
+    ['.adv-section:nth-of-type(1) summary','section.background'],['#sceneBackgroundMode option[value="inherit"]','background.inherit'],['#sceneBackgroundMode option[value="image"]','background.image'],['#sceneBackgroundMode option[value="clear"]','background.clear'],
+    ['label[for="sceneBackgroundInput"]','background.choose'],['#sceneBackgroundRemoveFile','background.unselect'],
+    ['#sceneBackgroundTransition option[value="fade"]','transition.fade'],['#sceneBackgroundTransition option[value="cut"]','transition.cut'],['#sceneBackgroundTransition option[value="flash"]','transition.flash'],['#sceneBackgroundTransition option[value="glitch"]','transition.glitch'],
+    ['#sceneBackgroundFit option[value="cover"]','fit.cover'],['#sceneBackgroundFit option[value="contain"]','fit.contain'],
+    ['#sceneBackgroundMotion option[value="none"]','motion.none'],['#sceneBackgroundMotion option[value="slowZoom"]','motion.slowZoom'],['#sceneBackgroundMotion option[value="breath"]','motion.breath'],['#sceneBackgroundMotion option[value="panLeft"]','motion.panLeft'],['#sceneBackgroundMotion option[value="panRight"]','motion.panRight'],['#sceneBackgroundMotion option[value="panUp"]','motion.panUp'],['#sceneBackgroundMotion option[value="panDown"]','motion.panDown'],
+    ['.adv-section:nth-of-type(2) summary','section.audio'],
+    ['label[for="sceneBgmInput"]','audio.chooseBgm'],['label[for="sceneAmbientInput"]','audio.chooseAmbient'],['label[for="sceneSeInput"]','audio.chooseSe'],
+    ['#sceneBgmLoop + span','audio.loop'],['#sceneAmbientLoop + span','audio.loop'],['#sceneSeEnabled + span','audio.seEnable'],
+    ['.audio-card:nth-child(1) .audio-card-title small','audio.bgm.note'],['.audio-card:nth-child(2) .audio-card-title small','audio.ambient.note'],['.audio-card:nth-child(3) .audio-card-title small','audio.se.note'],
+    ['.advanced-hint','audio.hint'],['#editReturnButton','preview.return']
+  ];
+
+  function applyStaticUITranslations(){
+    document.documentElement.lang = uiLanguage;
+    UI_BINDINGS.forEach(([selector,key,attr])=>{
+      const el=document.querySelector(selector); if(!el)return;
+      if(attr) el.setAttribute(attr,t(key)); else el.textContent=t(key);
+    });
+
+    // Labels that repeat and are safer to bind by semantic parent.
+    document.querySelectorAll('.adv-grid > .adv-field').forEach(label=>{
+      const sel=label.querySelector('select');
+      const head=label.querySelector(':scope > span');
+      if(!sel||!head)return;
+      if(sel.id==='sceneTypeSelect')head.textContent=t('scene.type');
+      if(sel.id==='sceneDisplaySelect')head.textContent=t('scene.display');
+      if(sel.id==='sceneEffectSelect')head.textContent=t('scene.effect');
+      if(sel.id==='sceneSizeSelect')head.textContent=t('scene.size');
+      if(sel.id==='sceneFontSelect')head.textContent=t('scene.font');
+      if(sel.id==='sceneBackgroundTransition')head.textContent=t('background.transition');
+      if(sel.id==='sceneBackgroundFit')head.textContent=t('background.fit');
+      if(sel.id==='sceneBackgroundMotion')head.textContent=t('background.motion');
+    });
+    const bgModeLabel=$('#sceneBackgroundMode')?.closest('.adv-field')?.querySelector(':scope > span');
+    if(bgModeLabel) bgModeLabel.textContent=t('background.mode');
+
+    ['Bgm','Ambient'].forEach(prefix=>{
+      const action=$(`#scene${prefix}Action`);
+      const label=action?.closest('.adv-field')?.querySelector(':scope > span');
+      if(label)label.textContent=t('audio.operation');
+      if(action){
+        const map={inherit:'audio.inherit',start:'audio.start',volume:'audio.volumeChange',stop:'audio.stop'};
+        [...action.options].forEach(o=>{ if(map[o.value])o.textContent=t(map[o.value]); });
+      }
+    });
+
+    document.querySelectorAll('[id$="Volume"],[id$="VolumeChange"]').forEach(input=>{
+      const head=input.closest('.adv-field')?.querySelector(':scope > span');
+      if(head && head.firstChild) head.firstChild.textContent=t('audio.volume')+' ';
+    });
+
+    $$('.ui-language-switch button').forEach(b=>{
+      const on=b.dataset.uiLang===uiLanguage;
+      b.classList.toggle('is-selected',on); b.setAttribute('aria-pressed',on?'true':'false');
+    });
+  }
+
+  function setUILanguage(language){
+    uiLanguage = I18N?.setLocale?.(language) || language;
+    applyStaticUITranslations();
+    updateCount();
+    updateAdvancedConditionalUI?.();
+    if(workingDocument) renderAdvanced?.();
+    if(player) player.setUILanguage?.(uiLanguage);
+  }
+
   let selectedTheme = 'light';
   let selectedFont = 'serif';
   let cinemaTone = 'dark';
@@ -61,7 +159,7 @@
     };
   }
 
-  function updateCount(){ charCount.textContent = `${bodyInput.value.length.toLocaleString()}文字`; }
+  function updateCount(){ charCount.textContent = t('body.chars',{n:bodyInput.value.length.toLocaleString(uiLanguage==='ja'?'ja-JP':'en-US')}); }
   function autoGrowSubText(){
     const el=$('#sceneSubTextInput');
     if(!el)return;
@@ -85,7 +183,7 @@
       workingDocument.appearance.typography.fontFamily=selectedFont;
     }
   }
-  function ensurePlayer(){ if(player)return player; player=new ScenePlayerCore(playerHost,{allowPrevious:true,keyboard:true,swipe:true,endOnNextAction:true,maxStackVisible:4,autoDelay:2600}); return player; }
+  function ensurePlayer(){ if(player)return player; player=new ScenePlayerCore(playerHost,{allowPrevious:true,keyboard:true,swipe:true,endOnNextAction:true,maxStackVisible:4,autoDelay:2600,uiLanguage}); return player; }
   function setScreen(name){ editorScreen.hidden=name!=='easy'; advancedScreen.hidden=name!=='advanced'; playerScreen.hidden=name!=='player'; const open=name==='player'; document.documentElement.classList.toggle('easy-player-open',open); document.body.classList.toggle('easy-player-open',open); }
   function scrollScreenToTop(screen){
     // iOS Safari/Chrome can preserve the document scroll position when a hidden
@@ -111,6 +209,7 @@
     playerReturnTarget=from;
     setScreen('player');
     const p=ensurePlayer();
+    p.setUILanguage?.(uiLanguage);
     p.load(getDocumentForPlayback(),{startAt});
 
     // openPlayer itself is called from the author's Play/Confirm click.
@@ -142,7 +241,7 @@
     const el=$('#'+id); if(!el)return; el.dataset.assetUrl=url||''; el.dataset.assetName=name||'';
   }
   function assetFrom(id){ const el=$('#'+id); return {src:el?.dataset.assetUrl||'', name:el?.dataset.assetName||''}; }
-  function updateAssetLabel(id, inputId){ const el=$('#'+id), asset=assetFrom(inputId); if(el)el.textContent=asset.name || (asset.src ? '設定済み' : '未選択'); }
+  function updateAssetLabel(id, inputId){ const el=$('#'+id), asset=assetFrom(inputId); if(el)el.textContent=asset.name || (asset.src ? t('audio.configured') : t('audio.notSelected')); }
   function updateRangeOutput(inputId, outputId){ const input=$('#'+inputId), output=$('#'+outputId); if(input&&output) output.value=`${input.value}%`; }
   function updateAdvancedConditionalUI(){
     const bgMode=$('#sceneBackgroundMode')?.value || 'inherit';
@@ -154,7 +253,7 @@
     const dimLabel=$('#sceneBackgroundDimLabel');
     if(dimLabel){
       const lightCinema=workingDocument?.theme==='cinema' && workingDocument?.appearance?.cinemaTone==='light';
-      dimLabel.textContent=lightCinema?'薄さ':'暗さ';
+      dimLabel.textContent=lightCinema?t('background.thin'):t('background.dim');
     }
     ['Bgm','Ambient'].forEach(prefix=>{
       const action=$(`#scene${prefix}Action`).value;
@@ -255,12 +354,12 @@
   }
   function scenePreviewText(scene){ const t=(scene.text||scene.subText||'(sound)').replace(/\s+/g,' ').trim(); return t.length>42?t.slice(0,42)+'…':t; }
   function renderSceneList(){
-    const list=$('#sceneList'); list.innerHTML=''; $('#sceneCountLabel').textContent=`${workingDocument.scenes.length} Scenes`;
+    const list=$('#sceneList'); list.innerHTML=''; $('#sceneCountLabel').textContent=t('scene.count',{n:workingDocument.scenes.length});
     workingDocument.scenes.forEach((scene,i)=>{
       const b=document.createElement('button'); b.type='button'; b.className='scene-list-item'+(i===selectedSceneIndex?' is-selected':'');
       const media=[]; if(scene.presentation?.background)media.push('BG'); if((scene.audio||[]).some(c=>c.channel==='bgm'))media.push('BGM'); if((scene.audio||[]).some(c=>c.channel==='ambient'))media.push('AMB'); if((scene.audio||[]).some(c=>c.channel==='oneshot'))media.push('SE');
-      const typeLabel={text:'テキスト',dialogue:'セリフ',sound:'音だけ'}[scene.type]||scene.type;
-      const effectLabel={auto:'おまかせ',fade:'フェード',pop:'ポン',blur:'ぼかし',whisper:'そっと',loud:'強調',pulse:'脈動',shake:'揺れ',tilt:'傾き',slow:'ゆっくり',none:'なし'}[scene.presentation?.effect||'auto'] || (scene.presentation?.effect||'auto');
+      const typeLabel={text:t('scene.type.text'),dialogue:t('scene.type.dialogue'),sound:t('scene.type.sound')}[scene.type]||scene.type;
+      const effectLabel={auto:t('effect.auto'),fade:t('effect.fade'),pop:t('effect.pop'),blur:t('effect.blur'),whisper:t('effect.whisper'),loud:t('effect.loud'),pulse:t('effect.pulse'),shake:t('effect.shake'),tilt:t('effect.tilt'),slow:t('effect.slow'),none:t('effect.none')}[scene.presentation?.effect||'auto'] || (scene.presentation?.effect||'auto');
       b.innerHTML=`<span>${String(i+1).padStart(2,'0')}</span><div><strong>${scenePreviewText(scene)}</strong><small>${typeLabel} · ${effectLabel}${media.length?' · '+media.join('/') : ''}</small></div>`;
       b.addEventListener('click',()=>{syncAdvancedFieldsToScene();selectedSceneIndex=i;renderAdvanced();}); list.appendChild(b);
     });
@@ -306,7 +405,7 @@
       if(isAudio){
         const name=(file.name||'').toLowerCase();
         const audioLike=(file.type||'').startsWith('audio/') || /\.(mp3|m4a|aac|wav|ogg|opus|flac)$/i.test(name);
-        if(!audioLike){ alert('音声ファイルを選択してください。'); input.value=''; return; }
+        if(!audioLike){ alert(t('alert.audio')); input.value=''; return; }
       }
       const url=URL.createObjectURL(file);setAssetField(inputId,url,file.name);if(onPick)onPick();updateAdvancedConditionalUI();syncAdvancedFieldsToScene();renderSceneList(); if(labelId)updateAssetLabel(labelId,inputId);
     });
@@ -322,6 +421,13 @@
   cinemaClear.addEventListener('click',()=>{if(cinemaBackgroundUrl)URL.revokeObjectURL(cinemaBackgroundUrl);cinemaBackgroundUrl='';cinemaInput.value='';cinemaPreview.style.backgroundImage='';cinemaPreview.hidden=true;cinemaClear.hidden=true;});
   $$('.cinema-tone-button').forEach(button=>button.addEventListener('click',()=>{cinemaTone=button.dataset.tone||'dark';$$('.cinema-tone-button').forEach(b=>{const on=b.dataset.tone===cinemaTone;b.classList.toggle('is-selected',on);b.setAttribute('aria-pressed',on?'true':'false');});}));
 
-  window.SceneStudioDebug={getSceneDocument:()=>clone(workingDocument||buildSceneDocument()),getPlayer:()=>player,splitJapanese:(text,options={})=>JapaneseSceneSplitter.splitDetailed(text,options)};
-  applyTheme('light'); updateCount();
+  $$('.ui-language-switch button').forEach(button=>button.addEventListener('click',()=>setUILanguage(button.dataset.uiLang)));
+  window.addEventListener('scene-studio:ui-language',(e)=>{
+    if(e.detail?.language && e.detail.language!==uiLanguage){
+      uiLanguage=e.detail.language; applyStaticUITranslations(); updateCount(); if(workingDocument)renderAdvanced(); player?.setUILanguage?.(uiLanguage);
+    }
+  });
+
+  window.SceneStudioDebug={getSceneDocument:()=>clone(workingDocument||buildSceneDocument()),getPlayer:()=>player,splitJapanese:(text,options={})=>JapaneseSceneSplitter.splitDetailed(text,options),getUILanguage:()=>uiLanguage,setUILanguage};
+  applyStaticUITranslations(); applyTheme('light'); updateCount();
 })();
