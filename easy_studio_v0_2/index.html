@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#f7f8fb">
-  <title>Easy Studio v0.2</title>
+  <title>Easy Studio v0.2.4</title>
   <link rel="stylesheet" href="./scene-player-core.css">
   <link rel="stylesheet" href="./style.css">
 </head>
@@ -13,7 +13,7 @@
   <section id="editorScreen" class="screen editor-screen">
     <header class="topbar">
       <div><p class="brand-kicker">SCENE STUDIO</p><h1>Easy Studio</h1></div>
-      <span class="version">v0.2</span>
+      <span class="version">v0.2.4</span>
     </header>
 
     <section class="intro">
@@ -71,7 +71,53 @@
       </div>
 
       <button id="makeButton" class="primary-button" type="button"><span>プレイヤーにする</span><small>Scene Format v1へ変換します</small></button>
+      <button id="advancedButton" class="secondary-button advanced-open-button" type="button">シーンを調整</button>
       <p class="footer-note">Easy Studioは本文を作るだけ。再生は共通Scene Player Coreが担当します。</p>
+    </div>
+  </section>
+
+
+  <section id="advancedScreen" class="screen advanced-screen" hidden>
+    <header class="advanced-topbar">
+      <button id="advancedBackButton" class="advanced-nav-button" type="button">‹ Easy</button>
+      <div><p class="brand-kicker">SCENE STUDIO</p><h1>シーンを調整</h1></div>
+      <button id="advancedPreviewButton" class="advanced-preview-button" type="button">確認</button>
+    </header>
+
+    <section class="advanced-policy">
+      <div><strong>読者が過去Sceneへ戻れる</strong><small>戻るボタン・スワイプ・キーボードをまとめて制御します。</small></div>
+      <label class="switch"><input id="allowPreviousInput" type="checkbox" checked><span></span></label>
+    </section>
+
+    <div class="advanced-layout">
+      <aside class="scene-rail">
+        <div class="scene-rail-head"><strong id="sceneCountLabel">0 Scenes</strong><button id="addSceneButton" type="button">＋</button></div>
+        <div id="sceneList" class="scene-list"></div>
+      </aside>
+
+      <section class="scene-inspector">
+        <div class="scene-inspector-head">
+          <div><span id="selectedSceneNumber" class="scene-number">Scene 1</span><code id="selectedSceneId">s001</code></div>
+          <div class="scene-move-actions"><button id="moveUpButton" type="button">↑</button><button id="moveDownButton" type="button">↓</button></div>
+        </div>
+
+        <label class="adv-field"><span>本文</span><textarea id="sceneTextInput" rows="7"></textarea></label>
+        <label class="adv-field"><span>サブテキスト</span><textarea id="sceneSubTextInput" rows="3" placeholder="任意"></textarea></label>
+
+        <div class="adv-grid">
+          <label class="adv-field"><span>種類</span><select id="sceneTypeSelect"><option value="text">text</option><option value="dialogue">dialogue</option><option value="sound">sound</option></select></label>
+          <label class="adv-field"><span>表示</span><select id="sceneDisplaySelect"><option value="stack">stack</option><option value="solo">solo</option></select></label>
+          <label class="adv-field"><span>演出</span><select id="sceneEffectSelect"><option value="auto">auto</option><option value="fade">fade</option><option value="pop">pop</option><option value="blur">blur</option><option value="whisper">whisper</option><option value="loud">loud</option><option value="pulse">pulse</option><option value="shake">shake</option><option value="tilt">tilt</option><option value="slow">slow</option><option value="none">none</option></select></label>
+          <label class="adv-field"><span>文字サイズ</span><select id="sceneSizeSelect"><option value="auto">AUTO</option><option value="small">小</option><option value="normal">標準</option><option value="large">大</option><option value="xl">特大</option></select></label>
+        </div>
+
+        <div class="scene-edit-actions">
+          <button id="mergePreviousButton" type="button">前と結合</button>
+          <button id="splitSceneButton" type="button">カーソル位置で分割</button>
+          <button id="deleteSceneButton" class="danger" type="button">削除</button>
+        </div>
+        <p class="advanced-hint">自動生成されたSceneを、気になる場所だけ直せます。背景・音の詳細編集は次のAdvanced拡張で追加します。</p>
+      </section>
     </div>
   </section>
 

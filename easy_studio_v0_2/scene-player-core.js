@@ -1,5 +1,5 @@
 /*
- * Scene Player Core v1.4.1.0
+ * Scene Player Core v1.5.0
  * Runtime for Scene Format v1.0
  * No splitter / studio authoring logic lives here.
  */
@@ -744,6 +744,14 @@
       this._stopAllAudio(true);
       this.audioPlaybackArmed = false;
       this.document = assertSceneDocument(doc);
+
+      // Scene Format v1: author-level navigation policy.
+      // Constructor options remain the fallback for older documents.
+      const authorAllowPrevious = doc.player?.navigation?.allowPrevious;
+      if (typeof authorAllowPrevious === 'boolean') this.options.allowPrevious = authorAllowPrevious;
+      this.els.prev.hidden = !this.options.allowPrevious;
+      this.host.classList.toggle('sp-no-previous', !this.options.allowPrevious);
+
       this.index = clamp(asNumber(options.startAt, this.options.startAt), 0, doc.scenes.length - 1);
       this.ended = false;
 
