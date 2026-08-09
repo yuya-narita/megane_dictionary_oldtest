@@ -1,5 +1,5 @@
 /*
- * Scene Player Core v1.5.0
+ * Scene Player Core v1.5.1
  * Runtime for Scene Format v1.0
  * No splitter / studio authoring logic lives here.
  */

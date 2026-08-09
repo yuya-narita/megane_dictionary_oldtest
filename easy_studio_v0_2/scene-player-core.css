@@ -60,6 +60,12 @@
 .sp-button{
   width:44px;height:44px;border:0;border-radius:50%;background:transparent;color:var(--sp-sub);font-size:25px;cursor:pointer
 }
+/* Keep the three header slots fixed even when Previous is author-disabled.
+   Without explicit placement, display:none on .sp-prev makes Grid auto-place
+   the title into column 1 and Restart into column 2 on iOS. */
+.sp-prev{grid-column:1;grid-row:1}
+.sp-meta{grid-column:2;grid-row:1}
+.sp-restart{grid-column:3;grid-row:1}
 .sp-button:hover:not(:disabled){background:var(--sp-line);color:var(--sp-text)}
 .sp-button:disabled{opacity:.22;cursor:default}
 .sp-meta{text-align:center;min-width:0}

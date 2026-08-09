@@ -61,6 +61,14 @@
   function updatePlayerToneClass(){ playerScreen.classList.toggle('easy-cinema-light', selectedTheme==='cinema'&&cinemaTone==='light'); playerScreen.classList.toggle('easy-cinema-dark', selectedTheme==='cinema'&&cinemaTone==='dark'); }
   function ensurePlayer(){ if(player)return player; player=new ScenePlayerCore(playerHost,{allowPrevious:true,keyboard:true,swipe:true,endOnNextAction:true,maxStackVisible:4,autoDelay:2600}); return player; }
   function setScreen(name){ editorScreen.hidden=name!=='easy'; advancedScreen.hidden=name!=='advanced'; playerScreen.hidden=name!=='player'; const open=name==='player'; document.documentElement.classList.toggle('easy-player-open',open); document.body.classList.toggle('easy-player-open',open); }
+  function scrollScreenToTop(screen){
+    // iOS Safari/Chrome can preserve the document scroll position when a hidden
+    // Studio screen is swapped in. Reset both the page and the screen itself.
+    if(screen) screen.scrollTop=0;
+    const reset=()=>window.scrollTo(0,0);
+    reset();
+    requestAnimationFrame(()=>{ reset(); requestAnimationFrame(reset); });
+  }
 
   function getDocumentForPlayback(){ return clone(workingDocument || buildSceneDocument()); }
   function openPlayer({from='easy', startAt=0}={}){
@@ -78,7 +86,7 @@
 
   function openAdvanced(){
     if(!bodyInput.value.trim()){bodyInput.focus();return;}
-    workingDocument=buildSceneDocument(); selectedSceneIndex=0; renderAdvanced(); setScreen('advanced');
+    workingDocument=buildSceneDocument(); selectedSceneIndex=0; renderAdvanced(); setScreen('advanced'); scrollScreenToTop(advancedScreen);
   }
   function closeAdvanced(){ syncAdvancedFieldsToScene(); setScreen('easy'); }
 
