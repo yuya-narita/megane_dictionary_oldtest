@@ -1,5 +1,5 @@
 /*
- * Scene Player Core v1.2.0
+ * Scene Player Core v1.3.0
  * Runtime for Scene Format v1.0
  * No splitter / studio authoring logic lives here.
  */
@@ -78,6 +78,17 @@
       this.backgroundState = null;
       this.backgroundLayerIndex = 0;
       this.backgroundTimers = [];
+      this.audioUnlocked = false;
+      this.audioPending = [];
+      this.audioTimers = [];
+      this.audioFadeFrames = new Map();
+      this.audioState = { bgm: null, ambient: null };
+      this.audioEls = {
+        bgm: this._createAudioElement('bgm'),
+        ambient: this._createAudioElement('ambient')
+      };
+      this.oneshots = new Set();
+      this._audioRenderMode = 'restore';
 
       this._buildShell();
       this._bindControls();
@@ -156,6 +167,10 @@
     }
 
     _bindControls() {
+      const unlock = () => this.unlockAudio();
+      this._on(this.host, 'pointerdown', unlock, { passive: true });
+      this._on(this.host, 'touchstart', unlock, { passive: true });
+
       this._on(this.els.prev, 'click', (e) => { e.stopPropagation(); this.previous(); });
       this._on(this.els.restart, 'click', (e) => { e.stopPropagation(); this.restart(); });
       this._on(this.els.endingRestart, 'click', () => this.restart());
@@ -185,6 +200,12 @@
           this.touchStartX = t.clientX;
         }, { passive: true });
 
+        this._on(this.els.stage, 'touchmove', (e) => {
+          // A Scene Player owns the gesture while it is active. This prevents
+          // iOS Safari's page rubber-band from competing with scene swipes.
+          if (e.cancelable) e.preventDefault();
+        }, { passive: false });
+
         this._on(this.els.stage, 'touchend', (e) => {
           if (this.touchStartY == null || this.touchStartX == null) return;
           const t = e.changedTouches[0];
@@ -203,6 +224,289 @@
           }
         }, { passive: true });
       }
+    }
+
+    _createAudioElement(channel) {
+      const audio = new Audio();
+      audio.preload = 'auto';
+      audio.dataset.scenePlayerChannel = channel;
+      audio.playsInline = true;
+      audio.addEventListener('error', () => {
+        emit(this.host, 'sceneplayer:audioerror', {
+          channel,
+          src: audio.currentSrc || audio.src || '',
+          error: audio.error || null
+        });
+      });
+      audio.addEventListener('timeupdate', () => {
+        const state = this.audioState[channel];
+        if (!state || state.stopAt == null) return;
+        if (audio.currentTime >= state.stopAt) this._stopPersistentChannel(channel, state.fadeOut || 0);
+      });
+      return audio;
+    }
+
+    unlockAudio() {
+      if (this.audioUnlocked) return true;
+      this.audioUnlocked = true;
+      const pending = this.audioPending.splice(0);
+      pending.forEach((fn) => {
+        try { fn(); } catch (_) {}
+      });
+      emit(this.host, 'sceneplayer:audiounlock', {});
+      return true;
+    }
+
+    _queueAudio(fn) {
+      if (this.audioUnlocked) return fn();
+      this.audioPending.push(fn);
+      emit(this.host, 'sceneplayer:audiopending', { count: this.audioPending.length });
+      return false;
+    }
+
+    _clearAudioTimers() {
+      this.audioTimers.forEach((timer) => clearTimeout(timer));
+      this.audioTimers.length = 0;
+      this.audioFadeFrames.forEach((frame) => cancelAnimationFrame(frame));
+      this.audioFadeFrames.clear();
+    }
+
+    _audioTimeout(fn, delay) {
+      const timer = setTimeout(() => {
+        const i = this.audioTimers.indexOf(timer);
+        if (i >= 0) this.audioTimers.splice(i, 1);
+        fn();
+      }, Math.max(0, delay));
+      this.audioTimers.push(timer);
+      return timer;
+    }
+
+    _fadeVolume(audio, target, duration, key, done) {
+      target = clamp(asNumber(target, audio.volume), 0, 1);
+      duration = Math.max(0, asNumber(duration, 0));
+      const previous = this.audioFadeFrames.get(key);
+      if (previous) cancelAnimationFrame(previous);
+      if (!duration) {
+        audio.volume = target;
+        this.audioFadeFrames.delete(key);
+        if (done) done();
+        return;
+      }
+      const start = performance.now();
+      const from = audio.volume;
+      const step = (now) => {
+        const t = clamp((now - start) / duration, 0, 1);
+        audio.volume = from + (target - from) * t;
+        if (t < 1) this.audioFadeFrames.set(key, requestAnimationFrame(step));
+        else {
+          this.audioFadeFrames.delete(key);
+          if (done) done();
+        }
+      };
+      this.audioFadeFrames.set(key, requestAnimationFrame(step));
+    }
+
+    _safePlay(audio, detail, onStarted) {
+      const play = () => {
+        const promise = audio.play();
+        if (promise && typeof promise.then === 'function') {
+          promise.then(() => {
+            if (onStarted) onStarted();
+          }).catch((error) => {
+            // A browser may still reject playback when its media policy is stricter.
+            this.audioUnlocked = false;
+            this.audioPending.push(() => this._safePlay(audio, detail, onStarted));
+            emit(this.host, 'sceneplayer:audioblocked', { ...detail, error });
+          });
+        } else if (onStarted) {
+          onStarted();
+        }
+      };
+      this._queueAudio(play);
+    }
+
+    _stopPersistentChannel(channel, fadeOut = 0) {
+      const audio = this.audioEls[channel];
+      if (!audio) return;
+      const finish = () => {
+        audio.pause();
+        try { audio.currentTime = 0; } catch (_) {}
+        this.audioState[channel] = null;
+        emit(this.host, 'sceneplayer:audiostop', { channel });
+      };
+      if (fadeOut > 0 && !audio.paused) this._fadeVolume(audio, 0, fadeOut, channel, finish);
+      else finish();
+    }
+
+    _startPersistentChannel(channel, command, reconstruct = false) {
+      const audio = this.audioEls[channel];
+      if (!audio || !command.src) return;
+      const sameSrc = this.audioState[channel]?.src === command.src;
+      const restart = command.restart === true || !sameSrc;
+      const targetVolume = clamp(asNumber(command.volume, 1), 0, 1);
+      const startAt = Math.max(0, asNumber(command.startAt, 0));
+
+      if (!sameSrc) audio.src = command.src;
+      audio.loop = command.loop !== false;
+      if (restart || reconstruct) {
+        try { audio.currentTime = startAt; } catch (_) {
+          audio.addEventListener('loadedmetadata', () => { try { audio.currentTime = startAt; } catch (_) {} }, { once: true });
+        }
+      }
+      const fadeIn = reconstruct ? 0 : Math.max(0, asNumber(command.fadeIn, 0));
+      audio.volume = fadeIn > 0 ? 0 : targetVolume;
+      this.audioState[channel] = {
+        src: command.src,
+        volume: targetVolume,
+        loop: command.loop !== false,
+        startAt,
+        stopAt: command.stopAt == null ? null : Math.max(0, asNumber(command.stopAt, 0)),
+        fadeOut: Math.max(0, asNumber(command.fadeOut, 0))
+      };
+      this._safePlay(audio, { channel, action: 'start', src: command.src }, () => {
+        if (fadeIn > 0) this._fadeVolume(audio, targetVolume, fadeIn, channel);
+        const stopAfter = Math.max(0, asNumber(command.stopAfter, 0));
+        if (stopAfter > 0) this._audioTimeout(() => this._stopPersistentChannel(channel, command.fadeOut || 0), stopAfter);
+      });
+      emit(this.host, 'sceneplayer:audiostart', { channel, command, reconstruct });
+    }
+
+    _volumePersistentChannel(channel, command) {
+      const audio = this.audioEls[channel];
+      if (!audio || !this.audioState[channel]) return;
+      const target = clamp(asNumber(command.volume, this.audioState[channel].volume), 0, 1);
+      this.audioState[channel].volume = target;
+      this._fadeVolume(audio, target, Math.max(0, asNumber(command.fade, 0)), channel);
+      emit(this.host, 'sceneplayer:audiovolume', { channel, volume: target });
+    }
+
+    _duckPersistentChannel(channel, command) {
+      const audio = this.audioEls[channel];
+      const state = this.audioState[channel];
+      if (!audio || !state) return;
+      const restore = state.volume;
+      const target = clamp(asNumber(command.volume, 0.22), 0, 1);
+      const fade = Math.max(0, asNumber(command.fade, 250));
+      const hold = Math.max(0, asNumber(command.hold, 1200));
+      this._fadeVolume(audio, target, fade, channel);
+      this._audioTimeout(() => this._fadeVolume(audio, restore, fade, channel), fade + hold);
+      emit(this.host, 'sceneplayer:audioduck', { channel, volume: target, hold });
+    }
+
+    _playOneShot(command) {
+      if (!command.src) return;
+      const audio = new Audio(command.src);
+      audio.preload = 'auto';
+      audio.playsInline = true;
+      audio.loop = command.loop === true;
+      const targetVolume = clamp(asNumber(command.volume, 1), 0, 1);
+      const fadeIn = Math.max(0, asNumber(command.fadeIn, 0));
+      audio.volume = fadeIn > 0 ? 0 : targetVolume;
+      const startAt = Math.max(0, asNumber(command.startAt, 0));
+      if (startAt > 0) {
+        audio.addEventListener('loadedmetadata', () => { try { audio.currentTime = startAt; } catch (_) {} }, { once: true });
+      }
+      const cleanup = () => {
+        this.oneshots.delete(audio);
+        audio.removeEventListener('ended', cleanup);
+      };
+      audio.addEventListener('ended', cleanup);
+      this.oneshots.add(audio);
+      const fadeKey = `oneshot:${Date.now()}:${Math.random()}`;
+      this._safePlay(audio, { channel: 'oneshot', role: command.role || 'se', action: 'play', src: command.src }, () => {
+        if (fadeIn > 0) this._fadeVolume(audio, targetVolume, fadeIn, fadeKey);
+        const stopAfter = Math.max(0, asNumber(command.stopAfter, 0));
+        if (stopAfter > 0) this._audioTimeout(() => { audio.pause(); cleanup(); }, stopAfter);
+      });
+      if (command.stopAt != null) {
+        const stopAt = Math.max(0, asNumber(command.stopAt, 0));
+        const onTime = () => {
+          if (audio.currentTime >= stopAt) { audio.pause(); audio.removeEventListener('timeupdate', onTime); cleanup(); }
+        };
+        audio.addEventListener('timeupdate', onTime);
+      }
+      emit(this.host, 'sceneplayer:oneshot', { command });
+    }
+
+    _applyAudioCommand(command, reconstruct = false) {
+      if (!command || typeof command !== 'object') return;
+      const channel = command.channel;
+      const action = command.action;
+      if (channel === 'oneshot') {
+        // One-shots represent an event, so history reconstruction never replays them.
+        if (!reconstruct && (action === 'play' || action === 'start')) this._playOneShot(command);
+        return;
+      }
+      if (!(channel === 'bgm' || channel === 'ambient')) return;
+      if (action === 'start' || action === 'play') this._startPersistentChannel(channel, command, reconstruct);
+      else if (action === 'stop') this._stopPersistentChannel(channel, reconstruct ? 0 : Math.max(0, asNumber(command.fadeOut ?? command.fade, 0)));
+      else if (action === 'volume') this._volumePersistentChannel(channel, command);
+      else if (action === 'duck' && !reconstruct) this._duckPersistentChannel(channel, command);
+    }
+
+    _applySceneAudio(scene, reconstruct = false) {
+      if (!Array.isArray(scene?.audio)) return;
+      scene.audio.forEach((command) => this._applyAudioCommand(command, reconstruct));
+    }
+
+    _queueInitialOneShots(scene) {
+      if (!Array.isArray(scene?.audio)) return;
+      scene.audio.forEach((command) => {
+        if (command?.channel === 'oneshot' && (command.action === 'play' || command.action === 'start')) {
+          this._queueAudio(() => this._playOneShot(command));
+        }
+      });
+    }
+
+    _stopOneShots() {
+      this.oneshots.forEach((audio) => { try { audio.pause(); } catch (_) {} });
+      this.oneshots.clear();
+    }
+
+    _derivePersistentAudioState(index) {
+      const result = { bgm: null, ambient: null };
+      if (!this.document) return result;
+      for (let i = 0; i <= index; i += 1) {
+        const commands = this.document.scenes[i]?.audio;
+        if (!Array.isArray(commands)) continue;
+        for (const cmd of commands) {
+          if (!(cmd?.channel === 'bgm' || cmd?.channel === 'ambient')) continue;
+          const ch = cmd.channel;
+          if (cmd.action === 'start' || cmd.action === 'play') {
+            result[ch] = {
+              src: cmd.src,
+              volume: clamp(asNumber(cmd.volume, 1), 0, 1),
+              loop: cmd.loop !== false,
+              startAt: Math.max(0, asNumber(cmd.startAt, 0)),
+              stopAt: cmd.stopAt == null ? null : Math.max(0, asNumber(cmd.stopAt, 0)),
+              fadeOut: Math.max(0, asNumber(cmd.fadeOut, 0)),
+              restart: true
+            };
+          } else if (cmd.action === 'stop') result[ch] = null;
+          else if (cmd.action === 'volume' && result[ch]) result[ch].volume = clamp(asNumber(cmd.volume, result[ch].volume), 0, 1);
+          // duck is transient and deliberately not part of reconstructed state.
+        }
+      }
+      return result;
+    }
+
+    _restoreAudioForIndex(index) {
+      this._clearAudioTimers();
+      this._stopOneShots();
+      const desired = this._derivePersistentAudioState(index);
+      ['bgm', 'ambient'].forEach((channel) => {
+        const state = desired[channel];
+        if (!state) this._stopPersistentChannel(channel, 0);
+        else this._startPersistentChannel(channel, state, true);
+      });
+    }
+
+    _stopAllAudio(resetPending = true) {
+      this._clearAudioTimers();
+      ['bgm', 'ambient'].forEach((channel) => this._stopPersistentChannel(channel, 0));
+      this.oneshots.forEach((audio) => { try { audio.pause(); } catch (_) {} });
+      this.oneshots.clear();
+      if (resetPending) this.audioPending.length = 0;
     }
 
     _clearPresentationTimers() {
@@ -263,6 +567,7 @@
       this.stopAuto();
       this._resetPresentationRuntime();
       this._resetBackgroundRuntime();
+      this._stopAllAudio(true);
       this.document = assertSceneDocument(doc);
       this.index = clamp(asNumber(options.startAt, this.options.startAt), 0, doc.scenes.length - 1);
       this.ended = false;
@@ -279,6 +584,7 @@
       this.backgroundState = null;
       this.backgroundLayerIndex = 0;
       this._resetBackgroundLayers();
+      this._audioRenderMode = 'load';
 
       this._render();
       emit(this.host, 'sceneplayer:load', { document: doc, index: this.index });
@@ -306,6 +612,7 @@
 
       if (this.index < this.document.scenes.length - 1) {
         this.index += 1;
+        this._audioRenderMode = 'advance';
         this._render();
         emit(this.host, 'sceneplayer:scenechange', { index: this.index, scene: this.currentScene, direction: 'next' });
         return true;
@@ -325,12 +632,14 @@
       if (this.ended) {
         this.ended = false;
         this.els.ending.hidden = true;
+        this._audioRenderMode = 'restore';
         this._render();
         return true;
       }
 
       if (this.index <= 0) return false;
       this.index -= 1;
+      this._audioRenderMode = 'restore';
       this._render();
       emit(this.host, 'sceneplayer:scenechange', { index: this.index, scene: this.currentScene, direction: 'previous' });
       return true;
@@ -349,6 +658,7 @@
       this.ended = false;
       this.els.ending.hidden = true;
       this.index = nextIndex;
+      this._audioRenderMode = 'restore';
       this._render();
       emit(this.host, 'sceneplayer:scenechange', { index: this.index, scene: this.currentScene, direction: 'jump' });
       return true;
@@ -362,6 +672,7 @@
       this.index = 0;
       this.ended = false;
       this.els.ending.hidden = true;
+      this._audioRenderMode = 'restore';
       this._render();
       emit(this.host, 'sceneplayer:restart', { scene: this.currentScene });
     }
@@ -438,6 +749,14 @@
 
       this._applyCorePresentation(active);
       this._applyBackgroundForIndex(this.index);
+      if (this._audioRenderMode === 'advance') {
+        this._applySceneAudio(active, false);
+      } else {
+        const mode = this._audioRenderMode;
+        this._restoreAudioForIndex(this.index);
+        if (mode === 'load') this._queueInitialOneShots(active);
+      }
+      this._audioRenderMode = 'advance';
 
       requestAnimationFrame(() => {
         const newest = this.els.scenes.lastElementChild;
@@ -762,6 +1081,7 @@
       this.stopAuto();
       this._resetPresentationRuntime();
       this._resetBackgroundRuntime();
+      this._stopAllAudio(true);
       this._bound.forEach(([el, event, fn, options]) => el.removeEventListener(event, fn, options));
       this._bound.length = 0;
       this.host.innerHTML = '';
@@ -770,7 +1090,7 @@
     }
   }
 
-  ScenePlayerCore.VERSION = '1.2.0';
+  ScenePlayerCore.VERSION = '1.3.0';
   ScenePlayerCore.FORMAT_VERSION = '1.0';
   ScenePlayerCore.validate = assertSceneDocument;
 

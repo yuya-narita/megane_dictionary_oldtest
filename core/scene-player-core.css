@@ -279,3 +279,10 @@
 }
 .sp-bg-textures.has-texture-glitch::before{animation:sp-texture-glitch-loop 2.4s steps(1,end) infinite}
 @keyframes sp-texture-glitch-loop{0%,86%,100%{transform:none}88%{transform:translateX(calc(var(--sp-texture-glitch) * 2%))}90%{transform:translateX(calc(var(--sp-texture-glitch) * -1.4%))}92%{transform:none}}
+
+/* Mobile gesture containment v1.3
+   Prevent iOS page rubber-band from stealing Scene Player swipes. */
+.sp-stage{
+  touch-action:none;
+  -webkit-overflow-scrolling:auto;
+}
