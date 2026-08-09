@@ -1,5 +1,5 @@
 /*
- * Scene Player Core v1.3.0
+ * Scene Player Core v1.3.1
  * Runtime for Scene Format v1.0
  * No splitter / studio authoring logic lives here.
  */
@@ -80,6 +80,9 @@
       this.backgroundTimers = [];
       this.audioUnlocked = false;
       this.audioPending = [];
+      this.audioContext = null;
+      this.audioGainNodes = new Map();
+      this.audioSourceNodes = new Map();
       this.audioTimers = [];
       this.audioFadeFrames = new Map();
       this.audioState = { bgm: null, ambient: null };
@@ -246,14 +249,73 @@
       return audio;
     }
 
+    _ensureAudioContext() {
+      if (this.audioContext) return this.audioContext;
+      const AudioContextClass = global.AudioContext || global.webkitAudioContext;
+      if (!AudioContextClass) return null;
+      try {
+        this.audioContext = new AudioContextClass();
+      } catch (_) {
+        this.audioContext = null;
+      }
+      return this.audioContext;
+    }
+
+    _ensureAudioNode(audio) {
+      if (!audio) return null;
+      if (this.audioGainNodes.has(audio)) return this.audioGainNodes.get(audio);
+      const ctx = this._ensureAudioContext();
+      if (!ctx) return null;
+      try {
+        const source = ctx.createMediaElementSource(audio);
+        const gain = ctx.createGain();
+        gain.gain.value = Number.isFinite(audio.__spGainValue) ? audio.__spGainValue : 1;
+        source.connect(gain);
+        gain.connect(ctx.destination);
+        this.audioSourceNodes.set(audio, source);
+        this.audioGainNodes.set(audio, gain);
+        // Once routed through Web Audio, leave HTMLMediaElement volume at unity.
+        // GainNode becomes the single source of truth for volume/fades.
+        try { audio.volume = 1; } catch (_) {}
+        return gain;
+      } catch (error) {
+        emit(this.host, 'sceneplayer:audiographerror', { error });
+        return null;
+      }
+    }
+
+    _setAudioVolume(audio, value) {
+      const target = clamp(asNumber(value, 1), 0, 1);
+      audio.__spGainValue = target;
+      const gain = this._ensureAudioNode(audio);
+      if (gain && this.audioContext) {
+        try { gain.gain.setValueAtTime(target, this.audioContext.currentTime); } catch (_) { gain.gain.value = target; }
+      } else {
+        try { audio.volume = target; } catch (_) {}
+      }
+    }
+
+    _getAudioVolume(audio) {
+      if (Number.isFinite(audio?.__spGainValue)) return audio.__spGainValue;
+      return clamp(asNumber(audio?.volume, 1), 0, 1);
+    }
+
     unlockAudio() {
-      if (this.audioUnlocked) return true;
+      if (this.audioUnlocked) {
+        const ctx = this._ensureAudioContext();
+        if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+        return true;
+      }
       this.audioUnlocked = true;
+      const ctx = this._ensureAudioContext();
+      if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+      // Build persistent media graphs inside the user gesture on iOS/WebKit.
+      Object.values(this.audioEls || {}).forEach((audio) => this._ensureAudioNode(audio));
       const pending = this.audioPending.splice(0);
       pending.forEach((fn) => {
         try { fn(); } catch (_) {}
       });
-      emit(this.host, 'sceneplayer:audiounlock', {});
+      emit(this.host, 'sceneplayer:audiounlock', { webAudio: !!ctx });
       return true;
     }
 
@@ -282,21 +344,46 @@
     }
 
     _fadeVolume(audio, target, duration, key, done) {
-      target = clamp(asNumber(target, audio.volume), 0, 1);
+      target = clamp(asNumber(target, this._getAudioVolume(audio)), 0, 1);
       duration = Math.max(0, asNumber(duration, 0));
       const previous = this.audioFadeFrames.get(key);
       if (previous) cancelAnimationFrame(previous);
+
+      const gain = this._ensureAudioNode(audio);
+      const ctx = this.audioContext;
+      const from = this._getAudioVolume(audio);
+      audio.__spGainValue = target;
+
+      // Web Audio path: reliable gain automation on iOS/WebKit.
+      if (gain && ctx) {
+        try {
+          const now = ctx.currentTime;
+          gain.gain.cancelScheduledValues(now);
+          gain.gain.setValueAtTime(from, now);
+          if (!duration) {
+            gain.gain.setValueAtTime(target, now);
+            if (done) done();
+          } else {
+            gain.gain.linearRampToValueAtTime(target, now + duration / 1000);
+            this._audioTimeout(() => { if (done) done(); }, duration);
+          }
+          return;
+        } catch (_) {
+          // Fall through to HTMLMediaElement/rAF fallback.
+        }
+      }
+
       if (!duration) {
-        audio.volume = target;
+        try { audio.volume = target; } catch (_) {}
         this.audioFadeFrames.delete(key);
         if (done) done();
         return;
       }
       const start = performance.now();
-      const from = audio.volume;
       const step = (now) => {
         const t = clamp((now - start) / duration, 0, 1);
-        audio.volume = from + (target - from) * t;
+        const value = from + (target - from) * t;
+        try { audio.volume = value; } catch (_) {}
         if (t < 1) this.audioFadeFrames.set(key, requestAnimationFrame(step));
         else {
           this.audioFadeFrames.delete(key);
@@ -308,6 +395,9 @@
 
     _safePlay(audio, detail, onStarted) {
       const play = () => {
+        this._ensureAudioNode(audio);
+        const ctx = this._ensureAudioContext();
+        if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
         const promise = audio.play();
         if (promise && typeof promise.then === 'function') {
           promise.then(() => {
@@ -354,7 +444,7 @@
         }
       }
       const fadeIn = reconstruct ? 0 : Math.max(0, asNumber(command.fadeIn, 0));
-      audio.volume = fadeIn > 0 ? 0 : targetVolume;
+      this._setAudioVolume(audio, fadeIn > 0 ? 0 : targetVolume);
       this.audioState[channel] = {
         src: command.src,
         volume: targetVolume,
@@ -401,7 +491,7 @@
       audio.loop = command.loop === true;
       const targetVolume = clamp(asNumber(command.volume, 1), 0, 1);
       const fadeIn = Math.max(0, asNumber(command.fadeIn, 0));
-      audio.volume = fadeIn > 0 ? 0 : targetVolume;
+      this._setAudioVolume(audio, fadeIn > 0 ? 0 : targetVolume);
       const startAt = Math.max(0, asNumber(command.startAt, 0));
       if (startAt > 0) {
         audio.addEventListener('loadedmetadata', () => { try { audio.currentTime = startAt; } catch (_) {} }, { once: true });
@@ -1082,6 +1172,11 @@
       this._resetPresentationRuntime();
       this._resetBackgroundRuntime();
       this._stopAllAudio(true);
+      if (this.audioContext && typeof this.audioContext.close === 'function') {
+        try { this.audioContext.close(); } catch (_) {}
+      }
+      this.audioGainNodes.clear();
+      this.audioSourceNodes.clear();
       this._bound.forEach(([el, event, fn, options]) => el.removeEventListener(event, fn, options));
       this._bound.length = 0;
       this.host.innerHTML = '';
@@ -1090,7 +1185,7 @@
     }
   }
 
-  ScenePlayerCore.VERSION = '1.3.0';
+  ScenePlayerCore.VERSION = '1.3.1';
   ScenePlayerCore.FORMAT_VERSION = '1.0';
   ScenePlayerCore.validate = assertSceneDocument;
 
