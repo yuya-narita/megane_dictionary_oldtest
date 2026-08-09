@@ -589,3 +589,8 @@
   .sp-title{font-size:13px}
   .sp-author{font-size:8.5px}
 }
+
+/* Core v1.11: scene-level language / direction */
+.sp-scene[dir="rtl"] .sp-text,.sp-scene[dir="rtl"] .sp-subtext{text-align:right;}
+.sp-scene:lang(en) .sp-text,.sp-scene:lang(en) .sp-subtext{line-break:auto;word-break:normal;overflow-wrap:anywhere;}
+.sp-scene:lang(ja) .sp-text,.sp-scene:lang(ja) .sp-subtext{line-break:strict;word-break:normal;}

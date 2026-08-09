@@ -33,7 +33,7 @@
     ['.cinema-background-copy strong','cinema.bg'],['.cinema-background-copy span','cinema.bg.note'],
     ['.cinema-tone-button[data-tone="dark"]','cinema.dark'],['.cinema-tone-button[data-tone="light"]','cinema.light'],
     ['.cinema-background-button','cinema.choose'],['#cinemaBackgroundClear','cinema.remove'],
-    ['#makeButton span','make'],['#makeButton small','make.note'],['#advancedButton','advanced.open'],['.footer-note','footer.note'],
+    ['#makeButton span','make'],['#makeButton small','make.note'],['#advancedButton','advanced.open'],['#projectIoTitle','io.heading'],['#exportSceneButton strong','io.export'],['.project-io-import strong','io.import'],['.footer-note','footer.note'],
     ['.advanced-topbar h1','advanced.title'],['#advancedPreviewButton','common.preview'],
     ['.advanced-policy strong','nav.previous.policy'],['.advanced-policy small','nav.previous.note'],
     ['#sceneTextInput','scene.text','aria-label'],['.scene-inspector > .adv-field:nth-of-type(1) > span','scene.text'],
@@ -44,6 +44,7 @@
     ['#sceneEffectSelect option[value="whisper"]','effect.whisper'],['#sceneEffectSelect option[value="loud"]','effect.loud'],['#sceneEffectSelect option[value="pulse"]','effect.pulse'],['#sceneEffectSelect option[value="shake"]','effect.shake'],['#sceneEffectSelect option[value="tilt"]','effect.tilt'],['#sceneEffectSelect option[value="slow"]','effect.slow'],['#sceneEffectSelect option[value="none"]','effect.none'],
     ['#sceneSizeSelect option[value="auto"]','size.auto'],['#sceneSizeSelect option[value="small"]','size.small'],['#sceneSizeSelect option[value="normal"]','size.normal'],['#sceneSizeSelect option[value="large"]','size.large'],['#sceneSizeSelect option[value="xl"]','size.xl'],
     ['#sceneFontSelect option[value="inherit"]','font.inherit'],['#sceneFontSelect option[value="serif"]','font.serif'],['#sceneFontSelect option[value="sans"]','font.sans'],['#sceneFontSelect option[value="mono"]','font.mono'],
+    ['#sceneLanguageSelect option[value="auto"]','scene.language.auto'],['#sceneLanguageSelect option[value="ja"]','scene.language.ja'],['#sceneLanguageSelect option[value="en"]','scene.language.en'],['#sceneLanguageSelect option[value="custom"]','scene.language.custom'],
     ['#mergePreviousButton','edit.merge'],['#splitSceneButton','edit.split'],['#deleteSceneButton','edit.delete'],
     ['.adv-section:nth-of-type(1) summary','section.background'],['#sceneBackgroundMode option[value="inherit"]','background.inherit'],['#sceneBackgroundMode option[value="image"]','background.image'],['#sceneBackgroundMode option[value="clear"]','background.clear'],
     ['label[for="sceneBackgroundInput"]','background.choose'],['#sceneBackgroundRemoveFile','background.unselect'],
@@ -74,6 +75,7 @@
       if(sel.id==='sceneEffectSelect')head.textContent=t('scene.effect');
       if(sel.id==='sceneSizeSelect')head.textContent=t('scene.size');
       if(sel.id==='sceneFontSelect')head.textContent=t('scene.font');
+      if(sel.id==='sceneLanguageSelect')head.textContent=t('scene.language');
       if(sel.id==='sceneBackgroundTransition')head.textContent=t('background.transition');
       if(sel.id==='sceneBackgroundFit')head.textContent=t('background.fit');
       if(sel.id==='sceneBackgroundMotion')head.textContent=t('background.motion');
@@ -96,6 +98,8 @@
       if(head && head.firstChild) head.firstChild.textContent=t('audio.volume')+' ';
     });
 
+    const customLangLabel=$('#sceneLanguageCustomField > span');
+    if(customLangLabel) customLangLabel.textContent=t('scene.language.tag');
     $$('.ui-language-switch button').forEach(b=>{
       const on=b.dataset.uiLang===uiLanguage;
       b.classList.toggle('is-selected',on); b.setAttribute('aria-pressed',on?'true':'false');
@@ -140,17 +144,40 @@
     });
   }
 
+  function refreshDocumentLanguages(){
+    if(!workingDocument?.scenes?.length)return;
+    const priorDefault=workingDocument.language && workingDocument.language!=='mul' && workingDocument.language!=='und' ? workingDocument.language : '';
+    const langs=[];
+    workingDocument.scenes.forEach(scene=>{
+      let lang=SceneTextSplitter.normalizeLanguageTag?.(scene.language,'') || '';
+      if(!lang || lang==='mul') lang=priorDefault || SceneTextSplitter.detectLanguage(scene.text || scene.subText || '');
+      if(lang && !['mul','und'].includes(lang) && !langs.includes(lang)) langs.push(lang);
+    });
+    workingDocument.languages=langs;
+    workingDocument.language=langs.length>1?'mul':(langs[0] || priorDefault || 'und');
+    if(workingDocument.language!=='mul'){
+      workingDocument.scenes.forEach(scene=>{ if(scene.language===workingDocument.language) delete scene.language; });
+    } else {
+      workingDocument.scenes.forEach(scene=>{
+        if(!scene.language && (scene.text || scene.subText)) scene.language=SceneTextSplitter.detectLanguage(scene.text || scene.subText || '');
+      });
+    }
+  }
+
   function buildSceneDocument() {
     const chunks = splitBody(bodyInput.value);
+    const languageSummary = SceneTextSplitter.summarizeLanguages?.(chunks) || { language: detectWorkLanguage(), languages: [detectWorkLanguage()] };
     const scenes = chunks.map((chunk, index) => ({
       id: makeSceneId(index), type: chunk.type || 'text', text: chunk.text,
+      ...(languageSummary.language === 'mul' && chunk.language ? { language: chunk.language } : {}),
       presentation: { display: 'stack', effect: 'auto', text: { size: 'auto' } }
     }));
     if (selectedTheme === 'cinema' && cinemaBackgroundUrl && scenes[0]) {
       scenes[0].presentation.background = { src: cinemaBackgroundUrl, transition: 'fade', dim: cinemaTone === 'dark' ? 0.48 : 0.72, fit: 'cover', position: 'center center' };
     }
     return {
-      format:'scene-format', version:'1.0', language:detectWorkLanguage(),
+      format:'scene-format', version:'1.0', language:languageSummary.language,
+      ...(languageSummary.languages?.length ? { languages: languageSummary.languages } : {}),
       title:titleInput.value.trim() || 'Untitled', author:authorInput.value.trim(), theme:selectedTheme,
       appearance:{
         cinemaTone: selectedTheme==='cinema' ? cinemaTone : 'dark',
@@ -158,6 +185,118 @@
       },
       player:{ navigation:{ allowPrevious:true } }, scenes
     };
+  }
+
+  function sceneDocumentForExport(){
+    // If Advanced has been opened, its Scene document is authoritative.
+    // Otherwise build directly from Easy Studio so a first export needs no extra step.
+    if(workingDocument){
+      if(!advancedScreen.hidden) syncAdvancedFieldsToScene();
+      return clone(workingDocument);
+    }
+    return buildSceneDocument();
+  }
+  function safeFileStem(value){
+    const stem=String(value||'untitled').trim()
+      .replace(/[\\/:*?"<>|\u0000-\u001F]/g,'_')
+      .replace(/\s+/g,' ')
+      .replace(/[. ]+$/g,'')
+      .slice(0,80);
+    return stem || 'untitled';
+  }
+  function downloadTextFile(name,text,type='application/json'){
+    const blob=new Blob([text],{type:`${type};charset=utf-8`});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=name; a.style.display='none';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+  }
+  function validateSceneFormatV1(value){
+    if(!value || typeof value!=='object') throw new Error('not-object');
+    const doc=value.format==='scene-format' ? value : (value.document?.format==='scene-format' ? value.document : value.sceneFormat?.format==='scene-format' ? value.sceneFormat : null);
+    if(!doc) throw new Error('format');
+    if(String(doc.version||'')!=='1.0') throw new Error('version');
+    if(!Array.isArray(doc.scenes) || !doc.scenes.length) throw new Error('scenes');
+    if(!['light','dark','cinema'].includes(doc.theme)) throw new Error('theme');
+    const seen=new Set();
+    doc.scenes.forEach((scene,index)=>{
+      if(!scene || typeof scene!=='object') throw new Error(`scene-${index}`);
+      if(!['text','dialogue','sound'].includes(scene.type)) throw new Error(`scene-type-${index}`);
+      if(scene.type!=='sound' && typeof scene.text!=='string') throw new Error(`scene-text-${index}`);
+      const id=String(scene.id||'').trim();
+      if(!id || seen.has(id)) throw new Error(`scene-id-${index}`);
+      seen.add(id);
+    });
+    return clone(doc);
+  }
+  function countLocalAssetRefs(doc){
+    let count=0;
+    const visit=(value)=>{
+      if(!value)return;
+      if(typeof value==='string'){ if(/^blob:/i.test(value))count++; return; }
+      if(Array.isArray(value)){value.forEach(visit);return;}
+      if(typeof value==='object')Object.values(value).forEach(visit);
+    };
+    visit(doc);
+    return count;
+  }
+  function setProjectIoStatus(message,{error=false}={}){
+    const el=$('#projectIoStatus'); if(!el)return;
+    el.textContent=message||''; el.classList.toggle('is-error',Boolean(error));
+  }
+  function restoreEasyStateFromDocument(doc){
+    titleInput.value=doc.title||'';
+    authorInput.value=doc.author||'';
+    bodyInput.value=(doc.scenes||[]).map(scene=>scene.text||'').filter(Boolean).join('\n\n');
+    updateCount();
+    applyTheme(doc.theme||'light');
+    applyWorkFont(doc.appearance?.typography?.fontFamily||'serif');
+    cinemaTone=doc.appearance?.cinemaTone==='light'?'light':'dark';
+    $$('.cinema-tone-button').forEach(b=>{
+      const on=b.dataset.tone===cinemaTone;
+      b.classList.toggle('is-selected',on); b.setAttribute('aria-pressed',on?'true':'false');
+    });
+    const firstBackground=(doc.scenes||[]).map(s=>s.presentation?.background).find(bg=>bg?.src);
+    cinemaBackgroundUrl=doc.theme==='cinema' ? (firstBackground?.src||'') : '';
+    const preview=$('#cinemaBackgroundPreview'), clear=$('#cinemaBackgroundClear');
+    if(preview){
+      preview.hidden=!cinemaBackgroundUrl;
+      preview.style.backgroundImage=cinemaBackgroundUrl?`url("${cinemaBackgroundUrl}")`:'';
+    }
+    if(clear) clear.hidden=!cinemaBackgroundUrl;
+  }
+  function exportSceneDocument(){
+    try{
+      const doc=sceneDocumentForExport();
+      const name=`${safeFileStem(doc.title)}.scene.json`;
+      downloadTextFile(name,JSON.stringify(doc,null,2));
+      setProjectIoStatus(t('io.exported',{name}));
+    }catch(error){
+      console.error(error); setProjectIoStatus(t('io.invalid'),{error:true});
+    }
+  }
+  async function importSceneDocument(file){
+    try{
+      const raw=await file.text();
+      const parsed=JSON.parse(raw.replace(/^\uFEFF/,''));
+      const doc=validateSceneFormatV1(parsed);
+      workingDocument=doc;
+      selectedSceneIndex=0;
+      restoreEasyStateFromDocument(doc);
+      normalizeSceneIds();
+      refreshDocumentLanguages();
+      renderAdvanced();
+      setScreen('advanced');
+      scrollScreenToTop(advancedScreen);
+      const localRefs=countLocalAssetRefs(doc);
+      let message=t('io.imported',{name:file.name||'scene.json',n:doc.scenes.length});
+      if(localRefs) message+=` ${t('io.localAssets',{n:localRefs})}`;
+      setProjectIoStatus(message);
+    }catch(error){
+      console.error(error); setProjectIoStatus(t('io.invalid'),{error:true});
+      alert(t('io.invalid'));
+    }
   }
 
   function updateCount(){ charCount.textContent = t('body.chars',{n:bodyInput.value.length.toLocaleString(uiLanguage==='ja'?'ja-JP':'en-US')}); }
@@ -338,7 +477,17 @@
     const sceneFont=$('#sceneFontSelect').value;
     if(sceneFont && sceneFont!=='inherit') p.text.fontFamily=sceneFont;
     else delete p.text.fontFamily;
+    const languageChoice=$('#sceneLanguageSelect')?.value || 'auto';
+    if(languageChoice==='auto'){
+      if(workingDocument?.language==='mul' && scene.text?.trim()) scene.language=SceneTextSplitter.detectLanguage(scene.text);
+      else delete scene.language;
+    }
+    else if(languageChoice==='custom'){
+      const custom=SceneTextSplitter.normalizeLanguageTag?.($('#sceneLanguageCustomInput')?.value,'') || '';
+      if(custom) scene.language=custom; else delete scene.language;
+    } else scene.language=languageChoice;
     syncBackgroundFields(scene); syncAudioFields(scene);
+    refreshDocumentLanguages();
     workingDocument.player ||= {}; workingDocument.player.navigation ||= {}; workingDocument.player.navigation.allowPrevious=$('#allowPreviousInput').checked;
   }
   function loadSceneIntoFields(){
@@ -349,6 +498,11 @@
     $('#sceneTypeSelect').value=scene.type || 'text'; $('#sceneDisplaySelect').value=scene.presentation?.display || 'stack';
     $('#sceneEffectSelect').value=scene.presentation?.effect || 'auto'; $('#sceneSizeSelect').value=scene.presentation?.text?.size || 'auto';
     $('#sceneFontSelect').value=scene.presentation?.text?.fontFamily || 'inherit';
+    const sceneLang=scene.language || '';
+    const commonSceneLang=['ja','en'];
+    $('#sceneLanguageSelect').value=!sceneLang?'auto':(commonSceneLang.includes(sceneLang)?sceneLang:'custom');
+    $('#sceneLanguageCustomInput').value=commonSceneLang.includes(sceneLang)?'':sceneLang;
+    $('#sceneLanguageCustomField').hidden=$('#sceneLanguageSelect').value!=='custom';
     $('#moveUpButton').disabled=selectedSceneIndex===0; $('#moveDownButton').disabled=selectedSceneIndex===workingDocument.scenes.length-1;
     $('#mergePreviousButton').disabled=selectedSceneIndex===0; $('#deleteSceneButton').disabled=workingDocument.scenes.length<=1;
     loadMediaFields(scene);
@@ -361,7 +515,8 @@
       const media=[]; if(scene.presentation?.background)media.push('BG'); if((scene.audio||[]).some(c=>c.channel==='bgm'))media.push('BGM'); if((scene.audio||[]).some(c=>c.channel==='ambient'))media.push('AMB'); if((scene.audio||[]).some(c=>c.channel==='oneshot'))media.push('SE');
       const typeLabel={text:t('scene.type.text'),dialogue:t('scene.type.dialogue'),sound:t('scene.type.sound')}[scene.type]||scene.type;
       const effectLabel={auto:t('effect.auto'),fade:t('effect.fade'),pop:t('effect.pop'),blur:t('effect.blur'),whisper:t('effect.whisper'),loud:t('effect.loud'),pulse:t('effect.pulse'),shake:t('effect.shake'),tilt:t('effect.tilt'),slow:t('effect.slow'),none:t('effect.none')}[scene.presentation?.effect||'auto'] || (scene.presentation?.effect||'auto');
-      b.innerHTML=`<span>${String(i+1).padStart(2,'0')}</span><div><strong>${scenePreviewText(scene)}</strong><small>${typeLabel} · ${effectLabel}${media.length?' · '+media.join('/') : ''}</small></div>`;
+      const sceneLang=scene.language || (workingDocument.language==='mul'?'':workingDocument.language) || '';
+      b.innerHTML=`<span>${String(i+1).padStart(2,'0')}</span><div><strong>${scenePreviewText(scene)}</strong><small>${typeLabel} · ${effectLabel}${sceneLang?' · '+sceneLang.toUpperCase():''}${media.length?' · '+media.join('/') : ''}</small></div>`;
       b.addEventListener('click',()=>{syncAdvancedFieldsToScene();selectedSceneIndex=i;renderAdvanced();}); list.appendChild(b);
     });
   }
@@ -388,13 +543,19 @@
   $$('.work-font-card').forEach(card=>card.addEventListener('click',()=>applyWorkFont(card.dataset.font)));
   $('#makeButton').addEventListener('click',()=>openPlayer({from:'easy',startAt:0}));
   $('#advancedButton').addEventListener('click',openAdvanced);
+  $('#exportSceneButton').addEventListener('click',exportSceneDocument);
+  $('#importSceneInput').addEventListener('change',async(event)=>{
+    const file=event.target.files?.[0];
+    if(file) await importSceneDocument(file);
+    event.target.value='';
+  });
   $('#editReturnButton').addEventListener('click',closePlayer);
   $('#advancedBackButton').addEventListener('click',closeAdvanced);
   $('#advancedPreviewButton').addEventListener('click',()=>{syncAdvancedFieldsToScene();openPlayer({from:'advanced',startAt:selectedSceneIndex});});
   $('#allowPreviousInput').addEventListener('change',()=>{if(workingDocument){workingDocument.player ||= {};workingDocument.player.navigation ||= {};workingDocument.player.navigation.allowPrevious=$('#allowPreviousInput').checked;}});
   $('#moveUpButton').addEventListener('click',()=>moveScene(-1)); $('#moveDownButton').addEventListener('click',()=>moveScene(1));
   $('#mergePreviousButton').addEventListener('click',mergePrevious); $('#splitSceneButton').addEventListener('click',splitAtCursor); $('#addSceneButton').addEventListener('click',addScene); $('#deleteSceneButton').addEventListener('click',deleteScene);
-  ['sceneTextInput','sceneSubTextInput','sceneTypeSelect','sceneDisplaySelect','sceneEffectSelect','sceneSizeSelect'].forEach(id=>$('#'+id).addEventListener('change',()=>{syncAdvancedFieldsToScene();renderSceneList();}));
+  ['sceneTextInput','sceneSubTextInput','sceneTypeSelect','sceneDisplaySelect','sceneEffectSelect','sceneSizeSelect','sceneFontSelect','sceneLanguageSelect','sceneLanguageCustomInput'].forEach(id=>$('#'+id).addEventListener('change',()=>{syncAdvancedFieldsToScene();renderSceneList();}));
 
   ['sceneBackgroundMode','sceneBackgroundTransition','sceneBackgroundFit','sceneBackgroundMotion','sceneBackgroundDim','sceneBgmAction','sceneBgmLoop','sceneBgmVolume','sceneBgmFadeIn','sceneBgmFadeOut','sceneBgmVolumeChange','sceneBgmVolumeFade','sceneBgmStopFade','sceneAmbientAction','sceneAmbientLoop','sceneAmbientVolume','sceneAmbientFadeIn','sceneAmbientFadeOut','sceneAmbientVolumeChange','sceneAmbientVolumeFade','sceneAmbientStopFade','sceneSeEnabled','sceneSeVolume','sceneSeFadeIn'].forEach(id=>{
     const el=$('#'+id); if(!el)return; const evt=el.type==='range'?'input':'change'; el.addEventListener(evt,()=>{updateAdvancedConditionalUI();syncAdvancedFieldsToScene();renderSceneList();});
@@ -429,6 +590,10 @@
     }
   });
 
-  window.SceneStudioDebug={getSceneDocument:()=>clone(workingDocument||buildSceneDocument()),getPlayer:()=>player,splitJapanese:(text,options={})=>JapaneseSceneSplitter.splitDetailed(text,options),splitEnglish:(text,options={})=>EnglishSceneSplitter.splitDetailed(text,options),splitAuto:(text,options={})=>SceneTextSplitter.splitDetailed(text,options),detectWorkLanguage:(text)=>SceneTextSplitter.detectLanguage(text),getUILanguage:()=>uiLanguage,setUILanguage};
+  $('#sceneLanguageSelect')?.addEventListener('change',()=>{
+    $('#sceneLanguageCustomField').hidden=$('#sceneLanguageSelect').value!=='custom';
+  });
+
+  window.SceneStudioDebug={getSceneDocument:()=>clone(workingDocument||buildSceneDocument()),validateSceneFormatV1:(value)=>validateSceneFormatV1(value),exportSceneDocument,getPlayer:()=>player,splitJapanese:(text,options={})=>JapaneseSceneSplitter.splitDetailed(text,options),splitEnglish:(text,options={})=>EnglishSceneSplitter.splitDetailed(text,options),splitAuto:(text,options={})=>SceneTextSplitter.splitDetailed(text,options),splitMultilingual:(text,options={})=>SceneTextSplitter.splitMultilingualDetailed(text,options),summarizeLanguages:(chunks)=>SceneTextSplitter.summarizeLanguages(chunks),detectWorkLanguage:(text)=>SceneTextSplitter.detectLanguage(text),getUILanguage:()=>uiLanguage,setUILanguage};
   applyStaticUITranslations(); applyTheme('light'); updateCount();
 })();

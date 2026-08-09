@@ -648,3 +648,20 @@ body.easy-player-open{position:fixed;inset:0;}
 .advanced-right-actions{
   white-space:nowrap;
 }
+
+/* v0.2.11 multilingual Scene authoring */
+.scene-language-custom[hidden]{display:none !important;}
+
+
+/* =========================================================
+   Scene Studio v0.2.12 — Scene Format Export / Import
+   ========================================================= */
+.project-io-section{display:grid;gap:10px;margin-top:14px;padding:14px;border:1px solid var(--line,#d9d9d9);border-radius:18px;background:var(--panel,#fff)}
+.project-io-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.project-io-button{min-height:58px;padding:11px 12px;border:1px solid var(--line,#d9d9d9);border-radius:14px;background:#fff;color:inherit;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;text-align:left;cursor:pointer;box-sizing:border-box}
+.project-io-button strong{font-size:13px}.project-io-button small{font-size:9.5px;color:#92949a;font-weight:650}
+.project-io-button:active{transform:translateY(1px)}
+.project-io-import{font:inherit}
+.project-io-status{min-height:1.25em;margin:0;color:#80838a;font-size:10px;line-height:1.45}
+.project-io-status.is-error{color:#a33}
+@media(max-width:520px){.project-io-section{padding:12px}.project-io-grid{grid-template-columns:1fr 1fr}.project-io-button{min-height:54px;padding:10px}}

@@ -1,5 +1,5 @@
 /*
- * Scene Player Core v1.9.0
+ * Scene Player Core v1.11.0
  * Runtime for Scene Format v1.0
  * No splitter / studio authoring logic lives here.
  */
@@ -884,8 +884,10 @@
       this.host.dataset.font = doc.appearance?.typography?.fontFamily || 'serif';
       this.host.dataset.cinemaTone = doc.theme === 'cinema' ? (doc.appearance?.cinemaTone === 'light' ? 'light' : 'dark') : '';
       this.host.dataset.language = doc.language || '';
+      this.host.dataset.languages = Array.isArray(doc.languages) ? doc.languages.join(' ') : '';
       this.host.dataset.preset = doc.preset || '';
-      this.host.setAttribute('lang', doc.language || '');
+      this.host.setAttribute('lang', doc.language || 'und');
+      this.host.setAttribute('dir', doc.direction || 'auto');
       this.els.title.textContent = doc.title || '';
       this.els.author.textContent = doc.author || '';
       this.els.total.textContent = String(doc.scenes.length);
@@ -1559,6 +1561,9 @@
       article.className = `sp-scene sp-type-${scene.type}`;
       article.dataset.sceneId = scene.id;
       article.dataset.age = String(age);
+      const sceneLanguage = scene.language || (this.document?.language && this.document.language !== 'mul' ? this.document.language : '');
+      if (sceneLanguage) { article.lang = sceneLanguage; article.dataset.language = sceneLanguage; }
+      article.dir = scene.direction || this.document?.direction || 'auto';
       article.classList.toggle('is-active', active);
       if (!active) article.classList.add('is-visible');
 
