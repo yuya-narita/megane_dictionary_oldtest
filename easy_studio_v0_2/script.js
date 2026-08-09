@@ -123,7 +123,8 @@
   const SAMPLE = `通りは朝から、よく整えられた録音室みたいだった。\n\n角を曲がると、声が重なった。\n\n「今日もいい天気ですね」\n\nパン屋の店主が、窯の前で。\n\n同じ音程、同じタイミング、同じ長さ。\n違う口から出ているのに、一枚の録音を街に貼り付けたみたいに、揺れない。\n\nそれでも——\n\n私は、ほんのわずかな遅れを待ってしまう。`;
 
   const clone = (v) => typeof structuredClone === 'function' ? structuredClone(v) : JSON.parse(JSON.stringify(v));
-  function splitBody(text) { return JapaneseSceneSplitter.splitDetailed(text, { density: densitySelect.value }); }
+  function splitBody(text) { return SceneTextSplitter.splitDetailed(text, { density: densitySelect.value, language: 'auto' }); }
+  function detectWorkLanguage(text = bodyInput.value) { return SceneTextSplitter.detectLanguage(text); }
   function makeSceneId(index) { return `s${String(index + 1).padStart(3, '0')}`; }
   function nextUniqueId() {
     const used = new Set((workingDocument?.scenes || []).map(s => s.id));
@@ -149,7 +150,7 @@
       scenes[0].presentation.background = { src: cinemaBackgroundUrl, transition: 'fade', dim: cinemaTone === 'dark' ? 0.48 : 0.72, fit: 'cover', position: 'center center' };
     }
     return {
-      format:'scene-format', version:'1.0', language:'ja',
+      format:'scene-format', version:'1.0', language:detectWorkLanguage(),
       title:titleInput.value.trim() || 'Untitled', author:authorInput.value.trim(), theme:selectedTheme,
       appearance:{
         cinemaTone: selectedTheme==='cinema' ? cinemaTone : 'dark',
@@ -428,6 +429,6 @@
     }
   });
 
-  window.SceneStudioDebug={getSceneDocument:()=>clone(workingDocument||buildSceneDocument()),getPlayer:()=>player,splitJapanese:(text,options={})=>JapaneseSceneSplitter.splitDetailed(text,options),getUILanguage:()=>uiLanguage,setUILanguage};
+  window.SceneStudioDebug={getSceneDocument:()=>clone(workingDocument||buildSceneDocument()),getPlayer:()=>player,splitJapanese:(text,options={})=>JapaneseSceneSplitter.splitDetailed(text,options),splitEnglish:(text,options={})=>EnglishSceneSplitter.splitDetailed(text,options),splitAuto:(text,options={})=>SceneTextSplitter.splitDetailed(text,options),detectWorkLanguage:(text)=>SceneTextSplitter.detectLanguage(text),getUILanguage:()=>uiLanguage,setUILanguage};
   applyStaticUITranslations(); applyTheme('light'); updateCount();
 })();
