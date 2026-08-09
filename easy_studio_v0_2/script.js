@@ -75,12 +75,23 @@
     if(from==='easy'){
       if(!bodyInput.value.trim()){bodyInput.focus();return;}
       workingDocument=buildSceneDocument();
+    } else {
+      // Advanced fields are authoritative only while opening from Advanced.
+      // Calling this after a fresh Easy build used stale hidden editor fields
+      // and could erase Scene 1's CINEMA background/media.
+      syncAdvancedFieldsToScene();
     }
     if(!workingDocument?.scenes?.length)return;
-    syncAdvancedFieldsToScene();
     playerReturnTarget=from;
     updatePlayerToneClass(); setScreen('player');
-    ensurePlayer().load(getDocumentForPlayback(),{startAt});
+    const p=ensurePlayer();
+    p.load(getDocumentForPlayback(),{startAt});
+
+    // openPlayer itself is called from the author's Play/Confirm click.
+    // Use that trusted gesture to unlock/arm audio AFTER load(), so Scene 1
+    // BGM/Ambient/SE can begin on the first Scene instead of waiting for the
+    // reader's next tap (especially important on iOS/WebKit).
+    p.unlockAudio(true);
   }
   function closePlayer(){ if(player){player.stopAuto();player._stopAllAudio?.(true);} setScreen(playerReturnTarget==='advanced'?'advanced':'easy'); if(playerReturnTarget==='advanced') renderAdvanced(); else window.scrollTo({top:0,left:0,behavior:'instant'}); }
 

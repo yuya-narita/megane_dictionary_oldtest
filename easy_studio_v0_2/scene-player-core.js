@@ -1,5 +1,5 @@
 /*
- * Scene Player Core v1.5.1
+ * Scene Player Core v1.6.0
  * Runtime for Scene Format v1.0
  * No splitter / studio authoring logic lives here.
  */
@@ -71,6 +71,10 @@
       this.autoTimer = null;
       this.touchStartY = null;
       this.touchStartX = null;
+      this.suppressNextClick = false;
+      this.maxVisitedIndex = -1;
+      this.historyOpen = false;
+      this.historyScrollRaf = 0;
       this.destroyed = false;
       this._bound = [];
       this.presentationTimers = [];
@@ -123,6 +127,16 @@
           <div class="sp-scenes"></div>
           <span class="sp-tap-hint">TAP</span>
         </main>
+        <section class="sp-history" hidden aria-label="Past scenes">
+          <div class="sp-history-top">
+            <span class="sp-history-kicker">PAST</span>
+            <span class="sp-history-help">過去Sceneをスクロール</span>
+            <button class="sp-history-close" type="button" aria-label="Close history">×</button>
+          </div>
+          <div class="sp-history-scroll">
+            <div class="sp-history-list"></div>
+          </div>
+        </section>
         <footer class="sp-footer">
           <div class="sp-progress-label"><span class="sp-progress-current">0</span><span> / </span><span class="sp-progress-total">0</span></div>
           <div class="sp-progress-track" aria-hidden="true"><div class="sp-progress-bar"></div></div>
@@ -150,6 +164,10 @@
         footer: q('.sp-footer'),
         stage: q('.sp-stage'),
         scenes: q('.sp-scenes'),
+        history: q('.sp-history'),
+        historyScroll: q('.sp-history-scroll'),
+        historyList: q('.sp-history-list'),
+        historyClose: q('.sp-history-close'),
         title: q('.sp-title'),
         author: q('.sp-author'),
         prev: q('.sp-prev'),
@@ -173,15 +191,18 @@
       this._bound.push([el, event, fn, options]);
     }
 
+
     _bindControls() {
-      // iOS/WebKit: do not consume the activation on a host-level gesture.
-      // The actual reading gesture must both unlock Web Audio and arm playback.
-      // Register only one gesture family to avoid pointerdown + touchstart double fires.
+      // iOS/WebKit: the reading gesture unlocks Web Audio and arms playback.
       const armFromStageGesture = () => this.unlockAudio(true);
       if ('PointerEvent' in global) this._on(this.els.stage, 'pointerdown', armFromStageGesture, { passive: true });
       else this._on(this.els.stage, 'touchstart', armFromStageGesture, { passive: true });
 
-      this._on(this.els.prev, 'click', (e) => { e.stopPropagation(); this.previous(); });
+      // Previous is no longer a one-scene step. It opens the continuous History Scroll.
+      this._on(this.els.prev, 'click', (e) => {
+        e.stopPropagation();
+        this.openHistory();
+      });
       this._on(this.els.restart, 'click', (e) => { e.stopPropagation(); this.restart(); });
       this._on(this.els.endingRestart, 'click', () => this.restart());
       this._on(this.els.auto, 'click', (e) => {
@@ -190,8 +211,26 @@
         this.toggleAuto();
       });
 
+      this._on(this.els.historyClose, 'click', (e) => {
+        e.stopPropagation();
+        this.closeHistory();
+      });
+      this._on(this.els.historyList, 'click', (e) => {
+        const item = e.target.closest('.sp-history-item');
+        if (!item) return;
+        const nextIndex = Number(item.dataset.index);
+        if (!Number.isInteger(nextIndex)) return;
+        this.closeHistory({ keepVisualState: true });
+        this.goToVisited(nextIndex);
+      });
+      this._on(this.els.historyScroll, 'scroll', () => this._scheduleHistoryDepth(), { passive: true });
+
       this._on(this.els.stage, 'click', (e) => {
         if (e.target.closest('button')) return;
+        if (this.suppressNextClick) {
+          this.suppressNextClick = false;
+          return;
+        }
         this.next();
       });
 
@@ -203,10 +242,20 @@
             this.next();
           } else if (this.options.allowPrevious && (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'Backspace')) {
             e.preventDefault();
-            this.previous();
+            this.openHistory();
           }
         });
       }
+
+      // Desktop/trackpad: scrolling upward opens History. Downward scrolling keeps
+      // the future discrete, so it never reveals an unread Scene.
+      this._on(this.els.stage, 'wheel', (e) => {
+        if (!this.options.allowPrevious || this.historyOpen) return;
+        if (e.deltaY < -8) {
+          e.preventDefault();
+          this.openHistory({ wheelDelta: e.deltaY });
+        }
+      }, { passive: false });
 
       if (this.options.swipe) {
         this._on(this.els.stage, 'touchstart', (e) => {
@@ -216,8 +265,7 @@
         }, { passive: true });
 
         this._on(this.els.stage, 'touchmove', (e) => {
-          // A Scene Player owns the gesture while it is active. This prevents
-          // iOS Safari's page rubber-band from competing with scene swipes.
+          // Keep the page itself fixed. History has its own native momentum scroller.
           if (e.cancelable) e.preventDefault();
         }, { passive: false });
 
@@ -230,11 +278,15 @@
           this.touchStartX = null;
 
           if (Math.max(Math.abs(dx), Math.abs(dy)) < this.options.swipeThreshold) return;
+          this.suppressNextClick = true;
+
+          // Pulling down/right enters History Scroll. Pushing up/left still advances
+          // only one unread Scene at a time.
           if (Math.abs(dy) >= Math.abs(dx)) {
-            if (dy > 0 && this.options.allowPrevious) this.previous();
+            if (dy > 0 && this.options.allowPrevious) this.openHistory({ dragDistance: dy });
             else if (dy < 0) this.next();
           } else {
-            if (dx > 0 && this.options.allowPrevious) this.previous();
+            if (dx > 0 && this.options.allowPrevious) this.openHistory({ dragDistance: dx });
             else this.next();
           }
         }, { passive: true });
@@ -753,6 +805,10 @@
       this.host.classList.toggle('sp-no-previous', !this.options.allowPrevious);
 
       this.index = clamp(asNumber(options.startAt, this.options.startAt), 0, doc.scenes.length - 1);
+      this.maxVisitedIndex = this.index;
+      this.historyOpen = false;
+      this.els.history.hidden = true;
+      this.host.classList.remove('sp-history-open');
       this.ended = false;
 
       this.host.dataset.theme = doc.theme;
@@ -795,6 +851,7 @@
 
       if (this.index < this.document.scenes.length - 1) {
         this.index += 1;
+        this.maxVisitedIndex = Math.max(this.maxVisitedIndex, this.index);
         this._audioRenderMode = 'advance';
         this._render();
         emit(this.host, 'sceneplayer:scenechange', { index: this.index, scene: this.currentScene, direction: 'next' });
@@ -806,26 +863,150 @@
       return false;
     }
 
+
     previous() {
-      if (!this.document || !this.options.allowPrevious) return false;
-      this._clearAutoTimer();
-      this._resetPresentationRuntime();
-      this._resetBackgroundRuntime();
+      // Kept for API compatibility. "Previous" now means entering History,
+      // not stepping backward one Scene.
+      return this.openHistory();
+    }
 
-      if (this.ended) {
-        this.ended = false;
-        this.els.ending.hidden = true;
-        this._audioRenderMode = 'restore';
-        this._render();
-        return true;
-      }
+    openHistory(options = {}) {
+      if (!this.document || !this.options.allowPrevious || this.maxVisitedIndex <= 0) return false;
+      this.stopAuto();
+      this._clearPresentationTimers();
+      this.historyOpen = true;
+      this.host.classList.add('sp-history-open');
+      this.els.history.hidden = false;
+      this._renderHistory();
 
-      if (this.index <= 0) return false;
-      this.index -= 1;
-      this._audioRenderMode = 'restore';
-      this._render();
-      emit(this.host, 'sceneplayer:scenechange', { index: this.index, scene: this.currentScene, direction: 'previous' });
+      requestAnimationFrame(() => {
+        const current = this.els.historyList.querySelector(`.sp-history-item[data-index="${this.index}"]`);
+        if (current) {
+          const box = current.getBoundingClientRect();
+          const viewport = this.els.historyScroll.getBoundingClientRect();
+          const target = this.els.historyScroll.scrollTop
+            + (box.top - viewport.top)
+            - ((viewport.height - box.height) / 2);
+          this.els.historyScroll.scrollTop = Math.max(0, target);
+
+          // A pull gesture should feel like grabbing the drum and moving into the past.
+          // Give it a small initial offset while preserving native momentum afterwards.
+          const drag = Math.abs(asNumber(options.dragDistance, 0));
+          const wheel = Math.abs(asNumber(options.wheelDelta, 0));
+          if (drag > 0 || wheel > 0) {
+            this.els.historyScroll.scrollTop = Math.max(
+              0,
+              this.els.historyScroll.scrollTop - clamp((drag || wheel) * 0.7, 18, 110)
+            );
+          }
+        }
+        this._updateHistoryDepth();
+      });
+
+      emit(this.host, 'sceneplayer:historyopen', {
+        index: this.index,
+        maxVisitedIndex: this.maxVisitedIndex
+      });
       return true;
+    }
+
+    closeHistory(options = {}) {
+      if (!this.historyOpen) return false;
+      this.historyOpen = false;
+      this.host.classList.remove('sp-history-open');
+      this.els.history.hidden = true;
+      if (!options.keepVisualState) this.els.stage.focus({ preventScroll: true });
+      emit(this.host, 'sceneplayer:historyclose', {
+        index: this.index,
+        maxVisitedIndex: this.maxVisitedIndex
+      });
+      return true;
+    }
+
+    _renderHistory() {
+      if (!this.document) return;
+      const fragment = document.createDocumentFragment();
+      this.els.historyList.innerHTML = '';
+
+      for (let i = 0; i <= this.maxVisitedIndex; i += 1) {
+        const scene = this.document.scenes[i];
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'sp-history-item';
+        item.dataset.index = String(i);
+        item.dataset.sceneId = scene.id;
+        if (i === this.index) item.classList.add('is-current');
+
+        const num = document.createElement('span');
+        num.className = 'sp-history-number';
+        num.textContent = `${i + 1} / ${this.document.scenes.length}`;
+
+        const body = document.createElement('span');
+        body.className = 'sp-history-body';
+
+        if (scene.type === 'sound' && !scene.text) {
+          const mark = document.createElement('span');
+          mark.className = 'sp-history-text';
+          mark.textContent = '♪';
+          body.appendChild(mark);
+        } else {
+          const text = document.createElement('span');
+          text.className = 'sp-history-text';
+          text.textContent = scene.text || '';
+          body.appendChild(text);
+        }
+
+        if (scene.subText) {
+          const sub = document.createElement('span');
+          sub.className = 'sp-history-subtext';
+          sub.textContent = scene.subText;
+          body.appendChild(sub);
+        }
+
+        item.append(num, body);
+        fragment.appendChild(item);
+      }
+      this.els.historyList.appendChild(fragment);
+    }
+
+    _scheduleHistoryDepth() {
+      if (this.historyScrollRaf) return;
+      this.historyScrollRaf = requestAnimationFrame(() => {
+        this.historyScrollRaf = 0;
+        this._updateHistoryDepth();
+      });
+    }
+
+    _updateHistoryDepth() {
+      if (!this.historyOpen) return;
+      const viewport = this.els.historyScroll.getBoundingClientRect();
+      const center = viewport.top + viewport.height / 2;
+      let nearest = null;
+      let nearestDistance = Infinity;
+
+      this.els.historyList.querySelectorAll('.sp-history-item').forEach((item) => {
+        const rect = item.getBoundingClientRect();
+        const itemCenter = rect.top + rect.height / 2;
+        const distance = Math.abs(itemCenter - center);
+        const normalized = clamp(distance / Math.max(1, viewport.height * 0.58), 0, 1);
+        item.style.setProperty('--sp-history-depth', String(normalized));
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearest = item;
+        }
+      });
+
+      this.els.historyList.querySelectorAll('.is-nearest').forEach((el) => el.classList.remove('is-nearest'));
+      if (nearest) nearest.classList.add('is-nearest');
+    }
+
+    goToVisited(sceneOrIndex) {
+      if (!this.document) return false;
+      let nextIndex = -1;
+      if (typeof sceneOrIndex === 'number') nextIndex = sceneOrIndex;
+      else if (typeof sceneOrIndex === 'string') nextIndex = this.document.scenes.findIndex((s) => s.id === sceneOrIndex);
+      if (nextIndex < 0 || nextIndex > this.maxVisitedIndex) return false;
+      return this.goTo(nextIndex);
     }
 
     goTo(sceneOrIndex) {
@@ -860,6 +1041,8 @@
       this.audioPlaybackArmed = false;
 
       this.index = 0;
+      this.maxVisitedIndex = 0;
+      this.closeHistory({ keepVisualState: true });
       this.ended = false;
       this.els.ending.hidden = true;
       this._audioRenderMode = 'restore';
@@ -932,7 +1115,7 @@
 
       this.els.current.textContent = String(this.index + 1);
       this.els.bar.style.width = `${this.progress * 100}%`;
-      this.els.prev.disabled = this.index <= 0;
+      this.els.prev.disabled = !this.options.allowPrevious || this.maxVisitedIndex <= 0;
       this.host.dataset.display = display;
       this.host.dataset.sceneId = active.id;
       this.host.dataset.sceneType = active.type;
