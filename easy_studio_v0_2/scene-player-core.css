@@ -1,6 +1,7 @@
 :root{
   --sp-font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic UI","Yu Gothic",sans-serif;
   --sp-font-serif:"Yu Mincho","Hiragino Mincho ProN","Hiragino Mincho Pro",serif;
+  --sp-font-mono:"SFMono-Regular","SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
 }
 
 .sp-core{
@@ -510,4 +511,39 @@
 .sp-core[data-theme="cinema"][data-cinema-tone="light"] .sp-veil{background:rgba(250,247,240,.72)}
 .sp-core[data-theme="cinema"][data-cinema-tone="dark"]{
   --sp-bg:#13171b;--sp-text:#fff;--sp-sub:rgba(255,255,255,.62);--sp-line:rgba(255,255,255,.14);--sp-accent:#fff;--sp-panel:rgba(10,12,15,.68);
+}
+
+
+/* Core v1.8 — typography inheritance */
+.sp-core[data-font="sans"] .sp-title{font-family:var(--sp-font-sans)}
+.sp-core[data-font="mono"] .sp-title{font-family:var(--sp-font-mono)}
+.sp-core[data-font="serif"] .sp-title{font-family:var(--sp-font-serif)}
+
+/* AUTO transition restored from the original players:
+   older text shifts slightly upward while the new Scene settles slightly downward.
+   The motion is deliberately tiny — spacing is the effect. */
+.sp-scene[data-auto-transition="true"]:not(.is-active){
+  transform:translateY(10px);
+}
+.sp-scene[data-auto-transition="true"].is-active{
+  transform:translateY(-12px);
+}
+.sp-scene[data-auto-transition="true"].is-visible{
+  transform:translateY(0);
+}
+.sp-scene[data-auto-transition="true"]:not(.is-active){
+  transition:
+    opacity .42s ease,
+    transform .46s cubic-bezier(.2,.75,.25,1),
+    filter .42s ease;
+}
+.sp-scene[data-auto-transition="true"].is-active{
+  transition:
+    opacity .44s ease,
+    transform .48s cubic-bezier(.2,.75,.25,1),
+    filter .44s ease;
+}
+
+@media (prefers-reduced-motion:reduce){
+  .sp-scene[data-auto-transition="true"]{transform:none!important}
 }

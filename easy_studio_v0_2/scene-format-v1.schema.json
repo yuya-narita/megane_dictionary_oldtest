@@ -70,6 +70,19 @@
             "dark",
             "light"
           ]
+        },
+        "typography": {
+          "type": "object",
+          "properties": {
+            "fontFamily": {
+              "enum": [
+                "serif",
+                "sans",
+                "mono"
+              ]
+            }
+          },
+          "additionalProperties": true
         }
       },
       "additionalProperties": true
@@ -170,6 +183,13 @@
           "enum": [
             "auto",
             "nowrap"
+          ]
+        },
+        "fontFamily": {
+          "enum": [
+            "serif",
+            "sans",
+            "mono"
           ]
         }
       },

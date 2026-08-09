@@ -564,13 +564,17 @@
       else finish();
     }
 
-    _startPersistentChannel(channel, command, reconstruct = false) {
+    _startPersistentChannel(channel, command, reconstruct = false, forceSeek = false) {
       const audio = this.audioEls[channel];
       if (!audio || !command.src) return;
       const sameSrc = this.audioState[channel]?.src === command.src;
-      // History reconstruction should not rewind a BGM/Ambient that is already
-      // the correct persistent source. Forward Scene commands can still request restart.
-      const shouldSeek = !sameSrc || (!reconstruct && command.restart === true);
+      // Audio semantics:
+      // BGM = continued time -> history keeps the current playback position when
+      // the same source is still active.
+      // Ambient = sound that existed there -> history restores that Scene-state
+      // from its own startAt, even when the same source is already playing.
+      // SE = event -> handled separately as a one-shot on explicit Scene landing.
+      const shouldSeek = forceSeek || !sameSrc || (!reconstruct && command.restart === true);
       const targetVolume = clamp(asNumber(command.volume, 1), 0, 1);
       const startAt = Math.max(0, asNumber(command.startAt, 0));
 
@@ -718,15 +722,25 @@
       return result;
     }
 
-    _restoreAudioForIndex(index) {
+    _restoreAudioForIndex(index, mode = 'restore') {
       this._clearAudioTimers();
       this._stopOneShots();
       const desired = this._derivePersistentAudioState(index);
-      ['bgm', 'ambient'].forEach((channel) => {
-        const state = desired[channel];
-        if (!state) this._stopPersistentChannel(channel, 0);
-        else this._startPersistentChannel(channel, state, true);
-      });
+
+      // BGM: 続いていた時間
+      // When landing in History, keep time if the same BGM is valid there.
+      const bgm = desired.bgm;
+      if (!bgm) this._stopPersistentChannel('bgm', 0);
+      else this._startPersistentChannel('bgm', bgm, true, false);
+
+      // Ambient: その時そこにあった音
+      // History is a state restoration, not a continuous timeline. Restore the
+      // Ambient that was active at that Scene and restart it from its configured
+      // startAt so rain / room tone / machinery / drones / any sustained asset
+      // behaves as the sound of that place/state rather than elapsed time.
+      const ambient = desired.ambient;
+      if (!ambient) this._stopPersistentChannel('ambient', 0);
+      else this._startPersistentChannel('ambient', ambient, true, mode === 'history');
     }
 
     _stopAllAudio(resetPending = true) {
@@ -814,6 +828,7 @@
       this.ended = false;
 
       this.host.dataset.theme = doc.theme;
+      this.host.dataset.font = doc.appearance?.typography?.fontFamily || 'serif';
       this.host.dataset.cinemaTone = doc.theme === 'cinema' ? (doc.appearance?.cinemaTone === 'light' ? 'light' : 'dark') : '';
       this.host.dataset.language = doc.language || '';
       this.host.dataset.preset = doc.preset || '';
@@ -1129,7 +1144,7 @@
         this._applySceneAudio(active, false);
       } else {
         const mode = this._audioRenderMode;
-        this._restoreAudioForIndex(this.index);
+        this._restoreAudioForIndex(this.index, mode);
         // One-shots do not fire while browsing History, but do replay when the
         // reader explicitly lands on a visited Scene. This recreates that Scene.
         if (mode === 'load' || mode === 'history') this._queueInitialOneShots(active);
@@ -1358,8 +1373,10 @@
       if (!active) article.classList.add('is-visible');
 
       const presentation = scene.presentation || {};
-      const effect = this._resolveSceneEffect(scene, presentation.effect);
+      const requestedEffect = presentation.effect || 'auto';
+      const effect = this._resolveSceneEffect(scene, requestedEffect);
       if (effect && /^[a-zA-Z0-9_-]+$/.test(effect)) article.dataset.effect = effect;
+      if (requestedEffect === 'auto') article.dataset.autoTransition = 'true';
       if (presentation.view && /^[a-zA-Z0-9_-]+$/.test(presentation.view)) article.dataset.view = presentation.view;
       article.dataset.fit = this._resolveAutoFit(scene, presentation.text || {});
 
@@ -1420,8 +1437,16 @@
     }
 
     _applyTextStyle(node, style, isSubText) {
-      if (!style || typeof style !== 'object') return;
+      if (!style || typeof style !== 'object') style = {};
       if (style.color) node.style.color = String(style.color);
+
+      const family = style.fontFamily || this.document?.appearance?.typography?.fontFamily || 'serif';
+      const families = {
+        serif: 'var(--sp-font-serif)',
+        sans: 'var(--sp-font-sans)',
+        mono: 'var(--sp-font-mono)'
+      };
+      node.style.fontFamily = families[family] || families.serif;
 
       const size = style.size;
       const tokenSizes = isSubText

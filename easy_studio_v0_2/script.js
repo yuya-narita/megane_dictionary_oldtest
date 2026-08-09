@@ -14,6 +14,7 @@
   const playerHost = $('#scenePlayer');
 
   let selectedTheme = 'light';
+  let selectedFont = 'serif';
   let cinemaTone = 'dark';
   let cinemaBackgroundUrl = '';
   let player = null;
@@ -52,13 +53,38 @@
     return {
       format:'scene-format', version:'1.0', language:'ja',
       title:titleInput.value.trim() || 'Untitled', author:authorInput.value.trim(), theme:selectedTheme,
-      appearance:{ cinemaTone: selectedTheme==='cinema' ? cinemaTone : 'dark' },
+      appearance:{
+        cinemaTone: selectedTheme==='cinema' ? cinemaTone : 'dark',
+        typography:{ fontFamily:selectedFont }
+      },
       player:{ navigation:{ allowPrevious:true } }, scenes
     };
   }
 
   function updateCount(){ charCount.textContent = `${bodyInput.value.length.toLocaleString()}文字`; }
+  function autoGrowSubText(){
+    const el=$('#sceneSubTextInput');
+    if(!el)return;
+    el.style.height='auto';
+    const max=150;
+    el.style.height=`${Math.min(Math.max(el.scrollHeight,72),max)}px`;
+    el.style.overflowY=el.scrollHeight>max?'auto':'hidden';
+  }
+
   function applyTheme(theme){ selectedTheme=theme; $$('.theme-card').forEach(card=>{const on=card.dataset.theme===theme;card.classList.toggle('is-selected',on);card.setAttribute('aria-pressed',on?'true':'false');}); $('#cinemaBackgroundPanel').hidden=theme!=='cinema'; }
+  function applyWorkFont(font){
+    selectedFont=['serif','sans','mono'].includes(font)?font:'serif';
+    $$('.work-font-card').forEach(card=>{
+      const on=card.dataset.font===selectedFont;
+      card.classList.toggle('is-selected',on);
+      card.setAttribute('aria-pressed',on?'true':'false');
+    });
+    if(workingDocument){
+      workingDocument.appearance=workingDocument.appearance||{};
+      workingDocument.appearance.typography=workingDocument.appearance.typography||{};
+      workingDocument.appearance.typography.fontFamily=selectedFont;
+    }
+  }
   function ensurePlayer(){ if(player)return player; player=new ScenePlayerCore(playerHost,{allowPrevious:true,keyboard:true,swipe:true,endOnNextAction:true,maxStackVisible:4,autoDelay:2600}); return player; }
   function setScreen(name){ editorScreen.hidden=name!=='easy'; advancedScreen.hidden=name!=='advanced'; playerScreen.hidden=name!=='player'; const open=name==='player'; document.documentElement.classList.toggle('easy-player-open',open); document.body.classList.toggle('easy-player-open',open); }
   function scrollScreenToTop(screen){
@@ -209,6 +235,9 @@
     const sub=$('#sceneSubTextInput').value; if(sub)scene.subText=sub; else delete scene.subText;
     scene.type=$('#sceneTypeSelect').value;
     const p=ensurePresentation(scene); p.display=$('#sceneDisplaySelect').value; p.effect=$('#sceneEffectSelect').value; p.text.size=$('#sceneSizeSelect').value;
+    const sceneFont=$('#sceneFontSelect').value;
+    if(sceneFont && sceneFont!=='inherit') p.text.fontFamily=sceneFont;
+    else delete p.text.fontFamily;
     syncBackgroundFields(scene); syncAudioFields(scene);
     workingDocument.player ||= {}; workingDocument.player.navigation ||= {}; workingDocument.player.navigation.allowPrevious=$('#allowPreviousInput').checked;
   }
@@ -216,8 +245,10 @@
     const scene=currentScene(); if(!scene)return;
     $('#selectedSceneNumber').textContent=`Scene ${selectedSceneIndex+1}`; $('#selectedSceneId').textContent=scene.id;
     $('#sceneTextInput').value=scene.text || ''; $('#sceneSubTextInput').value=scene.subText || '';
+    requestAnimationFrame(autoGrowSubText);
     $('#sceneTypeSelect').value=scene.type || 'text'; $('#sceneDisplaySelect').value=scene.presentation?.display || 'stack';
     $('#sceneEffectSelect').value=scene.presentation?.effect || 'auto'; $('#sceneSizeSelect').value=scene.presentation?.text?.size || 'auto';
+    $('#sceneFontSelect').value=scene.presentation?.text?.fontFamily || 'inherit';
     $('#moveUpButton').disabled=selectedSceneIndex===0; $('#moveDownButton').disabled=selectedSceneIndex===workingDocument.scenes.length-1;
     $('#mergePreviousButton').disabled=selectedSceneIndex===0; $('#deleteSceneButton').disabled=workingDocument.scenes.length<=1;
     loadMediaFields(scene);
@@ -228,7 +259,9 @@
     workingDocument.scenes.forEach((scene,i)=>{
       const b=document.createElement('button'); b.type='button'; b.className='scene-list-item'+(i===selectedSceneIndex?' is-selected':'');
       const media=[]; if(scene.presentation?.background)media.push('BG'); if((scene.audio||[]).some(c=>c.channel==='bgm'))media.push('BGM'); if((scene.audio||[]).some(c=>c.channel==='ambient'))media.push('AMB'); if((scene.audio||[]).some(c=>c.channel==='oneshot'))media.push('SE');
-      b.innerHTML=`<span>${String(i+1).padStart(2,'0')}</span><div><strong>${scenePreviewText(scene)}</strong><small>${scene.type} · ${scene.presentation?.effect||'auto'}${media.length?' · '+media.join('/') : ''}</small></div>`;
+      const typeLabel={text:'テキスト',dialogue:'セリフ',sound:'音だけ'}[scene.type]||scene.type;
+      const effectLabel={auto:'おまかせ',fade:'フェード',pop:'ポン',blur:'ぼかし',whisper:'そっと',loud:'強調',pulse:'脈動',shake:'揺れ',tilt:'傾き',slow:'ゆっくり',none:'なし'}[scene.presentation?.effect||'auto'] || (scene.presentation?.effect||'auto');
+      b.innerHTML=`<span>${String(i+1).padStart(2,'0')}</span><div><strong>${scenePreviewText(scene)}</strong><small>${typeLabel} · ${effectLabel}${media.length?' · '+media.join('/') : ''}</small></div>`;
       b.addEventListener('click',()=>{syncAdvancedFieldsToScene();selectedSceneIndex=i;renderAdvanced();}); list.appendChild(b);
     });
   }
@@ -249,8 +282,10 @@
   function deleteScene(){ if(workingDocument.scenes.length<=1)return; workingDocument.scenes.splice(selectedSceneIndex,1); selectedSceneIndex=Math.min(selectedSceneIndex,workingDocument.scenes.length-1); renderAdvanced(); }
 
   bodyInput.addEventListener('input',updateCount);
+  $('#sceneSubTextInput').addEventListener('input',autoGrowSubText);
   $('#sampleButton').addEventListener('click',()=>{titleInput.value='声のそろう通り';bodyInput.value=SAMPLE;updateCount();});
   $$('.theme-card').forEach(card=>card.addEventListener('click',()=>applyTheme(card.dataset.theme)));
+  $$('.work-font-card').forEach(card=>card.addEventListener('click',()=>applyWorkFont(card.dataset.font)));
   $('#makeButton').addEventListener('click',()=>openPlayer({from:'easy',startAt:0}));
   $('#advancedButton').addEventListener('click',openAdvanced);
   $('#editReturnButton').addEventListener('click',closePlayer);

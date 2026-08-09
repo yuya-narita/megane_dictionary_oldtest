@@ -580,3 +580,38 @@ body.easy-player-open{position:fixed;inset:0;}
 .audio-action-fields{padding-top:2px}.check-row{display:flex;align-items:center;gap:8px;min-height:38px;margin:4px 0 10px;font-size:11px;font-weight:700}.check-row input{width:18px;height:18px;accent-color:#222}
 .adv-field input[type=number]{width:100%;box-sizing:border-box;border:1px solid #d9d9d4;border-radius:13px;background:#fbfbf9;color:#222;padding:11px 12px;font:inherit}
 @media(max-width:760px){.audio-editor-grid{grid-template-columns:1fr}.audio-card-se{grid-column:auto}.adv-section-body{padding-left:11px;padding-right:11px}.asset-name{max-width:150px}}
+
+
+/* v0.2.8 — work typography */
+.work-font-section{display:grid;gap:12px}
+.work-font-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.work-font-card{
+  min-height:78px;padding:13px 12px;border:1px solid var(--line,#d9d9d9);border-radius:18px;
+  background:#fff;text-align:left;display:flex;flex-direction:column;gap:5px;color:inherit
+}
+.work-font-card strong{font-size:15px}
+.work-font-card small{font-size:11px;color:#8b8d92;line-height:1.35}
+.work-font-card.is-selected{
+  border-color:#9aa7ff;
+  box-shadow:0 0 0 3px rgba(91,109,247,.10);
+}
+.work-font-card[data-font="serif"] strong{font-family:"Yu Mincho","Hiragino Mincho ProN",serif}
+.work-font-card[data-font="sans"] strong{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
+.work-font-card[data-font="mono"] strong{font-family:"SFMono-Regular","SF Mono",Menlo,monospace}
+
+/* Subtext is optional; don't reserve another full body editor for it. */
+.subtext-field textarea{
+  min-height:72px!important;
+  height:72px;
+  max-height:150px;
+  resize:none;
+  overflow-y:hidden;
+}
+.subtext-field span small{font-weight:500;color:#9b9da2;margin-left:4px}
+
+@media (max-width:560px){
+  .work-font-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .work-font-card{min-height:72px;padding:11px 9px;border-radius:15px}
+  .work-font-card strong{font-size:14px}
+  .work-font-card small{font-size:9.5px}
+}
