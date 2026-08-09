@@ -1,5 +1,5 @@
 /*
- * Scene Player Core v1.3.2
+ * Scene Player Core v1.3.3
  * Runtime for Scene Format v1.0
  * No splitter / studio authoring logic lives here.
  */
@@ -174,16 +174,12 @@
     }
 
     _bindControls() {
-      // Unlocking Web Audio and starting the story's queued audio are kept
-      // separate. Merely touching a control may unlock the context, but only
-      // a reading gesture on the stage arms queued BGM/Ambient playback.
-      const unlockContext = () => this.unlockAudio(false);
-      this._on(this.host, 'pointerdown', unlockContext, { passive: true });
-      this._on(this.host, 'touchstart', unlockContext, { passive: true });
-
+      // iOS/WebKit: do not consume the activation on a host-level gesture.
+      // The actual reading gesture must both unlock Web Audio and arm playback.
+      // Register only one gesture family to avoid pointerdown + touchstart double fires.
       const armFromStageGesture = () => this.unlockAudio(true);
-      this._on(this.els.stage, 'pointerdown', armFromStageGesture, { passive: true });
-      this._on(this.els.stage, 'touchstart', armFromStageGesture, { passive: true });
+      if ('PointerEvent' in global) this._on(this.els.stage, 'pointerdown', armFromStageGesture, { passive: true });
+      else this._on(this.els.stage, 'touchstart', armFromStageGesture, { passive: true });
 
       this._on(this.els.prev, 'click', (e) => { e.stopPropagation(); this.previous(); });
       this._on(this.els.restart, 'click', (e) => { e.stopPropagation(); this.restart(); });
@@ -281,7 +277,11 @@
       if (!audio) return null;
       if (this.audioGainNodes.has(audio)) return this.audioGainNodes.get(audio);
       const ctx = this._ensureAudioContext();
-      if (!ctx) return null;
+      // Important on first iPhone playback: do not route a media element into
+      // a suspended AudioContext. WebKit can report media playback as active
+      // while the graph is still silent. Let the media element start first,
+      // then attach it once the context is actually running.
+      if (!ctx || ctx.state !== 'running') return null;
       try {
         const source = ctx.createMediaElementSource(audio);
         const gain = ctx.createGain();
@@ -307,6 +307,8 @@
       if (gain && this.audioContext) {
         try { gain.gain.setValueAtTime(target, this.audioContext.currentTime); } catch (_) { gain.gain.value = target; }
       } else {
+        // Desktop fallback only. iOS may ignore element.volume, but the stored
+        // gain value is applied immediately after the Web Audio graph attaches.
         try { audio.volume = target; } catch (_) {}
       }
     }
@@ -340,23 +342,37 @@
 
     unlockAudio(armPlayback = false) {
       const ctx = this._ensureAudioContext();
-
-      // Build persistent media graphs and prime the render path while we are
-      // still inside the trusted user gesture.
-      Object.values(this.audioEls || {}).forEach((audio) => this._ensureAudioNode(audio));
-      this._primeAudioContext(ctx);
-
-      if (ctx && ctx.state === 'suspended') {
-        try { ctx.resume().catch(() => {}); } catch (_) {}
-      }
-
       this.audioUnlocked = true;
       if (armPlayback) this.audioPlaybackArmed = true;
+
+      // Keep the call to resume inside the trusted reading gesture, but do not
+      // pre-connect media elements while the context is suspended.
+      this._primeAudioContext(ctx);
+      if (ctx && ctx.state === 'suspended') {
+        try {
+          const resumed = ctx.resume();
+          if (resumed && typeof resumed.then === 'function') {
+            resumed.then(() => {
+              // Any media that started directly during the gesture is routed
+              // through GainNode only after Web Audio is genuinely running.
+              Object.values(this.audioEls || {}).forEach((audio) => {
+                const gain = this._ensureAudioNode(audio);
+                if (gain) this._setAudioVolume(audio, this._getAudioVolume(audio));
+                try { audio.muted = false; } catch (_) {}
+              });
+            }).catch(() => {});
+          }
+        } catch (_) {}
+      }
+
+      // Flush now so HTMLMediaElement.play() itself is still called from the
+      // user's gesture. _safePlay handles delayed graph attachment.
       this._flushPendingAudio();
 
       emit(this.host, 'sceneplayer:audiounlock', {
         webAudio: !!ctx,
-        armed: this.audioPlaybackArmed
+        armed: this.audioPlaybackArmed,
+        contextState: ctx?.state || 'unavailable'
       });
       return true;
     }
@@ -437,22 +453,48 @@
 
     _safePlay(audio, detail, onStarted) {
       const play = () => {
-        this._ensureAudioNode(audio);
         const ctx = this._ensureAudioContext();
-        if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
-        const promise = audio.play();
-        if (promise && typeof promise.then === 'function') {
-          promise.then(() => {
+        let startedCallbackDone = false;
+        const finishStart = () => {
+          if (startedCallbackDone) return;
+          startedCallbackDone = true;
+          const attach = () => {
+            const gain = this._ensureAudioNode(audio);
+            if (gain) this._setAudioVolume(audio, this._getAudioVolume(audio));
+            try { audio.muted = false; } catch (_) {}
             if (onStarted) onStarted();
-          }).catch((error) => {
-            // A browser may still reject playback when its media policy is stricter.
+          };
+          if (!ctx || ctx.state === 'running') attach();
+          else {
+            try {
+              const r = ctx.resume();
+              if (r && typeof r.then === 'function') r.then(attach).catch(attach);
+              else attach();
+            } catch (_) { attach(); }
+          }
+        };
+
+        // On first iPhone playback, call media.play() before connecting the
+        // element to a suspended Web Audio graph. This preserves the trusted
+        // user activation that WebKit requires for media start.
+        if (ctx && ctx.state !== 'running' && !this.audioGainNodes.has(audio)) {
+          try { audio.muted = true; } catch (_) {}
+        }
+        let promise;
+        try { promise = audio.play(); }
+        catch (error) {
+          this.audioPlaybackArmed = false;
+          this.audioPending.push(() => this._safePlay(audio, detail, onStarted));
+          emit(this.host, 'sceneplayer:audioblocked', { ...detail, error });
+          return;
+        }
+        if (promise && typeof promise.then === 'function') {
+          promise.then(finishStart).catch((error) => {
             this.audioPlaybackArmed = false;
             this.audioPending.push(() => this._safePlay(audio, detail, onStarted));
             emit(this.host, 'sceneplayer:audioblocked', { ...detail, error });
           });
-        } else if (onStarted) {
-          onStarted();
-        }
+        } else finishStart();
       };
       this._queueAudio(play);
     }
@@ -1235,7 +1277,7 @@
     }
   }
 
-  ScenePlayerCore.VERSION = '1.3.2';
+  ScenePlayerCore.VERSION = '1.3.3';
   ScenePlayerCore.FORMAT_VERSION = '1.0';
   ScenePlayerCore.validate = assertSceneDocument;
 

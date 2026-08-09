@@ -30,7 +30,7 @@
       "id": "s003",
       "type": "dialogue",
       "text": "環境音を、重ねる。",
-      "subText": "ambient channel / loop",
+      "subText": "ambient channel / loop — 低い風・空調音",
       "pause": 3000,
       "audio": [
         {"channel":"ambient","action":"start","src":"./assets/ambient-demo.wav","volume":0.22,"loop":true,"fadeIn":700}
