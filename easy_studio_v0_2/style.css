@@ -557,3 +557,26 @@ body.easy-player-open{position:fixed;inset:0;}
 .scene-inspector{padding:18px}.scene-inspector-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.scene-inspector-head>div:first-child{display:flex;align-items:baseline;gap:9px}.scene-number{font-weight:900;font-size:16px}.scene-inspector-head code{color:#999;font-size:10px}.scene-move-actions{display:flex;gap:6px}.scene-move-actions button{width:38px;height:38px;border:1px solid #ddd;border-radius:11px;background:#fff}.scene-move-actions button:disabled{opacity:.3}
 .adv-field{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}.adv-field>span{font-size:10px;font-weight:800;color:#777;letter-spacing:.04em}.adv-field textarea,.adv-field select{width:100%;box-sizing:border-box;border:1px solid #d9d9d4;border-radius:13px;background:#fbfbf9;color:#222;padding:11px 12px;font:inherit}.adv-field textarea{resize:vertical;line-height:1.7;font-family:"Yu Mincho","Hiragino Mincho ProN",serif}.adv-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.scene-edit-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:5px}.scene-edit-actions button{min-height:44px;border:1px solid #dadad6;border-radius:12px;background:#fff;font-weight:800;font-size:11px}.scene-edit-actions button.danger{color:#a33;background:#fff9f8}.scene-edit-actions button:disabled{opacity:.3}.advanced-hint{margin:14px 2px 0;color:#999;font-size:10px;line-height:1.6}
 @media(max-width:760px){.advanced-screen{padding-left:10px;padding-right:10px}.advanced-topbar{margin-left:-10px;margin-right:-10px;padding-left:10px;padding-right:10px}.advanced-layout{display:block}.scene-rail{position:static;max-height:none;margin-bottom:12px}.scene-list{display:flex;overflow-x:auto;gap:6px;padding:8px}.scene-list-item{flex:0 0 150px;min-height:70px}.scene-inspector{padding:15px}.adv-grid{grid-template-columns:1fr 1fr}.scene-edit-actions{grid-template-columns:1fr 1fr}.scene-edit-actions .danger{grid-column:1/-1}.advanced-policy{margin-top:12px}.advanced-policy small{max-width:240px}}
+
+
+/* =========================================================
+   Easy Studio v0.2.5 — Advanced media editor
+   ========================================================= */
+.adv-section{margin-top:16px;border:1px solid #deded9;border-radius:16px;background:#fbfbf9;overflow:hidden}
+.adv-section>summary{padding:14px 15px;font-size:12px;font-weight:900;cursor:pointer;list-style:none}
+.adv-section>summary::-webkit-details-marker{display:none}
+.adv-section>summary::after{content:"＋";float:right;color:#999}.adv-section[open]>summary::after{content:"−"}
+.adv-section-body{padding:0 14px 14px;border-top:1px solid #e9e9e4}
+.asset-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0}
+.asset-button,.asset-clear{min-height:38px;padding:0 12px;border-radius:11px;font-size:10px;font-weight:850;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.asset-button{border:0;background:#202124;color:#fff}.asset-clear{border:1px solid #d7d7d2;background:#fff;color:#555}
+.asset-name{min-width:0;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#888;font-size:10px}
+.adv-asset-preview{height:130px;border-radius:13px;background-position:center;background-size:cover;border:1px solid #deded9;margin:8px 0 14px;position:relative;overflow:hidden}
+.adv-asset-preview::after{content:"このSceneから背景変更";position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.32);color:#fff;font-size:10px;font-weight:800}
+.range-field>span{display:flex;justify-content:space-between;align-items:center}.range-field output{font-weight:700;color:#555}.range-field input[type=range]{width:100%;accent-color:#222}
+.audio-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:12px}
+.audio-card{border:1px solid #e1e1dc;border-radius:14px;padding:12px;background:#fff}.audio-card-se{grid-column:1/-1}
+.audio-card-title{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}.audio-card-title strong{font-size:13px}.audio-card-title small{color:#999;font-size:9px}
+.audio-action-fields{padding-top:2px}.check-row{display:flex;align-items:center;gap:8px;min-height:38px;margin:4px 0 10px;font-size:11px;font-weight:700}.check-row input{width:18px;height:18px;accent-color:#222}
+.adv-field input[type=number]{width:100%;box-sizing:border-box;border:1px solid #d9d9d4;border-radius:13px;background:#fbfbf9;color:#222;padding:11px 12px;font:inherit}
+@media(max-width:760px){.audio-editor-grid{grid-template-columns:1fr}.audio-card-se{grid-column:auto}.adv-section-body{padding-left:11px;padding-right:11px}.asset-name{max-width:150px}}

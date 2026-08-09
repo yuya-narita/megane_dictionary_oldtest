@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#f7f8fb">
-  <title>Easy Studio v0.2.4</title>
+  <title>Easy Studio v0.2.5</title>
   <link rel="stylesheet" href="./scene-player-core.css">
   <link rel="stylesheet" href="./style.css">
 </head>
@@ -13,7 +13,7 @@
   <section id="editorScreen" class="screen editor-screen">
     <header class="topbar">
       <div><p class="brand-kicker">SCENE STUDIO</p><h1>Easy Studio</h1></div>
-      <span class="version">v0.2.4</span>
+      <span class="version">v0.2.5</span>
     </header>
 
     <section class="intro">
@@ -116,7 +116,73 @@
           <button id="splitSceneButton" type="button">カーソル位置で分割</button>
           <button id="deleteSceneButton" class="danger" type="button">削除</button>
         </div>
-        <p class="advanced-hint">自動生成されたSceneを、気になる場所だけ直せます。背景・音の詳細編集は次のAdvanced拡張で追加します。</p>
+
+        <details class="adv-section" open>
+          <summary>背景</summary>
+          <div class="adv-section-body">
+            <label class="adv-field"><span>このSceneの背景</span>
+              <select id="sceneBackgroundMode">
+                <option value="inherit">前Sceneから継続</option>
+                <option value="image">このSceneで画像を変更</option>
+                <option value="clear">このSceneで背景を解除</option>
+              </select>
+            </label>
+            <div id="sceneBackgroundControls" hidden>
+              <div class="asset-row">
+                <label class="asset-button" for="sceneBackgroundInput">画像を選ぶ</label>
+                <input id="sceneBackgroundInput" type="file" accept="image/*" hidden>
+                <button id="sceneBackgroundRemoveFile" type="button" class="asset-clear">選択解除</button>
+              </div>
+              <div id="sceneBackgroundPreview" class="adv-asset-preview" hidden></div>
+              <div class="adv-grid">
+                <label class="adv-field"><span>切替</span><select id="sceneBackgroundTransition"><option value="fade">fade</option><option value="cut">cut</option><option value="flash">flash</option><option value="glitch">glitch</option></select></label>
+                <label class="adv-field"><span>表示</span><select id="sceneBackgroundFit"><option value="cover">cover</option><option value="contain">contain</option></select></label>
+                <label class="adv-field"><span>動き</span><select id="sceneBackgroundMotion"><option value="none">none</option><option value="slowZoom">slowZoom</option><option value="breath">breath</option><option value="panLeft">panLeft</option><option value="panRight">panRight</option><option value="panUp">panUp</option><option value="panDown">panDown</option></select></label>
+                <label class="adv-field range-field"><span>暗さ <output id="sceneBackgroundDimOutput">34%</output></span><input id="sceneBackgroundDim" type="range" min="0" max="85" step="1" value="34"></label>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="adv-section" open>
+          <summary>音</summary>
+          <div class="adv-section-body audio-editor-grid">
+            <section class="audio-card">
+              <div class="audio-card-title"><strong>BGM</strong><small>Sceneをまたいで継続</small></div>
+              <label class="adv-field"><span>操作</span><select id="sceneBgmAction"><option value="inherit">継続（指定なし）</option><option value="start">このSceneで開始</option><option value="volume">音量を変更</option><option value="stop">このSceneで停止</option></select></label>
+              <div id="sceneBgmStartFields" class="audio-action-fields" hidden>
+                <div class="asset-row"><label class="asset-button" for="sceneBgmInput">BGMを選ぶ</label><input id="sceneBgmInput" type="file" accept="audio/*" hidden><span id="sceneBgmFileLabel" class="asset-name">未選択</span></div>
+                <label class="check-row"><input id="sceneBgmLoop" type="checkbox" checked><span>ループ</span></label>
+                <div class="adv-grid"><label class="adv-field range-field"><span>音量 <output id="sceneBgmVolumeOutput">50%</output></span><input id="sceneBgmVolume" type="range" min="0" max="100" value="50"></label><label class="adv-field"><span>fadeIn (ms)</span><input id="sceneBgmFadeIn" type="number" min="0" step="100" value="800"></label><label class="adv-field"><span>fadeOut (ms)</span><input id="sceneBgmFadeOut" type="number" min="0" step="100" value="800"></label></div>
+              </div>
+              <div id="sceneBgmVolumeFields" class="audio-action-fields" hidden><div class="adv-grid"><label class="adv-field range-field"><span>音量 <output id="sceneBgmVolumeChangeOutput">30%</output></span><input id="sceneBgmVolumeChange" type="range" min="0" max="100" value="30"></label><label class="adv-field"><span>fade (ms)</span><input id="sceneBgmVolumeFade" type="number" min="0" step="100" value="500"></label></div></div>
+              <div id="sceneBgmStopFields" class="audio-action-fields" hidden><label class="adv-field"><span>fadeOut (ms)</span><input id="sceneBgmStopFade" type="number" min="0" step="100" value="800"></label></div>
+            </section>
+
+            <section class="audio-card">
+              <div class="audio-card-title"><strong>Ambient</strong><small>環境音・持続音</small></div>
+              <label class="adv-field"><span>操作</span><select id="sceneAmbientAction"><option value="inherit">継続（指定なし）</option><option value="start">このSceneで開始</option><option value="volume">音量を変更</option><option value="stop">このSceneで停止</option></select></label>
+              <div id="sceneAmbientStartFields" class="audio-action-fields" hidden>
+                <div class="asset-row"><label class="asset-button" for="sceneAmbientInput">環境音を選ぶ</label><input id="sceneAmbientInput" type="file" accept="audio/*" hidden><span id="sceneAmbientFileLabel" class="asset-name">未選択</span></div>
+                <label class="check-row"><input id="sceneAmbientLoop" type="checkbox" checked><span>ループ</span></label>
+                <div class="adv-grid"><label class="adv-field range-field"><span>音量 <output id="sceneAmbientVolumeOutput">35%</output></span><input id="sceneAmbientVolume" type="range" min="0" max="100" value="35"></label><label class="adv-field"><span>fadeIn (ms)</span><input id="sceneAmbientFadeIn" type="number" min="0" step="100" value="600"></label><label class="adv-field"><span>fadeOut (ms)</span><input id="sceneAmbientFadeOut" type="number" min="0" step="100" value="600"></label></div>
+              </div>
+              <div id="sceneAmbientVolumeFields" class="audio-action-fields" hidden><div class="adv-grid"><label class="adv-field range-field"><span>音量 <output id="sceneAmbientVolumeChangeOutput">25%</output></span><input id="sceneAmbientVolumeChange" type="range" min="0" max="100" value="25"></label><label class="adv-field"><span>fade (ms)</span><input id="sceneAmbientVolumeFade" type="number" min="0" step="100" value="500"></label></div></div>
+              <div id="sceneAmbientStopFields" class="audio-action-fields" hidden><label class="adv-field"><span>fadeOut (ms)</span><input id="sceneAmbientStopFade" type="number" min="0" step="100" value="600"></label></div>
+            </section>
+
+            <section class="audio-card audio-card-se">
+              <div class="audio-card-title"><strong>SE</strong><small>このSceneで一度だけ鳴る</small></div>
+              <label class="check-row"><input id="sceneSeEnabled" type="checkbox"><span>このSceneでSEを鳴らす</span></label>
+              <div id="sceneSeFields" class="audio-action-fields" hidden>
+                <div class="asset-row"><label class="asset-button" for="sceneSeInput">SEを選ぶ</label><input id="sceneSeInput" type="file" accept="audio/*" hidden><span id="sceneSeFileLabel" class="asset-name">未選択</span></div>
+                <div class="adv-grid"><label class="adv-field range-field"><span>音量 <output id="sceneSeVolumeOutput">80%</output></span><input id="sceneSeVolume" type="range" min="0" max="100" value="80"></label><label class="adv-field"><span>fadeIn (ms)</span><input id="sceneSeFadeIn" type="number" min="0" step="50" value="0"></label></div>
+              </div>
+            </section>
+          </div>
+        </details>
+
+        <p class="advanced-hint">何も指定しなければ前Sceneの背景・BGM・Ambient状態を継続します。SEだけはそのSceneで一度だけ再生します。</p>
       </section>
     </div>
   </section>

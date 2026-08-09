@@ -92,12 +92,108 @@
 
   function currentScene(){ return workingDocument?.scenes?.[selectedSceneIndex] || null; }
   function ensurePresentation(scene){ scene.presentation ||= {}; scene.presentation.text ||= {}; return scene.presentation; }
+
+  const pct = (value, fallback=0) => Math.max(0, Math.min(100, Number(value ?? fallback))) / 100;
+  const ms = (value, fallback=0) => Math.max(0, Number(value ?? fallback) || 0);
+  function managedAudio(scene, channel){ return (scene.audio || []).find(c => c?._editorManaged && c.channel === channel) || null; }
+  function setManagedAudio(scene, channel, command){
+    const rest=(scene.audio || []).filter(c => !(c?._editorManaged && c.channel === channel));
+    if(command) rest.push({...command, _editorManaged:true});
+    if(rest.length) scene.audio=rest; else delete scene.audio;
+  }
+  function setAssetField(id, url='', name=''){
+    const el=$('#'+id); if(!el)return; el.dataset.assetUrl=url||''; el.dataset.assetName=name||'';
+  }
+  function assetFrom(id){ const el=$('#'+id); return {src:el?.dataset.assetUrl||'', name:el?.dataset.assetName||''}; }
+  function updateAssetLabel(id, inputId){ const el=$('#'+id), asset=assetFrom(inputId); if(el)el.textContent=asset.name || (asset.src ? '設定済み' : '未選択'); }
+  function updateRangeOutput(inputId, outputId){ const input=$('#'+inputId), output=$('#'+outputId); if(input&&output) output.value=`${input.value}%`; }
+  function updateAdvancedConditionalUI(){
+    const bgMode=$('#sceneBackgroundMode')?.value || 'inherit';
+    $('#sceneBackgroundControls').hidden=bgMode!=='image';
+    const bgAsset=assetFrom('sceneBackgroundInput');
+    const bgPreview=$('#sceneBackgroundPreview');
+    if(bgPreview){ bgPreview.hidden=!bgAsset.src; bgPreview.style.backgroundImage=bgAsset.src?`url("${bgAsset.src}")`:''; }
+    updateRangeOutput('sceneBackgroundDim','sceneBackgroundDimOutput');
+    ['Bgm','Ambient'].forEach(prefix=>{
+      const action=$(`#scene${prefix}Action`).value;
+      $(`#scene${prefix}StartFields`).hidden=action!=='start';
+      $(`#scene${prefix}VolumeFields`).hidden=action!=='volume';
+      $(`#scene${prefix}StopFields`).hidden=action!=='stop';
+      updateAssetLabel(`scene${prefix}FileLabel`,`scene${prefix}Input`);
+      updateRangeOutput(`scene${prefix}Volume`,`scene${prefix}VolumeOutput`);
+      updateRangeOutput(`scene${prefix}VolumeChange`,`scene${prefix}VolumeChangeOutput`);
+    });
+    $('#sceneSeFields').hidden=!$('#sceneSeEnabled').checked;
+    updateAssetLabel('sceneSeFileLabel','sceneSeInput');
+    updateRangeOutput('sceneSeVolume','sceneSeVolumeOutput');
+  }
+  function syncBackgroundFields(scene){
+    const p=ensurePresentation(scene), mode=$('#sceneBackgroundMode').value;
+    if(mode==='inherit') delete p.background;
+    else if(mode==='clear') p.background={src:'',transition:'fade',_editorManaged:true};
+    else {
+      const asset=assetFrom('sceneBackgroundInput');
+      const bg=p.background && typeof p.background==='object' ? {...p.background} : {};
+      bg.src=asset.src || bg.src || '';
+      bg._editorFileName=asset.name || bg._editorFileName || '';
+      bg._editorManaged=true;
+      bg.transition=$('#sceneBackgroundTransition').value;
+      bg.fit=$('#sceneBackgroundFit').value;
+      bg.dim=pct($('#sceneBackgroundDim').value,34);
+      const motion=$('#sceneBackgroundMotion').value;
+      if(motion==='none') delete bg.motion; else bg.motion={type:motion,duration:12000};
+      p.background=bg;
+    }
+  }
+  function syncPersistentAudio(scene, prefix, channel){
+    const action=$(`#scene${prefix}Action`).value;
+    if(action==='inherit'){ setManagedAudio(scene,channel,null); return; }
+    if(action==='start'){
+      const asset=assetFrom(`scene${prefix}Input`); const existing=managedAudio(scene,channel);
+      const src=asset.src || (existing?.action==='start'?existing.src:'');
+      if(!src){ setManagedAudio(scene,channel,null); return; }
+      setManagedAudio(scene,channel,{channel,action:'start',src,volume:pct($(`#scene${prefix}Volume`).value,50),fadeIn:ms($(`#scene${prefix}FadeIn`).value),fadeOut:ms($(`#scene${prefix}FadeOut`).value),loop:$(`#scene${prefix}Loop`).checked,restart:true,_editorFileName:asset.name||existing?._editorFileName||''});
+    } else if(action==='volume'){
+      setManagedAudio(scene,channel,{channel,action:'volume',volume:pct($(`#scene${prefix}VolumeChange`).value,30),fade:ms($(`#scene${prefix}VolumeFade`).value)});
+    } else if(action==='stop'){
+      setManagedAudio(scene,channel,{channel,action:'stop',fadeOut:ms($(`#scene${prefix}StopFade`).value,600)});
+    }
+  }
+  function syncAudioFields(scene){
+    syncPersistentAudio(scene,'Bgm','bgm');
+    syncPersistentAudio(scene,'Ambient','ambient');
+    if(!$('#sceneSeEnabled').checked){ setManagedAudio(scene,'oneshot',null); return; }
+    const asset=assetFrom('sceneSeInput'), existing=managedAudio(scene,'oneshot'); const src=asset.src || existing?.src || '';
+    if(!src){ setManagedAudio(scene,'oneshot',null); return; }
+    setManagedAudio(scene,'oneshot',{channel:'oneshot',role:'se',action:'play',src,volume:pct($('#sceneSeVolume').value,80),fadeIn:ms($('#sceneSeFadeIn').value),_editorFileName:asset.name||existing?._editorFileName||''});
+  }
+  function loadPersistentAudio(scene,prefix,channel,defaults){
+    const cmd=managedAudio(scene,channel); const action=cmd?.action || 'inherit'; $(`#scene${prefix}Action`).value=action;
+    setAssetField(`scene${prefix}Input`,cmd?.src||'',cmd?._editorFileName||'');
+    $(`#scene${prefix}Loop`).checked=cmd?.loop!==false;
+    $(`#scene${prefix}Volume`).value=Math.round((cmd?.action==='start'?cmd.volume:defaults.volume)*100);
+    $(`#scene${prefix}FadeIn`).value=cmd?.fadeIn ?? defaults.fadeIn; $(`#scene${prefix}FadeOut`).value=cmd?.fadeOut ?? defaults.fadeOut;
+    $(`#scene${prefix}VolumeChange`).value=Math.round((cmd?.action==='volume'?cmd.volume:defaults.changeVolume)*100); $(`#scene${prefix}VolumeFade`).value=cmd?.fade ?? defaults.volumeFade;
+    $(`#scene${prefix}StopFade`).value=cmd?.fadeOut ?? defaults.stopFade;
+  }
+  function loadMediaFields(scene){
+    const bg=scene.presentation?.background;
+    let mode='inherit'; if(bg && typeof bg==='object') mode=bg.src ? 'image' : 'clear';
+    $('#sceneBackgroundMode').value=mode;
+    setAssetField('sceneBackgroundInput',bg?.src||'',bg?._editorFileName||'');
+    $('#sceneBackgroundTransition').value=bg?.transition||'fade'; $('#sceneBackgroundFit').value=bg?.fit||'cover'; $('#sceneBackgroundMotion').value=bg?.motion?.type||'none'; $('#sceneBackgroundDim').value=Math.round((bg?.dim ?? 0.34)*100);
+    loadPersistentAudio(scene,'Bgm','bgm',{volume:.5,fadeIn:800,fadeOut:800,changeVolume:.3,volumeFade:500,stopFade:800});
+    loadPersistentAudio(scene,'Ambient','ambient',{volume:.35,fadeIn:600,fadeOut:600,changeVolume:.25,volumeFade:500,stopFade:600});
+    const se=managedAudio(scene,'oneshot'); $('#sceneSeEnabled').checked=Boolean(se); setAssetField('sceneSeInput',se?.src||'',se?._editorFileName||''); $('#sceneSeVolume').value=Math.round((se?.volume ?? .8)*100); $('#sceneSeFadeIn').value=se?.fadeIn ?? 0;
+    updateAdvancedConditionalUI();
+  }
   function syncAdvancedFieldsToScene(){
     const scene=currentScene(); if(!scene)return;
     scene.text=$('#sceneTextInput').value;
     const sub=$('#sceneSubTextInput').value; if(sub)scene.subText=sub; else delete scene.subText;
     scene.type=$('#sceneTypeSelect').value;
     const p=ensurePresentation(scene); p.display=$('#sceneDisplaySelect').value; p.effect=$('#sceneEffectSelect').value; p.text.size=$('#sceneSizeSelect').value;
+    syncBackgroundFields(scene); syncAudioFields(scene);
     workingDocument.player ||= {}; workingDocument.player.navigation ||= {}; workingDocument.player.navigation.allowPrevious=$('#allowPreviousInput').checked;
   }
   function loadSceneIntoFields(){
@@ -108,13 +204,15 @@
     $('#sceneEffectSelect').value=scene.presentation?.effect || 'auto'; $('#sceneSizeSelect').value=scene.presentation?.text?.size || 'auto';
     $('#moveUpButton').disabled=selectedSceneIndex===0; $('#moveDownButton').disabled=selectedSceneIndex===workingDocument.scenes.length-1;
     $('#mergePreviousButton').disabled=selectedSceneIndex===0; $('#deleteSceneButton').disabled=workingDocument.scenes.length<=1;
+    loadMediaFields(scene);
   }
   function scenePreviewText(scene){ const t=(scene.text||scene.subText||'(sound)').replace(/\s+/g,' ').trim(); return t.length>42?t.slice(0,42)+'…':t; }
   function renderSceneList(){
     const list=$('#sceneList'); list.innerHTML=''; $('#sceneCountLabel').textContent=`${workingDocument.scenes.length} Scenes`;
     workingDocument.scenes.forEach((scene,i)=>{
       const b=document.createElement('button'); b.type='button'; b.className='scene-list-item'+(i===selectedSceneIndex?' is-selected':'');
-      b.innerHTML=`<span>${String(i+1).padStart(2,'0')}</span><div><strong>${scenePreviewText(scene)}</strong><small>${scene.type} · ${scene.presentation?.effect||'auto'}</small></div>`;
+      const media=[]; if(scene.presentation?.background)media.push('BG'); if((scene.audio||[]).some(c=>c.channel==='bgm'))media.push('BGM'); if((scene.audio||[]).some(c=>c.channel==='ambient'))media.push('AMB'); if((scene.audio||[]).some(c=>c.channel==='oneshot'))media.push('SE');
+      b.innerHTML=`<span>${String(i+1).padStart(2,'0')}</span><div><strong>${scenePreviewText(scene)}</strong><small>${scene.type} · ${scene.presentation?.effect||'auto'}${media.length?' · '+media.join('/') : ''}</small></div>`;
       b.addEventListener('click',()=>{syncAdvancedFieldsToScene();selectedSceneIndex=i;renderAdvanced();}); list.appendChild(b);
     });
   }
@@ -128,7 +226,7 @@
   function splitAtCursor(){
     const input=$('#sceneTextInput'), pos=input.selectionStart; const text=input.value; if(pos<=0||pos>=text.length)return;
     syncAdvancedFieldsToScene(); const scene=currentScene(); const left=text.slice(0,pos).trimEnd(), right=text.slice(pos).trimStart(); if(!left||!right)return;
-    scene.text=left; const cloneScene=clone(scene); cloneScene.id=nextUniqueId(); cloneScene.text=right; delete cloneScene.subText;
+    scene.text=left; const cloneScene=clone(scene); cloneScene.id=nextUniqueId(); cloneScene.text=right; delete cloneScene.subText; delete cloneScene.audio; if(cloneScene.presentation)delete cloneScene.presentation.background;
     workingDocument.scenes.splice(selectedSceneIndex+1,0,cloneScene); selectedSceneIndex+=1; renderAdvanced();
   }
   function addScene(){ syncAdvancedFieldsToScene(); const scene={id:nextUniqueId(),type:'text',text:'',presentation:{display:'stack',effect:'auto',text:{size:'auto'}}}; workingDocument.scenes.splice(selectedSceneIndex+1,0,scene); selectedSceneIndex+=1; renderAdvanced(); $('#sceneTextInput').focus(); }
@@ -146,6 +244,18 @@
   $('#moveUpButton').addEventListener('click',()=>moveScene(-1)); $('#moveDownButton').addEventListener('click',()=>moveScene(1));
   $('#mergePreviousButton').addEventListener('click',mergePrevious); $('#splitSceneButton').addEventListener('click',splitAtCursor); $('#addSceneButton').addEventListener('click',addScene); $('#deleteSceneButton').addEventListener('click',deleteScene);
   ['sceneTextInput','sceneSubTextInput','sceneTypeSelect','sceneDisplaySelect','sceneEffectSelect','sceneSizeSelect'].forEach(id=>$('#'+id).addEventListener('change',()=>{syncAdvancedFieldsToScene();renderSceneList();}));
+
+  ['sceneBackgroundMode','sceneBackgroundTransition','sceneBackgroundFit','sceneBackgroundMotion','sceneBackgroundDim','sceneBgmAction','sceneBgmLoop','sceneBgmVolume','sceneBgmFadeIn','sceneBgmFadeOut','sceneBgmVolumeChange','sceneBgmVolumeFade','sceneBgmStopFade','sceneAmbientAction','sceneAmbientLoop','sceneAmbientVolume','sceneAmbientFadeIn','sceneAmbientFadeOut','sceneAmbientVolumeChange','sceneAmbientVolumeFade','sceneAmbientStopFade','sceneSeEnabled','sceneSeVolume','sceneSeFadeIn'].forEach(id=>{
+    const el=$('#'+id); if(!el)return; const evt=el.type==='range'?'input':'change'; el.addEventListener(evt,()=>{updateAdvancedConditionalUI();syncAdvancedFieldsToScene();renderSceneList();});
+  });
+  function bindAssetInput(inputId,labelId,onPick){
+    const input=$('#'+inputId); input.addEventListener('change',()=>{const file=input.files?.[0];if(!file)return; const url=URL.createObjectURL(file);setAssetField(inputId,url,file.name);if(onPick)onPick();updateAdvancedConditionalUI();syncAdvancedFieldsToScene();renderSceneList(); if(labelId)updateAssetLabel(labelId,inputId);});
+  }
+  bindAssetInput('sceneBackgroundInput',null,()=>{$('#sceneBackgroundMode').value='image';});
+  bindAssetInput('sceneBgmInput','sceneBgmFileLabel',()=>{$('#sceneBgmAction').value='start';});
+  bindAssetInput('sceneAmbientInput','sceneAmbientFileLabel',()=>{$('#sceneAmbientAction').value='start';});
+  bindAssetInput('sceneSeInput','sceneSeFileLabel',()=>{$('#sceneSeEnabled').checked=true;});
+  $('#sceneBackgroundRemoveFile').addEventListener('click',()=>{setAssetField('sceneBackgroundInput','','');$('#sceneBackgroundInput').value='';updateAdvancedConditionalUI();syncAdvancedFieldsToScene();renderSceneList();});
 
   const cinemaInput=$('#cinemaBackgroundInput'), cinemaPreview=$('#cinemaBackgroundPreview'), cinemaClear=$('#cinemaBackgroundClear');
   cinemaInput.addEventListener('change',()=>{const file=cinemaInput.files?.[0];if(!file)return;if(cinemaBackgroundUrl)URL.revokeObjectURL(cinemaBackgroundUrl);cinemaBackgroundUrl=URL.createObjectURL(file);cinemaPreview.style.backgroundImage=`url("${cinemaBackgroundUrl}")`;cinemaPreview.hidden=false;cinemaClear.hidden=false;});
