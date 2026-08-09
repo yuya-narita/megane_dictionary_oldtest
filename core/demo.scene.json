@@ -1,83 +1,133 @@
 {
   "format": "scene-format",
   "version": "1.0",
-  "id": "scene-player-core-demo.ja",
-  "workId": "scene-player-core-demo",
+  "id": "scene-player-core-background-demo.ja",
+  "workId": "scene-player-core-background-demo",
   "language": "ja",
-  "title": "Presentation Engine",
+  "title": "Background Engine",
   "author": "Scene Studio",
-  "theme": "light",
+  "theme": "cinema",
   "scenes": [
     {
       "id": "s001",
       "type": "text",
-      "text": "Sceneごとに、見た目を持てる。",
-      "subText": "Presentation Engine v1.1",
-      "pause": 2300,
+      "text": "背景も、Sceneの状態になる。",
+      "subText": "fade + slowZoom + vignette",
+      "pause": 2800,
       "presentation": {
+        "display": "solo",
         "effect": "fade",
-        "text": {"size": "large"},
-        "subText": {"size": "normal"}
+        "text": {"size": "large", "color": "#ffffff"},
+        "subText": {"color": "rgba(255,255,255,.68)"},
+        "background": {
+          "src": "./assets/bg-dawn.svg",
+          "transition": "fade",
+          "dim": 0.28,
+          "fit": "cover",
+          "position": "center center",
+          "reveal": {"type": "intro", "duration": 1100, "opacity": 1},
+          "motion": {"type": "slowZoom", "duration": 12000, "scaleFrom": 1, "scaleTo": 1.08},
+          "textures": {"grain": 0.08, "vignette": 0.32}
+        }
       }
     },
     {
       "id": "s002",
       "type": "dialogue",
-      "text": "色も、サイズも、前のSceneを汚さない。",
-      "pause": 2500,
+      "text": "次のSceneに背景指定がなくても、残る。",
+      "subText": "背景はSceneをまたぐ持続状態。",
+      "pause": 3000,
       "presentation": {
-        "effect": "pop",
-        "text": {"color": "#875f52", "size": "normal"}
+        "text": {"color": "#ffffff"},
+        "subText": {"color": "rgba(255,255,255,.68)"}
       }
     },
     {
       "id": "s003",
       "type": "text",
-      "text": "この文章は、一文字ずつ現れる。",
-      "subText": "途中でTAPすると全文表示。もう一度TAPすると次へ。",
-      "pause": 1800,
+      "text": "画像を変える。",
+      "subText": "flash + panRight",
+      "pause": 2600,
       "presentation": {
         "display": "solo",
-        "view": "console",
-        "typing": {"enabled": true, "speed": 70, "cursor": true},
-        "text": {"size": "large"},
-        "subText": {"size": "small"}
+        "text": {"size": "xl", "color": "#ffffff"},
+        "background": {
+          "src": "./assets/bg-night.svg",
+          "transition": "flash",
+          "dim": 0.42,
+          "position": "center center",
+          "motion": {"type": "panRight", "duration": 10500, "scaleTo": 1.08, "pan": 4},
+          "textures": {"grain": 0.04, "vignette": 0.46, "monochrome": 0.12}
+        }
       }
     },
     {
       "id": "s004",
-      "type": "dialogue",
-      "text": "小さく言うこともできる。",
-      "pause": 2200,
+      "type": "text",
+      "text": "画像は変えず、暗さだけ変える。",
+      "subText": "partial background state update",
+      "pause": 2800,
       "presentation": {
-        "effect": "whisper",
-        "text": {"color": "#77716a", "size": "small"}
+        "text": {"color": "#ffffff"},
+        "subText": {"color": "rgba(255,255,255,.62)"},
+        "background": {
+          "dim": 0.68,
+          "textures": {"scanline": 0.10, "vignette": 0.62}
+        }
       }
     },
     {
       "id": "s005",
-      "type": "text",
-      "text": "そして、消える。",
-      "subText": "1.8秒後にフェードアウト",
-      "pause": 3200,
+      "type": "dialogue",
+      "text": "GLITCH。",
+      "subText": "transition + grain + scanline",
+      "pause": 2800,
       "presentation": {
         "display": "solo",
-        "effect": "pulse",
-        "text": {"size": "xl"},
-        "disappear": {"after": 1800, "fade": 900}
+        "view": "warning",
+        "effect": "shake",
+        "text": {"size": "xl", "color": "#fff3f5"},
+        "subText": {"color": "rgba(255,255,255,.68)"},
+        "background": {
+          "src": "./assets/bg-signal.svg",
+          "transition": "glitch",
+          "dim": 0.34,
+          "reveal": {"type": "ghost", "duration": 900, "opacity": 1},
+          "motion": {"type": "breath", "duration": 7000, "scaleFrom": 1.01, "scaleTo": 1.05},
+          "textures": {"grain": 0.22, "scanline": 0.42, "glitch": 0.45, "vignette": 0.5}
+        }
       }
     },
     {
       "id": "s006",
       "type": "text",
-      "text": "PresentationはCoreへ入った。",
-      "subText": "次は Background Engine。",
-      "pause": 2800,
+      "text": "戻っても、背景はその地点へ戻る。",
+      "subText": "‹ や右スワイプで確認できます。",
+      "pause": 3200,
+      "presentation": {
+        "text": {"size": "large", "color": "#ffffff"},
+        "subText": {"color": "rgba(255,255,255,.66)"}
+      }
+    },
+    {
+      "id": "s007",
+      "type": "text",
+      "text": "Background EngineはCoreへ入った。",
+      "subText": "次は Audio Engine。",
+      "pause": 3000,
       "presentation": {
         "display": "solo",
         "view": "system",
-        "effect": "tilt",
-        "text": {"size": "large"}
+        "effect": "fade",
+        "text": {"size": "large"},
+        "background": {
+          "src": "",
+          "transition": "fade",
+          "dim": 0,
+          "blur": 0,
+          "motion": {"type": "none"},
+          "textures": {"grain": 0, "scanline": 0, "glitch": 0, "vignette": 0, "monochrome": 0, "blur": 0}
+        }
       }
     }
   ]

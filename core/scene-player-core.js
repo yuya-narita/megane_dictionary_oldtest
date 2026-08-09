@@ -1,5 +1,5 @@
 /*
- * Scene Player Core v1.1.0
+ * Scene Player Core v1.2.0
  * Runtime for Scene Format v1.0
  * No splitter / studio authoring logic lives here.
  */
@@ -75,6 +75,9 @@
       this._bound = [];
       this.presentationTimers = [];
       this.typingState = null;
+      this.backgroundState = null;
+      this.backgroundLayerIndex = 0;
+      this.backgroundTimers = [];
 
       this._buildShell();
       this._bindControls();
@@ -83,7 +86,12 @@
     _buildShell() {
       this.host.classList.add('sp-core');
       this.host.innerHTML = `
-        <div class="sp-background" aria-hidden="true"></div>
+        <div class="sp-background" aria-hidden="true">
+          <div class="sp-bg-layer sp-bg-a"></div>
+          <div class="sp-bg-layer sp-bg-b"></div>
+        </div>
+        <div class="sp-bg-textures" aria-hidden="true"></div>
+        <div class="sp-bg-flash" aria-hidden="true"></div>
         <div class="sp-veil" aria-hidden="true"></div>
         <header class="sp-header">
           <button class="sp-button sp-prev" type="button" aria-label="Previous scene">‹</button>
@@ -115,6 +123,11 @@
       const q = (s) => this.host.querySelector(s);
       this.els = {
         background: q('.sp-background'),
+        bgA: q('.sp-bg-a'),
+        bgB: q('.sp-bg-b'),
+        bgTextures: q('.sp-bg-textures'),
+        bgFlash: q('.sp-bg-flash'),
+        veil: q('.sp-veil'),
         header: q('.sp-header'),
         footer: q('.sp-footer'),
         stage: q('.sp-stage'),
@@ -197,6 +210,21 @@
       this.presentationTimers.length = 0;
     }
 
+    _clearBackgroundTimers() {
+      this.backgroundTimers.forEach((timer) => clearTimeout(timer));
+      this.backgroundTimers.length = 0;
+    }
+
+    _backgroundTimeout(fn, delay) {
+      const timer = setTimeout(() => {
+        const i = this.backgroundTimers.indexOf(timer);
+        if (i >= 0) this.backgroundTimers.splice(i, 1);
+        fn();
+      }, Math.max(0, delay));
+      this.backgroundTimers.push(timer);
+      return timer;
+    }
+
     _stopTyping(complete = false) {
       const state = this.typingState;
       if (!state) return false;
@@ -214,6 +242,12 @@
       this._stopTyping(false);
     }
 
+    _resetBackgroundRuntime() {
+      this._clearBackgroundTimers();
+      this.els?.bgFlash?.classList.remove('is-active');
+      this.host?.classList.remove('sp-bg-glitching');
+    }
+
     _presentationTimeout(fn, delay) {
       const timer = setTimeout(() => {
         const i = this.presentationTimers.indexOf(timer);
@@ -228,6 +262,7 @@
       if (this.destroyed) throw new Error('ScenePlayerCore has been destroyed.');
       this.stopAuto();
       this._resetPresentationRuntime();
+      this._resetBackgroundRuntime();
       this.document = assertSceneDocument(doc);
       this.index = clamp(asNumber(options.startAt, this.options.startAt), 0, doc.scenes.length - 1);
       this.ended = false;
@@ -241,6 +276,9 @@
       this.els.total.textContent = String(doc.scenes.length);
       this.els.endingTitle.textContent = doc.title || '読了';
       this.els.ending.hidden = true;
+      this.backgroundState = null;
+      this.backgroundLayerIndex = 0;
+      this._resetBackgroundLayers();
 
       this._render();
       emit(this.host, 'sceneplayer:load', { document: doc, index: this.index });
@@ -282,6 +320,7 @@
       if (!this.document || !this.options.allowPrevious) return false;
       this._clearAutoTimer();
       this._resetPresentationRuntime();
+      this._resetBackgroundRuntime();
 
       if (this.ended) {
         this.ended = false;
@@ -306,6 +345,7 @@
 
       this._clearAutoTimer();
       this._resetPresentationRuntime();
+      this._resetBackgroundRuntime();
       this.ended = false;
       this.els.ending.hidden = true;
       this.index = nextIndex;
@@ -318,6 +358,7 @@
       if (!this.document) return;
       this._clearAutoTimer();
       this._resetPresentationRuntime();
+      this._resetBackgroundRuntime();
       this.index = 0;
       this.ended = false;
       this.els.ending.hidden = true;
@@ -329,6 +370,7 @@
       if (!this.document || this.ended) return;
       this.stopAuto();
       this._resetPresentationRuntime();
+      this._resetBackgroundRuntime();
       this.ended = true;
       this.els.ending.hidden = false;
       emit(this.host, 'sceneplayer:end', { document: this.document, index: this.index });
@@ -395,6 +437,7 @@
       this.host.dataset.sceneType = active.type;
 
       this._applyCorePresentation(active);
+      this._applyBackgroundForIndex(this.index);
 
       requestAnimationFrame(() => {
         const newest = this.els.scenes.lastElementChild;
@@ -421,6 +464,182 @@
       }
       start = Math.max(start, this.index - this.options.maxStackVisible + 1);
       return scenes.slice(start, this.index + 1).map((scene, offset) => ({ scene, index: start + offset }));
+    }
+
+
+    _resetBackgroundLayers() {
+      if (!this.els?.bgA || !this.els?.bgB) return;
+      [this.els.bgA, this.els.bgB].forEach((layer) => {
+        layer.className = layer.classList.contains('sp-bg-a') ? 'sp-bg-layer sp-bg-a' : 'sp-bg-layer sp-bg-b';
+        layer.removeAttribute('style');
+      });
+      this.els.bgA.classList.add('is-current');
+      this.els.bgB.classList.remove('is-current');
+      if (this.els.veil) this.els.veil.removeAttribute('style');
+      if (this.els.bgTextures) {
+        this.els.bgTextures.removeAttribute('style');
+        this.els.bgTextures.dataset.texture = '';
+      }
+      this.host.classList.remove('sp-has-background','sp-bg-glitching');
+    }
+
+    _backgroundStateAt(index) {
+      const state = {
+        src: '',
+        transition: 'fade',
+        dim: null,
+        blur: 0,
+        fit: 'cover',
+        position: 'center center',
+        reveal: null,
+        motion: null,
+        textures: null
+      };
+      for (let i = 0; i <= index; i += 1) {
+        const bg = this.document?.scenes?.[i]?.presentation?.background;
+        if (!bg || typeof bg !== 'object') continue;
+        Object.keys(bg).forEach((key) => {
+          const value = bg[key];
+          if (value !== undefined) state[key] = (value && typeof value === 'object' && !Array.isArray(value))
+            ? { ...(state[key] && typeof state[key] === 'object' ? state[key] : {}), ...value }
+            : value;
+        });
+      }
+      return state;
+    }
+
+    _applyBackgroundForIndex(index) {
+      const next = this._backgroundStateAt(index);
+      const previous = this.backgroundState;
+      const sceneBg = this.document?.scenes?.[index]?.presentation?.background || null;
+      const transition = sceneBg?.transition || next.transition || 'fade';
+      const srcChanged = !previous || previous.src !== next.src;
+
+      this._resetBackgroundRuntime();
+      this.backgroundState = next;
+      this.host.classList.toggle('sp-has-background', Boolean(next.src));
+
+      if (srcChanged) this._swapBackground(next, transition);
+      else this._styleCurrentBackground(next, Boolean(sceneBg?.motion));
+
+      this._applyBackgroundOverlays(next);
+      this._runBackgroundReveal(sceneBg?.reveal, transition);
+      emit(this.host, 'sceneplayer:backgroundchange', { index, scene: this.currentScene, background: { ...next }, srcChanged });
+    }
+
+    _currentBackgroundLayer() {
+      return this.backgroundLayerIndex === 0 ? this.els.bgA : this.els.bgB;
+    }
+
+    _nextBackgroundLayer() {
+      return this.backgroundLayerIndex === 0 ? this.els.bgB : this.els.bgA;
+    }
+
+    _swapBackground(state, transition) {
+      const current = this._currentBackgroundLayer();
+      const incoming = this._nextBackgroundLayer();
+      this._prepareBackgroundLayer(incoming, state);
+
+      const mode = ['fade','cut','flash','glitch'].includes(transition) ? transition : 'fade';
+      this.host.dataset.bgTransition = mode;
+      incoming.classList.add('is-current');
+      current.classList.remove('is-current');
+
+      if (mode === 'cut') {
+        incoming.classList.add('sp-bg-cut');
+        requestAnimationFrame(() => incoming.classList.remove('sp-bg-cut'));
+      } else if (mode === 'flash') {
+        this.els.bgFlash.classList.remove('is-active');
+        void this.els.bgFlash.offsetWidth;
+        this.els.bgFlash.classList.add('is-active');
+        this._backgroundTimeout(() => this.els.bgFlash.classList.remove('is-active'), 520);
+      } else if (mode === 'glitch') {
+        this.host.classList.add('sp-bg-glitching');
+        this._backgroundTimeout(() => this.host.classList.remove('sp-bg-glitching'), 560);
+      }
+
+      this.backgroundLayerIndex = this.backgroundLayerIndex === 0 ? 1 : 0;
+      this._styleCurrentBackground(state, true);
+      this._backgroundTimeout(() => {
+        current.style.backgroundImage = '';
+        current.className = current.classList.contains('sp-bg-a') ? 'sp-bg-layer sp-bg-a' : 'sp-bg-layer sp-bg-b';
+      }, mode === 'cut' ? 20 : 900);
+    }
+
+    _prepareBackgroundLayer(layer, state) {
+      layer.className = layer.classList.contains('sp-bg-a') ? 'sp-bg-layer sp-bg-a' : 'sp-bg-layer sp-bg-b';
+      layer.style.backgroundImage = state.src ? `url("${String(state.src).replace(/"/g, '\"')}")` : 'none';
+      layer.style.backgroundSize = state.fit === 'contain' ? 'contain' : 'cover';
+      layer.style.backgroundPosition = state.position || 'center center';
+      layer.style.filter = state.blur > 0 ? `blur(${state.blur}px)` : '';
+      this._applyBackgroundMotion(layer, state.motion);
+    }
+
+    _styleCurrentBackground(state, resetMotion) {
+      const layer = this._currentBackgroundLayer();
+      if (!layer) return;
+      layer.style.backgroundSize = state.fit === 'contain' ? 'contain' : 'cover';
+      layer.style.backgroundPosition = state.position || 'center center';
+      layer.style.filter = state.blur > 0 ? `blur(${state.blur}px)` : '';
+      if (resetMotion) this._applyBackgroundMotion(layer, state.motion);
+    }
+
+    _applyBackgroundMotion(layer, motion) {
+      layer.classList.remove('sp-motion-parallax','sp-motion-breath','sp-motion-slowZoom','sp-motion-panLeft','sp-motion-panRight','sp-motion-panUp','sp-motion-panDown');
+      layer.style.removeProperty('--sp-bg-duration');
+      layer.style.removeProperty('--sp-bg-scale-from');
+      layer.style.removeProperty('--sp-bg-scale-to');
+      layer.style.removeProperty('--sp-bg-pan');
+      if (!motion || !motion.type || motion.type === 'none') return;
+      const type = ['parallax','breath','slowZoom','panLeft','panRight','panUp','panDown'].includes(motion.type) ? motion.type : null;
+      if (!type) return;
+      layer.classList.add(`sp-motion-${type}`);
+      layer.style.setProperty('--sp-bg-duration', `${Math.max(250, asNumber(motion.duration, 12000))}ms`);
+      layer.style.setProperty('--sp-bg-scale-from', String(asNumber(motion.scaleFrom, 1)));
+      layer.style.setProperty('--sp-bg-scale-to', String(asNumber(motion.scaleTo, type === 'slowZoom' ? 1.08 : 1.04)));
+      layer.style.setProperty('--sp-bg-pan', `${asNumber(motion.pan, 4)}%`);
+    }
+
+    _applyBackgroundOverlays(state) {
+      const themeDefaultDim = this.document?.theme === 'cinema' ? 0.34 : 0;
+      const dim = clamp(asNumber(state.dim, themeDefaultDim), 0, 1);
+      this.els.veil.style.background = `rgba(0,0,0,${dim})`;
+
+      const textures = state.textures || {};
+      const grain = clamp(asNumber(textures.grain, 0), 0, 1);
+      const scanline = clamp(asNumber(textures.scanline, 0), 0, 1);
+      const vignette = clamp(asNumber(textures.vignette, 0), 0, 1);
+      const monochrome = clamp(asNumber(textures.monochrome, 0), 0, 1);
+      const glitch = clamp(asNumber(textures.glitch, 0), 0, 1);
+      const blurTexture = clamp(asNumber(textures.blur, 0), 0, 1);
+      this.els.bgTextures.style.setProperty('--sp-grain', grain);
+      this.els.bgTextures.style.setProperty('--sp-scanline', scanline);
+      this.els.bgTextures.style.setProperty('--sp-vignette', vignette);
+      this.els.bgTextures.style.setProperty('--sp-texture-glitch', glitch);
+      this.els.bgTextures.style.opacity = String(Math.max(grain, scanline, vignette, glitch, blurTexture));
+      this.els.bgTextures.classList.toggle('has-texture-glitch', glitch > 0);
+      this.els.bgTextures.style.backdropFilter = blurTexture > 0 ? `blur(${blurTexture * 4}px) grayscale(${monochrome})` : `grayscale(${monochrome})`;
+      this.els.bgTextures.style.webkitBackdropFilter = this.els.bgTextures.style.backdropFilter;
+    }
+
+    _runBackgroundReveal(reveal, fallbackTransition) {
+      if (!reveal || !reveal.type || reveal.type === 'none' || reveal.type === 'still') return;
+      const type = ['intro','memory','ghost','flash'].includes(reveal.type) ? reveal.type : null;
+      if (!type) return;
+      const layer = this._currentBackgroundLayer();
+      const duration = Math.max(0, asNumber(reveal.duration, 1000));
+      const hold = Math.max(0, asNumber(reveal.hold, 0));
+      const opacity = clamp(asNumber(reveal.opacity, 1), 0, 1);
+      layer.style.setProperty('--sp-reveal-duration', `${duration}ms`);
+      layer.style.setProperty('--sp-reveal-opacity', opacity);
+      layer.classList.remove('sp-reveal-intro','sp-reveal-memory','sp-reveal-ghost','sp-reveal-flash');
+      void layer.offsetWidth;
+      layer.classList.add(`sp-reveal-${type}`);
+      this._backgroundTimeout(() => layer.classList.remove(`sp-reveal-${type}`), duration + hold + 80);
+      if (type === 'flash' && fallbackTransition !== 'flash') {
+        this.els.bgFlash.classList.add('is-active');
+        this._backgroundTimeout(() => this.els.bgFlash.classList.remove('is-active'), Math.min(520, duration || 520));
+      }
     }
 
     _sceneNode(scene, active, age) {
@@ -542,6 +761,7 @@
       if (this.destroyed) return;
       this.stopAuto();
       this._resetPresentationRuntime();
+      this._resetBackgroundRuntime();
       this._bound.forEach(([el, event, fn, options]) => el.removeEventListener(event, fn, options));
       this._bound.length = 0;
       this.host.innerHTML = '';
@@ -550,7 +770,7 @@
     }
   }
 
-  ScenePlayerCore.VERSION = '1.1.0';
+  ScenePlayerCore.VERSION = '1.2.0';
   ScenePlayerCore.FORMAT_VERSION = '1.0';
   ScenePlayerCore.validate = assertSceneDocument;
 
