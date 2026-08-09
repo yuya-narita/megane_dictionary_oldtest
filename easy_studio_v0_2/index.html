@@ -151,7 +151,7 @@
               <div class="audio-card-title"><strong>BGM</strong><small>Sceneをまたいで継続</small></div>
               <label class="adv-field"><span>操作</span><select id="sceneBgmAction"><option value="inherit">継続（指定なし）</option><option value="start">このSceneで開始</option><option value="volume">音量を変更</option><option value="stop">このSceneで停止</option></select></label>
               <div id="sceneBgmStartFields" class="audio-action-fields" hidden>
-                <div class="asset-row"><label class="asset-button" for="sceneBgmInput">BGMを選ぶ</label><input id="sceneBgmInput" type="file" accept="audio/*" hidden><span id="sceneBgmFileLabel" class="asset-name">未選択</span></div>
+                <div class="asset-row"><label class="asset-button" for="sceneBgmInput">BGMを選ぶ</label><input id="sceneBgmInput" type="file" hidden><span id="sceneBgmFileLabel" class="asset-name">未選択</span></div>
                 <label class="check-row"><input id="sceneBgmLoop" type="checkbox" checked><span>ループ</span></label>
                 <div class="adv-grid"><label class="adv-field range-field"><span>音量 <output id="sceneBgmVolumeOutput">50%</output></span><input id="sceneBgmVolume" type="range" min="0" max="100" value="50"></label><label class="adv-field"><span>fadeIn (ms)</span><input id="sceneBgmFadeIn" type="number" min="0" step="100" value="800"></label><label class="adv-field"><span>fadeOut (ms)</span><input id="sceneBgmFadeOut" type="number" min="0" step="100" value="800"></label></div>
               </div>
@@ -163,7 +163,7 @@
               <div class="audio-card-title"><strong>Ambient</strong><small>環境音・持続音</small></div>
               <label class="adv-field"><span>操作</span><select id="sceneAmbientAction"><option value="inherit">継続（指定なし）</option><option value="start">このSceneで開始</option><option value="volume">音量を変更</option><option value="stop">このSceneで停止</option></select></label>
               <div id="sceneAmbientStartFields" class="audio-action-fields" hidden>
-                <div class="asset-row"><label class="asset-button" for="sceneAmbientInput">環境音を選ぶ</label><input id="sceneAmbientInput" type="file" accept="audio/*" hidden><span id="sceneAmbientFileLabel" class="asset-name">未選択</span></div>
+                <div class="asset-row"><label class="asset-button" for="sceneAmbientInput">環境音を選ぶ</label><input id="sceneAmbientInput" type="file" hidden><span id="sceneAmbientFileLabel" class="asset-name">未選択</span></div>
                 <label class="check-row"><input id="sceneAmbientLoop" type="checkbox" checked><span>ループ</span></label>
                 <div class="adv-grid"><label class="adv-field range-field"><span>音量 <output id="sceneAmbientVolumeOutput">35%</output></span><input id="sceneAmbientVolume" type="range" min="0" max="100" value="35"></label><label class="adv-field"><span>fadeIn (ms)</span><input id="sceneAmbientFadeIn" type="number" min="0" step="100" value="600"></label><label class="adv-field"><span>fadeOut (ms)</span><input id="sceneAmbientFadeOut" type="number" min="0" step="100" value="600"></label></div>
               </div>
@@ -175,7 +175,7 @@
               <div class="audio-card-title"><strong>SE</strong><small>このSceneで一度だけ鳴る</small></div>
               <label class="check-row"><input id="sceneSeEnabled" type="checkbox"><span>このSceneでSEを鳴らす</span></label>
               <div id="sceneSeFields" class="audio-action-fields" hidden>
-                <div class="asset-row"><label class="asset-button" for="sceneSeInput">SEを選ぶ</label><input id="sceneSeInput" type="file" accept="audio/*" hidden><span id="sceneSeFileLabel" class="asset-name">未選択</span></div>
+                <div class="asset-row"><label class="asset-button" for="sceneSeInput">SEを選ぶ</label><input id="sceneSeInput" type="file" hidden><span id="sceneSeFileLabel" class="asset-name">未選択</span></div>
                 <div class="adv-grid"><label class="adv-field range-field"><span>音量 <output id="sceneSeVolumeOutput">80%</output></span><input id="sceneSeVolume" type="range" min="0" max="100" value="80"></label><label class="adv-field"><span>fadeIn (ms)</span><input id="sceneSeFadeIn" type="number" min="0" step="50" value="0"></label></div>
               </div>
             </section>

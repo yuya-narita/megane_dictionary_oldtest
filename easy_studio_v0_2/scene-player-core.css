@@ -498,7 +498,7 @@
   .sp-history-item{transform:none!important;filter:none!important}
 }
 
-/* Core v1.7.0 — unified theme contract.
+/* Core v1.7.1 — unified theme contract + light-cinema wash.
    Geometry/interaction stay identical; themes only supply visual tokens. */
 .sp-core[data-theme="light"]{
   --sp-bg:#fbfaf5;--sp-text:#26221e;--sp-sub:#8d877f;--sp-line:rgba(55,50,45,.14);--sp-accent:#5f6df7;--sp-panel:rgba(255,255,255,.88);
@@ -507,7 +507,7 @@
   --sp-bg:#f5f1e9;--sp-text:#25211d;--sp-sub:rgba(37,33,29,.58);--sp-line:rgba(37,33,29,.14);--sp-accent:#25211d;--sp-panel:rgba(250,247,240,.76);
 }
 .sp-core[data-theme="cinema"][data-cinema-tone="light"] .sp-background{background:#f5f1e9}
-.sp-core[data-theme="cinema"][data-cinema-tone="light"] .sp-veil{background:rgba(250,247,240,.28)}
+.sp-core[data-theme="cinema"][data-cinema-tone="light"] .sp-veil{background:rgba(250,247,240,.72)}
 .sp-core[data-theme="cinema"][data-cinema-tone="dark"]{
   --sp-bg:#13171b;--sp-text:#fff;--sp-sub:rgba(255,255,255,.62);--sp-line:rgba(255,255,255,.14);--sp-accent:#fff;--sp-panel:rgba(10,12,15,.68);
 }

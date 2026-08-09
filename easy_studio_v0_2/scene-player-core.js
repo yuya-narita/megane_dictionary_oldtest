@@ -568,13 +568,15 @@
       const audio = this.audioEls[channel];
       if (!audio || !command.src) return;
       const sameSrc = this.audioState[channel]?.src === command.src;
-      const restart = command.restart === true || !sameSrc;
+      // History reconstruction should not rewind a BGM/Ambient that is already
+      // the correct persistent source. Forward Scene commands can still request restart.
+      const shouldSeek = !sameSrc || (!reconstruct && command.restart === true);
       const targetVolume = clamp(asNumber(command.volume, 1), 0, 1);
       const startAt = Math.max(0, asNumber(command.startAt, 0));
 
       if (!sameSrc) audio.src = command.src;
       audio.loop = command.loop !== false;
-      if (restart || reconstruct) {
+      if (shouldSeek) {
         try { audio.currentTime = startAt; } catch (_) {
           audio.addEventListener('loadedmetadata', () => { try { audio.currentTime = startAt; } catch (_) {} }, { once: true });
         }
@@ -1007,10 +1009,10 @@
       if (typeof sceneOrIndex === 'number') nextIndex = sceneOrIndex;
       else if (typeof sceneOrIndex === 'string') nextIndex = this.document.scenes.findIndex((s) => s.id === sceneOrIndex);
       if (nextIndex < 0 || nextIndex > this.maxVisitedIndex) return false;
-      return this.goTo(nextIndex);
+      return this.goTo(nextIndex, { audioMode: 'history' });
     }
 
-    goTo(sceneOrIndex) {
+    goTo(sceneOrIndex, options = {}) {
       if (!this.document) return false;
       let nextIndex = -1;
       if (typeof sceneOrIndex === 'number') nextIndex = sceneOrIndex;
@@ -1023,7 +1025,7 @@
       this.ended = false;
       this.els.ending.hidden = true;
       this.index = nextIndex;
-      this._audioRenderMode = 'restore';
+      this._audioRenderMode = options.audioMode === 'history' ? 'history' : 'restore';
       this._render();
       emit(this.host, 'sceneplayer:scenechange', { index: this.index, scene: this.currentScene, direction: 'jump' });
       return true;
@@ -1128,7 +1130,9 @@
       } else {
         const mode = this._audioRenderMode;
         this._restoreAudioForIndex(this.index);
-        if (mode === 'load') this._queueInitialOneShots(active);
+        // One-shots do not fire while browsing History, but do replay when the
+        // reader explicitly lands on a visited Scene. This recreates that Scene.
+        if (mode === 'load' || mode === 'history') this._queueInitialOneShots(active);
       }
       this._audioRenderMode = 'advance';
 
@@ -1299,9 +1303,14 @@
     }
 
     _applyBackgroundOverlays(state) {
-      const themeDefaultDim = this.document?.theme === 'cinema' ? 0.34 : 0;
+      const isCinemaLight = this.document?.theme === 'cinema' && this.document?.appearance?.cinemaTone === 'light';
+      const themeDefaultDim = this.document?.theme === 'cinema' ? (isCinemaLight ? 0.72 : 0.34) : 0;
       const dim = clamp(asNumber(state.dim, themeDefaultDim), 0, 1);
-      this.els.veil.style.background = `rgba(0,0,0,${dim})`;
+      // CINEMA dark dims the image; CINEMA light washes it toward paper so
+      // black typography remains readable over photography.
+      this.els.veil.style.background = isCinemaLight
+        ? `rgba(250,247,240,${dim})`
+        : `rgba(0,0,0,${dim})`;
 
       const textures = state.textures || {};
       const grain = clamp(asNumber(textures.grain, 0), 0, 1);
