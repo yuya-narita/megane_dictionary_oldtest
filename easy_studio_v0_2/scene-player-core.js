@@ -1,5 +1,5 @@
 /*
- * Scene Player Core v1.4.0
+ * Scene Player Core v1.4.1.0
  * Runtime for Scene Format v1.0
  * No splitter / studio authoring logic lives here.
  */
@@ -943,11 +943,16 @@
       requestAnimationFrame(() => {
         const newest = this.els.scenes.lastElementChild;
         if (newest) {
+          // Anchor the newest Scene's CENTER to the Stage center.
+          // This recreates the v0.1 reading rhythm without Studio-specific layout code.
+          const latestHalf = Math.max(0, newest.getBoundingClientRect().height / 2);
+          this.els.scenes.style.setProperty('--sp-latest-half', `${latestHalf}px`);
           newest.classList.add('is-visible');
           this._activatePresentation(active, newest);
+        } else {
+          this.els.scenes.style.setProperty('--sp-latest-half', '0px');
         }
         this._scheduleAuto();
-        this.els.stage.scrollTop = this.els.stage.scrollHeight;
       });
     }
 
@@ -1307,7 +1312,7 @@
     }
   }
 
-  ScenePlayerCore.VERSION = '1.4.0';
+  ScenePlayerCore.VERSION = '1.4.1';
   ScenePlayerCore.FORMAT_VERSION = '1.0';
   ScenePlayerCore.validate = assertSceneDocument;
 
