@@ -52,13 +52,13 @@
     return {
       format:'scene-format', version:'1.0', language:'ja',
       title:titleInput.value.trim() || 'Untitled', author:authorInput.value.trim(), theme:selectedTheme,
+      appearance:{ cinemaTone: selectedTheme==='cinema' ? cinemaTone : 'dark' },
       player:{ navigation:{ allowPrevious:true } }, scenes
     };
   }
 
   function updateCount(){ charCount.textContent = `${bodyInput.value.length.toLocaleString()}文字`; }
   function applyTheme(theme){ selectedTheme=theme; $$('.theme-card').forEach(card=>{const on=card.dataset.theme===theme;card.classList.toggle('is-selected',on);card.setAttribute('aria-pressed',on?'true':'false');}); $('#cinemaBackgroundPanel').hidden=theme!=='cinema'; }
-  function updatePlayerToneClass(){ playerScreen.classList.toggle('easy-cinema-light', selectedTheme==='cinema'&&cinemaTone==='light'); playerScreen.classList.toggle('easy-cinema-dark', selectedTheme==='cinema'&&cinemaTone==='dark'); }
   function ensurePlayer(){ if(player)return player; player=new ScenePlayerCore(playerHost,{allowPrevious:true,keyboard:true,swipe:true,endOnNextAction:true,maxStackVisible:4,autoDelay:2600}); return player; }
   function setScreen(name){ editorScreen.hidden=name!=='easy'; advancedScreen.hidden=name!=='advanced'; playerScreen.hidden=name!=='player'; const open=name==='player'; document.documentElement.classList.toggle('easy-player-open',open); document.body.classList.toggle('easy-player-open',open); }
   function scrollScreenToTop(screen){
@@ -83,7 +83,7 @@
     }
     if(!workingDocument?.scenes?.length)return;
     playerReturnTarget=from;
-    updatePlayerToneClass(); setScreen('player');
+    setScreen('player');
     const p=ensurePlayer();
     p.load(getDocumentForPlayback(),{startAt});
 

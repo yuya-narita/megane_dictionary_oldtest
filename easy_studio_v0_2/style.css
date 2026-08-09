@@ -521,18 +521,18 @@ body.easy-player-open{position:fixed;inset:0;}
 .easy-core-screen .sp-scene[data-age="6"],
 .easy-core-screen .sp-scene[data-age="7"]{opacity:.22;}
 
-/* Easy CINEMA light treatment remains a Studio choice, not a new Scene theme. */
-.easy-cinema-light .sp-core[data-theme="cinema"]{
+/* Legacy Easy CINEMA tone shim disabled in v0.2.7; Core v1.7.0 owns theme rendering. */
+.legacy-easy-cinema-light-disabled .sp-core[data-theme="cinema"]{
   --sp-bg:#f5f1e9;
   --sp-text:#25211d;
   --sp-sub:rgba(37,33,29,.56);
   --sp-line:rgba(37,33,29,.14);
   --sp-panel:rgba(250,247,240,.76);
 }
-.easy-cinema-light .sp-core[data-theme="cinema"] .sp-background{
+.legacy-easy-cinema-light-disabled .sp-core[data-theme="cinema"] .sp-background{
   background:#f5f1e9;
 }
-.easy-cinema-light .sp-core[data-theme="cinema"] .sp-veil{
+.legacy-easy-cinema-light-disabled .sp-core[data-theme="cinema"] .sp-veil{
   background:rgba(250,247,240,.28);
 }
 

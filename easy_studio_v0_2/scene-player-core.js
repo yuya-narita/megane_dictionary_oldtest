@@ -812,6 +812,7 @@
       this.ended = false;
 
       this.host.dataset.theme = doc.theme;
+      this.host.dataset.cinemaTone = doc.theme === 'cinema' ? (doc.appearance?.cinemaTone === 'light' ? 'light' : 'dark') : '';
       this.host.dataset.language = doc.language || '';
       this.host.dataset.preset = doc.preset || '';
       this.host.setAttribute('lang', doc.language || '');

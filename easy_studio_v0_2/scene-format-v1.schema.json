@@ -61,6 +61,18 @@
     },
     "player": {
       "$ref": "#/$defs/player"
+    },
+    "appearance": {
+      "type": "object",
+      "properties": {
+        "cinemaTone": {
+          "enum": [
+            "dark",
+            "light"
+          ]
+        }
+      },
+      "additionalProperties": true
     }
   },
   "additionalProperties": true,
