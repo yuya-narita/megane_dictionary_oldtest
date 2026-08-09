@@ -150,3 +150,43 @@
 @media (prefers-reduced-motion:reduce){
   .sp-core *{scroll-behavior:auto!important;transition-duration:.001ms!important;animation-duration:.001ms!important}
 }
+
+/* Presentation Engine v1.1 */
+.sp-text.is-typing::selection{background:transparent}
+.sp-scene.is-disappearing{
+  opacity:0!important;
+  transform:translateY(-4px)!important;
+  filter:blur(2px)!important;
+  transition:opacity var(--sp-disappear-fade,700ms) ease,
+             transform var(--sp-disappear-fade,700ms) ease,
+             filter var(--sp-disappear-fade,700ms) ease!important;
+}
+.sp-scene.is-disappeared{visibility:hidden;pointer-events:none}
+
+.sp-scene[data-view="console"] .sp-text{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  letter-spacing:.01em;
+}
+.sp-scene[data-view="system"] .sp-text{
+  font-family:var(--sp-font-sans);
+  font-weight:700;
+  letter-spacing:.08em;
+  text-align:center;
+}
+.sp-scene[data-view="warning"] .sp-text{
+  font-family:var(--sp-font-sans);
+  font-weight:750;
+  letter-spacing:.055em;
+}
+.sp-scene[data-view="void"]{text-align:center}
+.sp-scene[data-view="void"] .sp-text{letter-spacing:.12em}
+
+@keyframes sp-pulse{0%,100%{opacity:1}50%{opacity:.56}}
+@keyframes sp-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
+@keyframes sp-tilt{0%{transform:rotate(-1.2deg) translateY(5px)}100%{transform:rotate(0deg) translateY(0)}}
+.sp-scene[data-effect="pulse"].is-visible{animation:sp-pulse 1.6s ease-in-out 1}
+.sp-scene[data-effect="shake"].is-visible{animation:sp-shake .42s ease 1}
+.sp-scene[data-effect="tilt"].is-visible{animation:sp-tilt .55s ease-out 1}
+
+.sp-subtext{overflow-wrap:anywhere;text-wrap:pretty}
+.sp-core[data-language^="en"] .sp-subtext{line-height:1.6}

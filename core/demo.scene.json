@@ -4,14 +4,81 @@
   "id": "scene-player-core-demo.ja",
   "workId": "scene-player-core-demo",
   "language": "ja",
-  "title": "次の文章は、まだ見えない。",
+  "title": "Presentation Engine",
   "author": "Scene Studio",
   "theme": "light",
   "scenes": [
-    {"id":"s001","type":"text","text":"文章は、最初から全部見えていなくてもいい。","pause":2200},
-    {"id":"s002","type":"text","text":"自分の操作で、次のSceneが現れる。","subText":"TAP / AUTO","pause":2400,"presentation":{"effect":"fade"}},
-    {"id":"s003","type":"dialogue","text":"次は、まだ見えない。","pause":2100,"presentation":{"display":"solo","effect":"whisper"}},
-    {"id":"s004","type":"text","text":"でも、過去には戻れる。","subText":"‹ ボタン / 上・右スワイプ / ↑ ← キー","pause":2400},
-    {"id":"s005","type":"text","text":"Scene Player Core v1","subText":"Scene Format v1.0 を読むための、最初の共通Core。","pause":2800,"presentation":{"effect":"pop"}}
+    {
+      "id": "s001",
+      "type": "text",
+      "text": "Sceneごとに、見た目を持てる。",
+      "subText": "Presentation Engine v1.1",
+      "pause": 2300,
+      "presentation": {
+        "effect": "fade",
+        "text": {"size": "large"},
+        "subText": {"size": "normal"}
+      }
+    },
+    {
+      "id": "s002",
+      "type": "dialogue",
+      "text": "色も、サイズも、前のSceneを汚さない。",
+      "pause": 2500,
+      "presentation": {
+        "effect": "pop",
+        "text": {"color": "#875f52", "size": "normal"}
+      }
+    },
+    {
+      "id": "s003",
+      "type": "text",
+      "text": "この文章は、一文字ずつ現れる。",
+      "subText": "途中でTAPすると全文表示。もう一度TAPすると次へ。",
+      "pause": 1800,
+      "presentation": {
+        "display": "solo",
+        "view": "console",
+        "typing": {"enabled": true, "speed": 70, "cursor": true},
+        "text": {"size": "large"},
+        "subText": {"size": "small"}
+      }
+    },
+    {
+      "id": "s004",
+      "type": "dialogue",
+      "text": "小さく言うこともできる。",
+      "pause": 2200,
+      "presentation": {
+        "effect": "whisper",
+        "text": {"color": "#77716a", "size": "small"}
+      }
+    },
+    {
+      "id": "s005",
+      "type": "text",
+      "text": "そして、消える。",
+      "subText": "1.8秒後にフェードアウト",
+      "pause": 3200,
+      "presentation": {
+        "display": "solo",
+        "effect": "pulse",
+        "text": {"size": "xl"},
+        "disappear": {"after": 1800, "fade": 900}
+      }
+    },
+    {
+      "id": "s006",
+      "type": "text",
+      "text": "PresentationはCoreへ入った。",
+      "subText": "次は Background Engine。",
+      "pause": 2800,
+      "presentation": {
+        "display": "solo",
+        "view": "system",
+        "effect": "tilt",
+        "text": {"size": "large"}
+      }
+    }
   ]
 }

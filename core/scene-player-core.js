@@ -1,5 +1,5 @@
 /*
- * Scene Player Core v1.0.0
+ * Scene Player Core v1.1.0
  * Runtime for Scene Format v1.0
  * No splitter / studio authoring logic lives here.
  */
@@ -73,6 +73,8 @@
       this.touchStartX = null;
       this.destroyed = false;
       this._bound = [];
+      this.presentationTimers = [];
+      this.typingState = null;
 
       this._buildShell();
       this._bindControls();
@@ -190,9 +192,42 @@
       }
     }
 
+    _clearPresentationTimers() {
+      this.presentationTimers.forEach((timer) => clearTimeout(timer));
+      this.presentationTimers.length = 0;
+    }
+
+    _stopTyping(complete = false) {
+      const state = this.typingState;
+      if (!state) return false;
+      clearInterval(state.timer);
+      if (complete && state.node?.isConnected) {
+        state.node.textContent = state.text;
+        state.node.classList.remove('is-typing');
+      }
+      this.typingState = null;
+      return true;
+    }
+
+    _resetPresentationRuntime() {
+      this._clearPresentationTimers();
+      this._stopTyping(false);
+    }
+
+    _presentationTimeout(fn, delay) {
+      const timer = setTimeout(() => {
+        const i = this.presentationTimers.indexOf(timer);
+        if (i >= 0) this.presentationTimers.splice(i, 1);
+        fn();
+      }, Math.max(0, delay));
+      this.presentationTimers.push(timer);
+      return timer;
+    }
+
     load(doc, options = {}) {
       if (this.destroyed) throw new Error('ScenePlayerCore has been destroyed.');
       this.stopAuto();
+      this._resetPresentationRuntime();
       this.document = assertSceneDocument(doc);
       this.index = clamp(asNumber(options.startAt, this.options.startAt), 0, doc.scenes.length - 1);
       this.ended = false;
@@ -223,13 +258,18 @@
 
     next() {
       if (!this.document || this.ended) return false;
+      if (this._stopTyping(true)) {
+        emit(this.host, 'sceneplayer:typingend', { index: this.index, scene: this.currentScene, skipped: true });
+        this._scheduleAuto();
+        return true;
+      }
       this._clearAutoTimer();
+      this._clearPresentationTimers();
 
       if (this.index < this.document.scenes.length - 1) {
         this.index += 1;
         this._render();
         emit(this.host, 'sceneplayer:scenechange', { index: this.index, scene: this.currentScene, direction: 'next' });
-        this._scheduleAuto();
         return true;
       }
 
@@ -241,12 +281,12 @@
     previous() {
       if (!this.document || !this.options.allowPrevious) return false;
       this._clearAutoTimer();
+      this._resetPresentationRuntime();
 
       if (this.ended) {
         this.ended = false;
         this.els.ending.hidden = true;
         this._render();
-        this._scheduleAuto();
         return true;
       }
 
@@ -254,7 +294,6 @@
       this.index -= 1;
       this._render();
       emit(this.host, 'sceneplayer:scenechange', { index: this.index, scene: this.currentScene, direction: 'previous' });
-      this._scheduleAuto();
       return true;
     }
 
@@ -266,30 +305,30 @@
       if (nextIndex < 0 || nextIndex >= this.document.scenes.length) return false;
 
       this._clearAutoTimer();
+      this._resetPresentationRuntime();
       this.ended = false;
       this.els.ending.hidden = true;
       this.index = nextIndex;
       this._render();
       emit(this.host, 'sceneplayer:scenechange', { index: this.index, scene: this.currentScene, direction: 'jump' });
-      this._scheduleAuto();
       return true;
     }
 
     restart() {
       if (!this.document) return;
-      const wasAuto = this.auto;
       this._clearAutoTimer();
+      this._resetPresentationRuntime();
       this.index = 0;
       this.ended = false;
       this.els.ending.hidden = true;
       this._render();
       emit(this.host, 'sceneplayer:restart', { scene: this.currentScene });
-      if (wasAuto) this._scheduleAuto();
     }
 
     finish() {
       if (!this.document || this.ended) return;
       this.stopAuto();
+      this._resetPresentationRuntime();
       this.ended = true;
       this.els.ending.hidden = false;
       emit(this.host, 'sceneplayer:end', { document: this.document, index: this.index });
@@ -324,7 +363,7 @@
     }
 
     _scheduleAuto() {
-      if (!this.auto || this.ended || !this.currentScene) return;
+      if (!this.auto || this.ended || !this.currentScene || this.typingState) return;
       this._clearAutoTimer();
       const delay = Math.max(0, asNumber(this.currentScene.pause, this.options.autoDelay));
       this.autoTimer = setTimeout(() => {
@@ -336,6 +375,7 @@
 
     _render() {
       if (!this.document) return;
+      this._resetPresentationRuntime();
       const scenes = this.document.scenes;
       const active = scenes[this.index];
       const display = active?.presentation?.display || 'stack';
@@ -354,13 +394,15 @@
       this.host.dataset.sceneId = active.id;
       this.host.dataset.sceneType = active.type;
 
-      // v1 foundation intentionally ignores unsupported advanced presentation,
-      // audio and extensions. Hooks/events remain stable for later engines.
       this._applyCorePresentation(active);
 
       requestAnimationFrame(() => {
         const newest = this.els.scenes.lastElementChild;
-        if (newest) newest.classList.add('is-visible');
+        if (newest) {
+          newest.classList.add('is-visible');
+          this._activatePresentation(active, newest);
+        }
+        this._scheduleAuto();
         this.els.stage.scrollTop = this.els.stage.scrollHeight;
       });
     }
@@ -389,13 +431,16 @@
       article.classList.toggle('is-active', active);
       if (!active) article.classList.add('is-visible');
 
-      const effect = scene.presentation?.effect;
+      const presentation = scene.presentation || {};
+      const effect = presentation.effect;
       if (effect && /^[a-zA-Z0-9_-]+$/.test(effect)) article.dataset.effect = effect;
+      if (presentation.view && /^[a-zA-Z0-9_-]+$/.test(presentation.view)) article.dataset.view = presentation.view;
 
       if (typeof scene.text === 'string' && scene.text.length) {
         const text = document.createElement('div');
         text.className = 'sp-text';
         text.textContent = scene.text;
+        this._applyTextStyle(text, presentation.text || {}, false);
         article.appendChild(text);
       }
 
@@ -403,6 +448,7 @@
         const sub = document.createElement('div');
         sub.className = 'sp-subtext';
         sub.textContent = scene.subText;
+        this._applyTextStyle(sub, presentation.subText || {}, true);
         article.appendChild(sub);
       }
 
@@ -417,21 +463,85 @@
       return article;
     }
 
+    _applyTextStyle(node, style, isSubText) {
+      if (!style || typeof style !== 'object') return;
+      if (style.color) node.style.color = String(style.color);
+
+      const size = style.size;
+      const tokenSizes = isSubText
+        ? { small: '11px', normal: '14px', large: '17px', xl: '20px' }
+        : { small: 'clamp(17px,3.8vw,24px)', normal: 'clamp(21px,4.8vw,34px)', large: 'clamp(26px,5.8vw,42px)', xl: 'clamp(32px,7vw,54px)' };
+      if (typeof size === 'number' && Number.isFinite(size) && size > 0) node.style.fontSize = `${size}px`;
+      else if (typeof size === 'string' && size !== 'auto' && tokenSizes[size]) node.style.fontSize = tokenSizes[size];
+
+      if (style.wrap === 'nowrap') {
+        node.style.whiteSpace = 'nowrap';
+        node.style.overflowWrap = 'normal';
+      }
+    }
+
     _applyCorePresentation(scene) {
       const view = scene.presentation?.view || 'world';
       this.host.dataset.view = view;
+    }
 
-      const textStyle = scene.presentation?.text || {};
-      if (textStyle.color) this.host.style.setProperty('--sp-scene-color', textStyle.color);
-      else this.host.style.removeProperty('--sp-scene-color');
-      const size = textStyle.size;
-      if (typeof size === 'number') this.host.style.setProperty('--sp-scene-size', `${size}px`);
-      else this.host.style.removeProperty('--sp-scene-size');
+    _activatePresentation(scene, article) {
+      const presentation = scene.presentation || {};
+      const textNode = article.querySelector('.sp-text');
+      const typing = presentation.typing;
+
+      if (textNode && typing?.enabled && typeof scene.text === 'string' && scene.text.length) {
+        this._startTyping(scene, textNode, typing);
+      }
+
+      const disappear = presentation.disappear;
+      const after = asNumber(disappear?.after, 0);
+      if (after > 0) {
+        const fade = Math.max(100, asNumber(disappear?.fade, 700));
+        article.style.setProperty('--sp-disappear-fade', `${fade}ms`);
+        this._presentationTimeout(() => {
+          if (!article.isConnected) return;
+          article.classList.add('is-disappearing');
+          emit(this.host, 'sceneplayer:disappear', { index: this.index, scene, phase: 'start' });
+          this._presentationTimeout(() => {
+            if (!article.isConnected) return;
+            article.classList.add('is-disappeared');
+            emit(this.host, 'sceneplayer:disappear', { index: this.index, scene, phase: 'end' });
+          }, fade);
+        }, after);
+      }
+    }
+
+    _startTyping(scene, node, typing) {
+      this._stopTyping(true);
+      const chars = Array.from(scene.text || '');
+      const speed = Math.max(10, asNumber(typing.speed, 55));
+      const cursor = typing.cursor === false ? '' : '▍';
+      let position = 0;
+
+      node.classList.add('is-typing');
+      node.textContent = cursor;
+      emit(this.host, 'sceneplayer:typingstart', { index: this.index, scene });
+
+      const timer = setInterval(() => {
+        position += 1;
+        node.textContent = chars.slice(0, position).join('') + (position < chars.length ? cursor : '');
+        if (position >= chars.length) {
+          clearInterval(timer);
+          if (this.typingState?.timer === timer) this.typingState = null;
+          node.classList.remove('is-typing');
+          emit(this.host, 'sceneplayer:typingend', { index: this.index, scene, skipped: false });
+          this._scheduleAuto();
+        }
+      }, speed);
+
+      this.typingState = { timer, node, text: scene.text, sceneId: scene.id };
     }
 
     destroy() {
       if (this.destroyed) return;
       this.stopAuto();
+      this._resetPresentationRuntime();
       this._bound.forEach(([el, event, fn, options]) => el.removeEventListener(event, fn, options));
       this._bound.length = 0;
       this.host.innerHTML = '';
@@ -440,7 +550,7 @@
     }
   }
 
-  ScenePlayerCore.VERSION = '1.0.0';
+  ScenePlayerCore.VERSION = '1.1.0';
   ScenePlayerCore.FORMAT_VERSION = '1.0';
   ScenePlayerCore.validate = assertSceneDocument;
 
