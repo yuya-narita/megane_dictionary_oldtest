@@ -1,5 +1,5 @@
 /*
- * Scene Player Core v1.3.1
+ * Scene Player Core v1.3.2
  * Runtime for Scene Format v1.0
  * No splitter / studio authoring logic lives here.
  */
@@ -79,6 +79,10 @@
       this.backgroundLayerIndex = 0;
       this.backgroundTimers = [];
       this.audioUnlocked = false;
+      // AudioContext unlock and story playback are separate states.
+      // A restarted story must wait for the reader's next stage gesture even
+      // when the AudioContext itself is already unlocked.
+      this.audioPlaybackArmed = false;
       this.audioPending = [];
       this.audioContext = null;
       this.audioGainNodes = new Map();
@@ -170,14 +174,25 @@
     }
 
     _bindControls() {
-      const unlock = () => this.unlockAudio();
-      this._on(this.host, 'pointerdown', unlock, { passive: true });
-      this._on(this.host, 'touchstart', unlock, { passive: true });
+      // Unlocking Web Audio and starting the story's queued audio are kept
+      // separate. Merely touching a control may unlock the context, but only
+      // a reading gesture on the stage arms queued BGM/Ambient playback.
+      const unlockContext = () => this.unlockAudio(false);
+      this._on(this.host, 'pointerdown', unlockContext, { passive: true });
+      this._on(this.host, 'touchstart', unlockContext, { passive: true });
+
+      const armFromStageGesture = () => this.unlockAudio(true);
+      this._on(this.els.stage, 'pointerdown', armFromStageGesture, { passive: true });
+      this._on(this.els.stage, 'touchstart', armFromStageGesture, { passive: true });
 
       this._on(this.els.prev, 'click', (e) => { e.stopPropagation(); this.previous(); });
       this._on(this.els.restart, 'click', (e) => { e.stopPropagation(); this.restart(); });
       this._on(this.els.endingRestart, 'click', () => this.restart());
-      this._on(this.els.auto, 'click', (e) => { e.stopPropagation(); this.toggleAuto(); });
+      this._on(this.els.auto, 'click', (e) => {
+        e.stopPropagation();
+        this.unlockAudio(true);
+        this.toggleAuto();
+      });
 
       this._on(this.els.stage, 'click', (e) => {
         if (e.target.closest('button')) return;
@@ -188,6 +203,7 @@
         this._on(this.els.stage, 'keydown', (e) => {
           if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight' || e.key === 'ArrowDown') {
             e.preventDefault();
+            this.unlockAudio(true);
             this.next();
           } else if (this.options.allowPrevious && (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'Backspace')) {
             e.preventDefault();
@@ -300,27 +316,53 @@
       return clamp(asNumber(audio?.volume, 1), 0, 1);
     }
 
-    unlockAudio() {
-      if (this.audioUnlocked) {
-        const ctx = this._ensureAudioContext();
-        if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
-        return true;
-      }
-      this.audioUnlocked = true;
-      const ctx = this._ensureAudioContext();
-      if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
-      // Build persistent media graphs inside the user gesture on iOS/WebKit.
-      Object.values(this.audioEls || {}).forEach((audio) => this._ensureAudioNode(audio));
+    _primeAudioContext(ctx) {
+      if (!ctx) return;
+      try {
+        // iOS/WebKit can report a resumed context while the output path is not
+        // yet producing audio. Starting a one-sample silent buffer inside the
+        // same user gesture explicitly primes the Web Audio render path.
+        const buffer = ctx.createBuffer(1, 1, Math.max(8000, ctx.sampleRate || 44100));
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+      } catch (_) {}
+    }
+
+    _flushPendingAudio() {
+      if (!this.audioUnlocked || !this.audioPlaybackArmed) return;
       const pending = this.audioPending.splice(0);
       pending.forEach((fn) => {
         try { fn(); } catch (_) {}
       });
-      emit(this.host, 'sceneplayer:audiounlock', { webAudio: !!ctx });
+    }
+
+    unlockAudio(armPlayback = false) {
+      const ctx = this._ensureAudioContext();
+
+      // Build persistent media graphs and prime the render path while we are
+      // still inside the trusted user gesture.
+      Object.values(this.audioEls || {}).forEach((audio) => this._ensureAudioNode(audio));
+      this._primeAudioContext(ctx);
+
+      if (ctx && ctx.state === 'suspended') {
+        try { ctx.resume().catch(() => {}); } catch (_) {}
+      }
+
+      this.audioUnlocked = true;
+      if (armPlayback) this.audioPlaybackArmed = true;
+      this._flushPendingAudio();
+
+      emit(this.host, 'sceneplayer:audiounlock', {
+        webAudio: !!ctx,
+        armed: this.audioPlaybackArmed
+      });
       return true;
     }
 
     _queueAudio(fn) {
-      if (this.audioUnlocked) return fn();
+      if (this.audioUnlocked && this.audioPlaybackArmed) return fn();
       this.audioPending.push(fn);
       emit(this.host, 'sceneplayer:audiopending', { count: this.audioPending.length });
       return false;
@@ -404,7 +446,7 @@
             if (onStarted) onStarted();
           }).catch((error) => {
             // A browser may still reject playback when its media policy is stricter.
-            this.audioUnlocked = false;
+            this.audioPlaybackArmed = false;
             this.audioPending.push(() => this._safePlay(audio, detail, onStarted));
             emit(this.host, 'sceneplayer:audioblocked', { ...detail, error });
           });
@@ -658,6 +700,7 @@
       this._resetPresentationRuntime();
       this._resetBackgroundRuntime();
       this._stopAllAudio(true);
+      this.audioPlaybackArmed = false;
       this.document = assertSceneDocument(doc);
       this.index = clamp(asNumber(options.startAt, this.options.startAt), 0, doc.scenes.length - 1);
       this.ended = false;
@@ -759,6 +802,13 @@
       this._clearAutoTimer();
       this._resetPresentationRuntime();
       this._resetBackgroundRuntime();
+
+      // Restart means a fresh reading session, not an immediate audio restart.
+      // Stop current audio, clear old queued work, disarm playback, then rebuild
+      // scene-1 audio as pending until the reader taps the stage again.
+      this._stopAllAudio(true);
+      this.audioPlaybackArmed = false;
+
       this.index = 0;
       this.ended = false;
       this.els.ending.hidden = true;
@@ -1185,7 +1235,7 @@
     }
   }
 
-  ScenePlayerCore.VERSION = '1.3.1';
+  ScenePlayerCore.VERSION = '1.3.2';
   ScenePlayerCore.FORMAT_VERSION = '1.0';
   ScenePlayerCore.validate = assertSceneDocument;
 
