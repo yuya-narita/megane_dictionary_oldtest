@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f7f8fb">
+  <title>Scene Studio v0.2.12.5.0</title>
+  <link rel="stylesheet" href="./scene-player-core.css">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<main id="app">
+  <section id="editorScreen" class="screen editor-screen">
+    <header class="topbar">
+      <div><p class="brand-kicker">SCENE STUDIO</p><h1>Easy Studio</h1></div>
+      <div class="topbar-actions"><span class="version">v0.2.12.5</span><div class="ui-language-switch" role="group" aria-label="UI language"><button type="button" data-ui-lang="ja">JA</button><button type="button" data-ui-lang="en">EN</button></div></div>
+    </header>
+
+    <section class="intro">
+      <h2>文章を貼るだけ。</h2>
+      <p>次の文章を、まだ見せない体験にします。</p>
+    </section>
+
+    <div class="form-stack">
+      <label class="field">
+        <span class="field-label">作品タイトル</span>
+        <input id="titleInput" type="text" placeholder="例：声のそろう通り">
+      </label>
+      <label class="field">
+        <span class="field-label">作者名 <small>任意</small></span>
+        <input id="authorInput" type="text" placeholder="例：Yuya Narita">
+      </label>
+      <label class="field body-field">
+        <span class="field-label">本文</span>
+        <textarea id="bodyInput" placeholder="ここに文章を貼り付けてください。"></textarea>
+        <div class="body-meta">
+          <span id="charCount">0文字</span>
+          <button id="sampleButton" class="text-button" type="button">サンプルを入れる</button>
+        </div>
+      </label>
+
+      <section class="theme-section">
+        <div class="section-heading"><span>雰囲気</span><small>あとから変えられます</small></div>
+        <div class="theme-grid">
+          <button class="theme-card is-selected" data-theme="light" type="button"><span class="theme-preview theme-preview-light">あ</span><strong>LIGHT</strong><small>文章・エッセイ</small></button>
+          <button class="theme-card" data-theme="dark" type="button"><span class="theme-preview theme-preview-dark">あ</span><strong>DARK</strong><small>SF・ホラー</small></button>
+          <button class="theme-card" data-theme="cinema" type="button"><span class="theme-preview theme-preview-cinema">あ</span><strong>CINEMA</strong><small>余白・映画的</small></button>
+        </div>
+      </section>
+
+      <section class="work-font-section">
+        <div class="section-heading"><span>作品の書体</span><small>全Sceneの基本になります</small></div>
+        <div class="work-font-grid" role="radiogroup" aria-label="作品の書体">
+          <button class="work-font-card is-selected" type="button" data-font="serif" aria-pressed="true"><strong>明朝</strong><small>物語・文章向け</small></button>
+          <button class="work-font-card" type="button" data-font="sans" aria-pressed="false"><strong>ゴシック</strong><small>説明・現代的</small></button>
+          <button class="work-font-card" type="button" data-font="mono" aria-pressed="false"><strong>等幅</strong><small>端末・ログ向け</small></button>
+        </div>
+      </section>
+
+      <details class="split-options">
+        <summary>シーン分割を調整</summary>
+        <div class="split-panel">
+          <label><span>1シーンの目安</span>
+            <select id="densitySelect"><option value="short">短め</option><option value="normal" selected>標準</option><option value="long">長め</option></select>
+          </label>
+          <p>空行・会話文・箇条書き・改行を優先し、最後に句点と文字数で整えます。</p>
+        </div>
+      </details>
+
+      <div id="cinemaBackgroundPanel" class="cinema-background-panel" hidden>
+        <div class="cinema-background-copy"><strong>背景画像</strong><span>Scene Formatの背景としてPlayerへ渡します。</span></div>
+        <div class="cinema-tone" role="radiogroup" aria-label="CINEMAの明るさ">
+          <button class="cinema-tone-button is-selected" type="button" data-tone="dark" aria-pressed="true">暗く</button>
+          <button class="cinema-tone-button" type="button" data-tone="light" aria-pressed="false">明るく</button>
+        </div>
+        <label class="cinema-background-button" for="cinemaBackgroundInput">画像を選ぶ</label>
+        <input id="cinemaBackgroundInput" type="file" accept="image/*" hidden>
+        <button id="cinemaBackgroundClear" class="cinema-background-clear" type="button" hidden>画像を外す</button>
+        <div id="cinemaBackgroundPreview" class="cinema-background-preview" hidden></div>
+      </div>
+
+      <button id="makeButton" class="primary-button" type="button"><span>プレイヤーにする</span><small>Scene Format v1へ変換します</small></button>
+      <button id="advancedButton" class="secondary-button advanced-open-button" type="button">シーンを調整</button>
+
+      <section class="project-io-section" aria-labelledby="projectIoTitle">
+        <div class="section-heading"><span id="projectIoTitle">作品ファイル</span><small>Scene Format v1</small></div>
+        <div class="project-io-grid">
+          <button id="exportSceneButton" class="project-io-button" type="button"><strong>設計図を書き出す</strong><small>.scene.json</small></button>
+          <label class="project-io-button project-io-import" for="importSceneInput"><strong>設計図を読み込む</strong><small>.scene.json / .json</small></label>
+          <input id="importSceneInput" type="file" accept=".scene.json,.json,application/json" hidden>
+          <button id="exportPackageButton" class="project-io-button project-io-package" type="button"><strong>完全パッケージを書き出す</strong><small>.scene.zip（画像・音声込み）</small></button>
+          <label class="project-io-button project-io-import project-io-package" for="importPackageInput"><strong>完全パッケージを読み込む</strong><small>.scene.zip / .zip</small></label>
+          <input id="importPackageInput" type="file" accept=".scene.zip,.zip,application/zip" hidden>
+        </div>
+        <p id="projectIoStatus" class="project-io-status" aria-live="polite"></p>
+      </section>
+
+      <p class="footer-note">Easy Studioは本文を作るだけ。再生は共通Scene Player Coreが担当します。</p>
+    </div>
+  </section>
+
+
+  <section id="advancedScreen" class="screen advanced-screen" hidden>
+    <header class="advanced-topbar">
+      <button id="advancedBackButton" class="advanced-nav-button" type="button">‹ Easy</button>
+      <div><p class="brand-kicker">SCENE STUDIO</p><h1>シーンを調整</h1></div>
+      <div class="advanced-right-actions"><div class="ui-language-switch ui-language-switch-advanced" role="group" aria-label="UI language"><button type="button" data-ui-lang="ja">JA</button><button type="button" data-ui-lang="en">EN</button></div><button id="advancedPreviewButton" class="advanced-preview-button" type="button">確認</button></div>
+    </header>
+
+    <section class="advanced-policy">
+      <div><strong>読者が過去Sceneへ戻れる</strong><small>戻るボタン・スワイプ・キーボードをまとめて制御します。</small></div>
+      <label class="switch"><input id="allowPreviousInput" type="checkbox" checked><span></span></label>
+    </section>
+
+    <div class="advanced-layout">
+      <aside class="scene-rail">
+        <div class="scene-rail-head"><strong id="sceneCountLabel">0 Scenes</strong><button id="addSceneButton" type="button">＋</button></div>
+        <div id="sceneList" class="scene-list"></div>
+      </aside>
+
+      <section class="scene-inspector">
+        <div class="scene-inspector-head">
+          <div><span id="selectedSceneNumber" class="scene-number">Scene 1</span><code id="selectedSceneId">s001</code></div>
+          <div class="scene-move-actions"><button id="moveUpButton" type="button">↑</button><button id="moveDownButton" type="button">↓</button></div>
+        </div>
+
+        <label class="adv-field"><span>本文</span><textarea id="sceneTextInput" rows="7"></textarea></label>
+        <label class="adv-field subtext-field"><span>サブテキスト <small>任意</small></span><textarea id="sceneSubTextInput" rows="2" placeholder="補足が必要なSceneだけ"></textarea></label>
+
+        <div class="adv-grid">
+          <label class="adv-field"><span>種類</span><select id="sceneTypeSelect"><option value="text">テキスト</option><option value="dialogue">セリフ</option><option value="sound">音だけ</option></select></label>
+          <label class="adv-field"><span>表示</span><select id="sceneDisplaySelect"><option value="stack">前の文章を残す</option><option value="solo">この文章だけ</option></select></label>
+          <label class="adv-field"><span>出かた</span><select id="sceneEffectSelect"><option value="auto">おまかせ</option><option value="fade">フェード</option><option value="pop">ポンと出る</option><option value="blur">ぼやけて現れる</option><option value="whisper">そっと現れる</option><option value="loud">強く出る</option><option value="pulse">脈打つ</option><option value="shake">揺れる</option><option value="tilt">傾く</option><option value="slow">ゆっくり</option><option value="none">演出なし</option></select></label>
+          <label class="adv-field"><span>文字サイズ</span><select id="sceneSizeSelect"><option value="auto">おまかせ</option><option value="small">小</option><option value="normal">標準</option><option value="large">大</option><option value="xl">特大</option></select></label>
+          <label class="adv-field"><span>このSceneの書体</span><select id="sceneFontSelect"><option value="inherit">作品設定を使う</option><option value="serif">明朝</option><option value="sans">ゴシック</option><option value="mono">等幅</option></select></label>
+          <label class="adv-field"><span>このSceneの言語</span><select id="sceneLanguageSelect"><option value="auto">自動判定</option><option value="ja">日本語</option><option value="en">English</option><option value="custom">その他</option></select></label>
+          <label id="sceneLanguageCustomField" class="adv-field scene-language-custom" hidden><span>言語タグ</span><input id="sceneLanguageCustomInput" type="text" inputmode="text" autocomplete="off" placeholder="例: ko / zh-Hans / ar"></label>
+        </div>
+
+        <div class="scene-edit-actions">
+          <button id="mergePreviousButton" type="button">前と結合</button>
+          <button id="splitSceneButton" type="button">カーソル位置で分割</button>
+          <button id="deleteSceneButton" class="danger" type="button">削除</button>
+        </div>
+
+        <details class="adv-section" open>
+          <summary>背景</summary>
+          <div class="adv-section-body">
+            <label class="adv-field"><span>このSceneの背景</span>
+              <select id="sceneBackgroundMode">
+                <option value="inherit">前Sceneから継続</option>
+                <option value="image">このSceneで画像を変更</option>
+                <option value="clear">このSceneで背景を解除</option>
+              </select>
+            </label>
+            <div id="sceneBackgroundControls" hidden>
+              <div class="asset-row">
+                <label class="asset-button" for="sceneBackgroundInput">画像を選ぶ</label>
+                <input id="sceneBackgroundInput" type="file" accept="image/*" hidden>
+                <button id="sceneBackgroundRemoveFile" type="button" class="asset-clear">選択解除</button>
+              </div>
+              <div class="asset-url-row">
+                <input id="sceneBackgroundUrlInput" type="url" inputmode="url" autocomplete="off" placeholder="https://example.com/background.jpg">
+                <button id="sceneBackgroundUrlApply" type="button">URLを反映</button>
+              </div>
+              <div id="sceneBackgroundPreview" class="adv-asset-preview" hidden></div>
+              <div class="adv-grid">
+                <label class="adv-field"><span>切替</span><select id="sceneBackgroundTransition"><option value="fade">fade</option><option value="cut">cut</option><option value="flash">flash</option><option value="glitch">glitch</option></select></label>
+                <label class="adv-field"><span>表示</span><select id="sceneBackgroundFit"><option value="cover">cover</option><option value="contain">contain</option></select></label>
+                <label class="adv-field"><span>動き</span><select id="sceneBackgroundMotion"><option value="none">none</option><option value="slowZoom">slowZoom</option><option value="breath">breath</option><option value="panLeft">panLeft</option><option value="panRight">panRight</option><option value="panUp">panUp</option><option value="panDown">panDown</option></select></label>
+                <label class="adv-field range-field"><span>暗さ <output id="sceneBackgroundDimOutput">34%</output></span><input id="sceneBackgroundDim" type="range" min="0" max="85" step="1" value="34"></label>
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="adv-section" open>
+          <summary>音</summary>
+          <div class="adv-section-body audio-editor-grid">
+            <section class="audio-card">
+              <div class="audio-card-title"><strong>BGM</strong><small>続いていた時間</small></div>
+              <label class="adv-field"><span>操作</span><select id="sceneBgmAction"><option value="inherit">継続（指定なし）</option><option value="start">このSceneで開始</option><option value="volume">音量を変更</option><option value="stop">このSceneで停止</option></select></label>
+              <div id="sceneBgmStartFields" class="audio-action-fields" hidden>
+                <div class="asset-row"><label class="asset-button" for="sceneBgmInput">BGMを選ぶ</label><input id="sceneBgmInput" type="file" accept="audio/*" hidden><span id="sceneBgmFileLabel" class="asset-name">未選択</span></div>
+                <div class="asset-url-row"><input id="sceneBgmUrlInput" type="url" inputmode="url" autocomplete="off" placeholder="https://example.com/bgm.mp3"><button id="sceneBgmUrlApply" type="button">URLを反映</button></div>
+                <label class="check-row"><input id="sceneBgmLoop" type="checkbox" checked><span>ループ</span></label>
+                <div class="adv-grid"><label class="adv-field range-field"><span>音量 <output id="sceneBgmVolumeOutput">50%</output></span><input id="sceneBgmVolume" type="range" min="0" max="100" value="50"></label><label class="adv-field"><span>fadeIn (ms)</span><input id="sceneBgmFadeIn" type="number" min="0" step="100" value="800"></label><label class="adv-field"><span>fadeOut (ms)</span><input id="sceneBgmFadeOut" type="number" min="0" step="100" value="800"></label></div>
+              </div>
+              <div id="sceneBgmVolumeFields" class="audio-action-fields" hidden><div class="adv-grid"><label class="adv-field range-field"><span>音量 <output id="sceneBgmVolumeChangeOutput">30%</output></span><input id="sceneBgmVolumeChange" type="range" min="0" max="100" value="30"></label><label class="adv-field"><span>fade (ms)</span><input id="sceneBgmVolumeFade" type="number" min="0" step="100" value="500"></label></div></div>
+              <div id="sceneBgmStopFields" class="audio-action-fields" hidden><label class="adv-field"><span>fadeOut (ms)</span><input id="sceneBgmStopFade" type="number" min="0" step="100" value="800"></label></div>
+            </section>
+
+            <section class="audio-card">
+              <div class="audio-card-title"><strong>Ambient</strong><small>その時そこにあった音</small></div>
+              <label class="adv-field"><span>操作</span><select id="sceneAmbientAction"><option value="inherit">継続（指定なし）</option><option value="start">このSceneで開始</option><option value="volume">音量を変更</option><option value="stop">このSceneで停止</option></select></label>
+              <div id="sceneAmbientStartFields" class="audio-action-fields" hidden>
+                <div class="asset-row"><label class="asset-button" for="sceneAmbientInput">持続音を選ぶ</label><input id="sceneAmbientInput" type="file" accept="audio/*" hidden><span id="sceneAmbientFileLabel" class="asset-name">未選択</span></div>
+                <div class="asset-url-row"><input id="sceneAmbientUrlInput" type="url" inputmode="url" autocomplete="off" placeholder="https://example.com/ambient.mp3"><button id="sceneAmbientUrlApply" type="button">URLを反映</button></div>
+                <label class="check-row"><input id="sceneAmbientLoop" type="checkbox" checked><span>ループ</span></label>
+                <div class="adv-grid"><label class="adv-field range-field"><span>音量 <output id="sceneAmbientVolumeOutput">35%</output></span><input id="sceneAmbientVolume" type="range" min="0" max="100" value="35"></label><label class="adv-field"><span>fadeIn (ms)</span><input id="sceneAmbientFadeIn" type="number" min="0" step="100" value="600"></label><label class="adv-field"><span>fadeOut (ms)</span><input id="sceneAmbientFadeOut" type="number" min="0" step="100" value="600"></label></div>
+              </div>
+              <div id="sceneAmbientVolumeFields" class="audio-action-fields" hidden><div class="adv-grid"><label class="adv-field range-field"><span>音量 <output id="sceneAmbientVolumeChangeOutput">25%</output></span><input id="sceneAmbientVolumeChange" type="range" min="0" max="100" value="25"></label><label class="adv-field"><span>fade (ms)</span><input id="sceneAmbientVolumeFade" type="number" min="0" step="100" value="500"></label></div></div>
+              <div id="sceneAmbientStopFields" class="audio-action-fields" hidden><label class="adv-field"><span>fadeOut (ms)</span><input id="sceneAmbientStopFade" type="number" min="0" step="100" value="600"></label></div>
+            </section>
+
+            <section class="audio-card audio-card-se">
+              <div class="audio-card-title"><strong>SE</strong><small>その時起きた音</small></div>
+              <label class="check-row"><input id="sceneSeEnabled" type="checkbox"><span>このSceneでSEを鳴らす</span></label>
+              <div id="sceneSeFields" class="audio-action-fields" hidden>
+                <div class="asset-row"><label class="asset-button" for="sceneSeInput">SEを選ぶ</label><input id="sceneSeInput" type="file" accept="audio/*" hidden><span id="sceneSeFileLabel" class="asset-name">未選択</span></div>
+                <div class="asset-url-row"><input id="sceneSeUrlInput" type="url" inputmode="url" autocomplete="off" placeholder="https://example.com/se.mp3"><button id="sceneSeUrlApply" type="button">URLを反映</button></div>
+                <div class="adv-grid"><label class="adv-field range-field"><span>音量 <output id="sceneSeVolumeOutput">80%</output></span><input id="sceneSeVolume" type="range" min="0" max="100" value="80"></label><label class="adv-field"><span>fadeIn (ms)</span><input id="sceneSeFadeIn" type="number" min="0" step="50" value="0"></label></div>
+              </div>
+            </section>
+          </div>
+        </details>
+
+        <p class="advanced-hint">BGMは「続いていた時間」、Ambientは「その時そこにあった音」、SEは「その時起きた音」として扱います。何も指定しなければ前Sceneの状態を継続します。</p>
+      </section>
+    </div>
+  </section>
+
+  <section id="playerScreen" class="easy-core-screen" hidden>
+    <div id="scenePlayer"></div>
+    <button id="editReturnButton" class="easy-edit-return" type="button">編集に戻る</button>
+  </section>
+</main>
+<script src="./scene-studio-i18n.js"></script>
+<script src="./scene-player-core.js"></script>
+<script src="./japanese-splitter.js"></script>
+<script src="./english-splitter.js"></script>
+<script src="./scene-text-splitter.js"></script>
+<script src="./script.js"></script>
+</body>
+</html>

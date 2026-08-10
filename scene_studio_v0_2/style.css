@@ -1,0 +1,702 @@
+:root{--bg:#f7f8fb;--panel:#fff;--text:#17191d;--muted:#7f8792;--line:#e6e9ee;--accent:#5f6df7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Sans","Yu Gothic UI","Yu Gothic",sans-serif}*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text)}body{min-height:100dvh}button,input,textarea,select{font:inherit}.screen{min-height:100dvh}.editor-screen{width:min(760px,100%);margin:auto;padding:calc(26px + env(safe-area-inset-top)) 20px calc(44px + env(safe-area-inset-bottom))}.topbar{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:44px}.brand-kicker{margin:0 0 6px;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.18em}h1{margin:0;font-size:28px}.version{color:var(--muted);font-size:12px}.intro{margin-bottom:34px}.intro h2{margin:0 0 8px;font-size:32px}.intro p{margin:0;color:var(--muted);font-size:15px;line-height:1.7}.form-stack{display:flex;flex-direction:column;gap:18px}.field{display:flex;flex-direction:column;gap:9px}.field-label{font-size:13px;font-weight:700}.field-label small{margin-left:5px;color:var(--muted);font-weight:500}input,textarea,select{width:100%;border:1px solid var(--line);border-radius:16px;background:var(--panel);color:var(--text);outline:none}input:focus,textarea:focus,select:focus{border-color:#b8befd;box-shadow:0 0 0 4px rgba(95,109,247,.08)}input{height:54px;padding:0 16px}textarea{min-height:320px;resize:vertical;padding:18px 16px;line-height:1.9;font-size:16px}.body-meta{display:flex;justify-content:space-between;color:var(--muted);font-size:12px}.text-button{border:0;background:none;color:var(--accent);font-weight:700}.section-heading{display:flex;justify-content:space-between;margin-bottom:10px}.section-heading span{font-size:13px;font-weight:700}.section-heading small{color:var(--muted);font-size:11px}.theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.theme-card{padding:12px 10px 14px;border:1px solid var(--line);border-radius:18px;background:var(--panel);text-align:left}.theme-card.is-selected{border-color:#aeb5ff;box-shadow:0 0 0 3px rgba(95,109,247,.08)}.theme-preview{display:grid;place-items:center;width:100%;aspect-ratio:1.7/1;margin-bottom:10px;border-radius:12px;font-family:"Yu Mincho","Hiragino Mincho ProN",serif;font-size:26px}.theme-preview-light{background:#fbfaf5}.theme-preview-dark{background:#07080d;color:#b9b0ff}.theme-preview-cinema{color:#fff;background:linear-gradient(rgba(42,45,52,.28),rgba(42,45,52,.28)),radial-gradient(circle at 30% 25%,#b4c1c8 0,#778891 28%,#4b5a62 55%,#283139 100%)}.theme-card strong{display:block;font-size:12px}.theme-card small{color:var(--muted);font-size:10px}.split-options{border:1px solid var(--line);border-radius:16px;background:var(--panel);overflow:hidden}.split-options summary{padding:15px 16px;font-size:13px;font-weight:700}.split-panel{padding:0 16px 16px;border-top:1px solid var(--line)}.split-panel label{display:flex;align-items:center;justify-content:space-between;padding-top:14px;font-size:12px}.split-panel select{width:auto;height:38px;border-radius:10px}.split-panel p{margin:10px 0 0;color:var(--muted);font-size:11px;line-height:1.7}.primary-button{min-height:68px;border:0;border-radius:20px;background:#17191d;color:#fff}.primary-button span{display:block;font-size:16px;font-weight:800}.primary-button small{display:block;margin-top:5px;color:#bfc3ca;font-size:10px}.footer-note{margin:2px 0 0;color:var(--muted);font-size:11px;text-align:center}
+.player-screen{--p-bg:#fbfaf5;--p-text:#26221e;--p-sub:#8d877f;--p-line:rgba(55,50,45,.14);position:fixed;inset:0;overflow:hidden;background:var(--p-bg);color:var(--p-text)}.player-screen.theme-dark{--p-bg:#05060a;--p-text:#f4f1fb;--p-sub:#8d879d;--p-line:rgba(151,138,255,.16)}.player-screen.theme-cinema{--p-bg:#15191d;--p-text:#fff;--p-sub:rgba(255,255,255,.6);--p-line:rgba(255,255,255,.14);background:linear-gradient(rgba(17,20,24,.35),rgba(17,20,24,.55)),radial-gradient(circle at 28% 18%,#b7c0c5 0,#87959c 25%,#52616a 50%,#242d33 100%)}.player-header{position:absolute;z-index:5;top:0;left:0;right:0;height:calc(86px + env(safe-area-inset-top));padding:calc(10px + env(safe-area-inset-top)) 18px 10px;display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;border-bottom:1px solid var(--p-line)}.icon-button{width:44px;height:44px;border:0;background:transparent;color:var(--p-sub);font-size:24px}.player-title-wrap{text-align:center;min-width:0}.player-author{display:block;min-height:14px;margin-bottom:4px;color:var(--p-sub);font-size:10px}.player-title{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:"Yu Mincho","Hiragino Mincho ProN",serif;font-size:15px}.player-stage{position:absolute;inset:calc(86px + env(safe-area-inset-top)) 0 calc(72px + env(safe-area-inset-bottom));padding:24px 28px;display:flex;align-items:center;outline:none;user-select:none;-webkit-tap-highlight-color:transparent}.scene-stack{width:100%;display:flex;flex-direction:column;gap:22px}.scene-line{color:var(--p-text);font-family:"Yu Mincho","Hiragino Mincho ProN",serif;font-size:clamp(23px,5.3vw,33px);line-height:1.9;letter-spacing:.025em;opacity:0;transform:translateY(12px);filter:blur(4px);transition:opacity .55s ease,transform .65s ease,filter .65s ease;white-space:pre-wrap}.scene-line.is-visible{opacity:1;transform:none;filter:none}.scene-line.age-1{opacity:.8}.scene-line.age-2{opacity:.56}.scene-line.age-3{opacity:.34}.tap-hint{position:absolute;right:28px;bottom:26px;color:var(--p-sub);font-size:10px;letter-spacing:.22em}.player-footer{position:absolute;z-index:5;left:0;right:0;bottom:0;height:calc(72px + env(safe-area-inset-bottom));padding:0 22px env(safe-area-inset-bottom);display:flex;align-items:center;border-top:1px solid var(--p-line)}.progress-row{width:100%;display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;color:var(--p-sub);font-size:11px}.progress-track{height:2px;background:var(--p-line)}.progress-bar{width:0;height:100%;background:currentColor;transition:width .25s}.auto-button{border:0;background:none;color:var(--p-sub);font-size:11px}.auto-button.is-on{color:var(--p-text);font-weight:800}.player-menu{position:absolute;z-index:20;inset:0;padding:20px;display:flex;flex-direction:column;justify-content:flex-end;gap:10px;background:rgba(0,0,0,.35)}.player-menu button{min-height:54px;border:0;border-radius:16px;background:#fff;color:#17191d;font-weight:700}.player-menu button:last-child{margin-bottom:calc(10px + env(safe-area-inset-bottom))}@media(max-width:520px){.editor-screen{padding-left:16px;padding-right:16px}.intro h2{font-size:29px}textarea{min-height:42dvh}.theme-grid{gap:8px}.scene-line{font-size:clamp(21px,6.2vw,29px)}}
+
+
+/* =========================================================
+   v0.1 stable — tap flow / ending flow
+   ========================================================= */
+[hidden]{display:none!important}
+
+.player-menu[hidden],
+.ending-screen[hidden]{display:none!important}
+
+.ending-screen{
+  position:absolute;
+  z-index:18;
+  inset:0;
+  padding:
+    calc(92px + env(safe-area-inset-top))
+    28px
+    calc(34px + env(safe-area-inset-bottom));
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  background:var(--p-bg);
+  color:var(--p-text);
+  text-align:center;
+  animation:easyEndingIn .7s ease both;
+}
+.ending-copy{
+  margin-top:auto;
+  margin-bottom:auto;
+}
+.ending-kicker{
+  display:block;
+  margin-bottom:18px;
+  color:var(--p-sub);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.28em;
+}
+.ending-copy strong{
+  display:block;
+  font-family:"Yu Mincho","Hiragino Mincho ProN",serif;
+  font-size:clamp(34px,8vw,52px);
+  font-weight:500;
+  letter-spacing:.06em;
+}
+.ending-copy p{
+  margin:18px 0 0;
+  color:var(--p-sub);
+  font-size:13px;
+}
+.ending-actions{
+  width:min(100%,440px);
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.ending-actions button{
+  min-height:58px;
+  border-radius:17px;
+  font-weight:800;
+}
+.ending-primary{
+  border:0;
+  background:var(--p-text);
+  color:var(--p-bg);
+}
+.ending-secondary{
+  border:1px solid var(--p-line);
+  background:transparent;
+  color:var(--p-text);
+}
+@keyframes easyEndingIn{
+  from{opacity:0}
+  to{opacity:1}
+}
+
+
+/* =========================================================
+   Easy Studio v0.1 FINAL
+   Shared player geometry / scene rhythm / CINEMA image
+   ========================================================= */
+
+:root{
+  --easy-player-header-h: 120px;
+  --easy-player-footer-h: 86px;
+  --easy-player-side: 28px;
+}
+
+/* Shared header geometry */
+.player-header{
+  height:var(--easy-player-header-h);
+  min-height:var(--easy-player-header-h);
+  padding:
+    calc(18px + env(safe-area-inset-top))
+    var(--easy-player-side)
+    16px;
+  box-sizing:border-box;
+  display:grid;
+  grid-template-columns:44px minmax(0,1fr) 44px;
+  align-items:end;
+}
+.player-head-center{
+  align-self:end;
+  min-width:0;
+  padding:0 8px;
+}
+.player-author{
+  min-height:18px;
+  margin-bottom:5px;
+  line-height:1.15;
+}
+.player-title{
+  line-height:1.2;
+}
+.icon-button{
+  width:44px;
+  height:44px;
+  display:grid;
+  place-items:center;
+  align-self:end;
+}
+
+/* CINEMA image sits behind the normal theme. */
+.player-background,
+.player-background-veil{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+.player-background{
+  z-index:0;
+  background-position:center;
+  background-size:cover;
+  background-repeat:no-repeat;
+  opacity:0;
+  transform:scale(1.015);
+}
+.player-background-veil{
+  z-index:1;
+  opacity:0;
+  background:rgba(14,17,19,.78);
+}
+
+.theme-cinema .player-background.has-image{
+  opacity:.34;
+}
+.theme-cinema .player-background-veil{
+  opacity:1;
+}
+/* Keep text readable without asking the creator to tune anything. */
+.theme-cinema{
+  --p-bg:#252b2e;
+  --p-text:#f7f6f1;
+  --p-sub:rgba(247,246,241,.58);
+  --p-line:rgba(247,246,241,.18);
+}
+
+/* More air between scenes. */
+.scene-stack{
+  gap:clamp(34px,5.2vh,58px);
+}
+
+/* Long/multi-line scenes are fitted automatically by JS. */
+.scene-line.fit-medium{
+  font-size:clamp(22px,5.5vw,31px);
+  line-height:1.78;
+}
+.scene-line.fit-compact{
+  font-size:clamp(19px,4.9vw,27px);
+  line-height:1.62;
+}
+.scene-line.fit-tight{
+  font-size:clamp(17px,4.35vw,24px);
+  line-height:1.48;
+}
+
+/* Keep the newest scene around the visual center; blank lower space is intentional. */
+.player-stage{
+  box-sizing:border-box;
+  padding-top:clamp(44px,8vh,92px);
+  padding-bottom:clamp(118px,17vh,180px);
+}
+.scene-stack{
+  min-height:100%;
+  justify-content:center;
+}
+
+/* CINEMA picker only appears for CINEMA. */
+.cinema-background-panel{
+  margin:14px 0 18px;
+  padding:16px;
+  border:1px solid var(--line,#dfe2e8);
+  border-radius:18px;
+  background:#fff;
+}
+.cinema-background-copy{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  margin-bottom:12px;
+}
+.cinema-background-copy strong{font-size:14px}
+.cinema-background-copy span{
+  color:#8b9099;
+  font-size:12px;
+}
+.cinema-background-button,
+.cinema-background-clear{
+  min-height:44px;
+  border-radius:13px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 15px;
+  font-size:13px;
+  font-weight:800;
+  cursor:pointer;
+}
+.cinema-background-button{
+  border:0;
+  background:#17191d;
+  color:#fff;
+}
+.cinema-background-clear{
+  margin-left:8px;
+  border:1px solid #dfe2e8;
+  background:#fff;
+  color:#34373d;
+}
+.cinema-background-preview{
+  height:116px;
+  margin-top:12px;
+  border-radius:14px;
+  background-position:center;
+  background-size:cover;
+  overflow:hidden;
+  position:relative;
+}
+.cinema-background-preview::after{
+  content:"PLAYERでは自動的に薄く表示";
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  padding:12px;
+  background:rgba(14,17,19,.68);
+  color:#fff;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.04em;
+}
+
+@media (max-height:700px){
+  :root{ --easy-player-header-h:108px; }
+  .player-stage{
+    padding-top:34px;
+    padding-bottom:105px;
+  }
+  .scene-stack{gap:28px}
+}
+
+
+/* =========================================================
+   Easy Studio v0.1.1 — restore player geometry + CINEMA tone
+   ========================================================= */
+
+/* Background layers stay behind everything without changing original layout. */
+.player-background,
+.player-background-veil{
+  position:absolute!important;
+  inset:0!important;
+  z-index:0!important;
+  pointer-events:none!important;
+}
+
+/* Restore original fixed player shell. */
+.player-header{
+  position:absolute!important;
+  z-index:5!important;
+  top:0!important;
+  left:0!important;
+  right:0!important;
+  height:calc(86px + env(safe-area-inset-top))!important;
+  min-height:0!important;
+  padding:
+    calc(10px + env(safe-area-inset-top))
+    18px
+    10px!important;
+  display:grid!important;
+  grid-template-columns:44px minmax(0,1fr) 44px!important;
+  align-items:center!important;
+  border-bottom:1px solid var(--p-line)!important;
+}
+
+.player-header .icon-button{
+  align-self:center!important;
+}
+
+.player-stage{
+  position:absolute!important;
+  z-index:2!important;
+  inset:
+    calc(86px + env(safe-area-inset-top))
+    0
+    calc(72px + env(safe-area-inset-bottom))!important;
+  padding:24px 28px!important;
+  display:flex!important;
+  align-items:center!important;
+  overflow:hidden!important;
+}
+
+.player-footer{
+  position:absolute!important;
+  z-index:5!important;
+  left:0!important;
+  right:0!important;
+  bottom:0!important;
+  height:calc(72px + env(safe-area-inset-bottom))!important;
+  padding:0 22px env(safe-area-inset-bottom)!important;
+  display:flex!important;
+  align-items:center!important;
+  border-top:1px solid var(--p-line)!important;
+}
+
+.player-menu,
+.ending-screen{
+  position:absolute!important;
+}
+
+/* Scene Player rhythm:
+   newest scene stays around center; older scenes rise above it.
+   Lower half stays intentionally quiet. */
+.scene-stack{
+  width:100%!important;
+  min-height:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:flex-end!important;
+  gap:clamp(30px,4.6vh,50px)!important;
+  transform:translateY(8%)!important;
+}
+
+.scene-line{
+  flex:0 0 auto;
+}
+
+/* Long scenes fit without breaking the whole stage. */
+.scene-line.fit-medium{
+  font-size:clamp(20px,5.0vw,29px)!important;
+  line-height:1.7!important;
+}
+.scene-line.fit-compact{
+  font-size:clamp(18px,4.5vw,25px)!important;
+  line-height:1.55!important;
+}
+.scene-line.fit-tight{
+  font-size:clamp(16px,4.0vw,22px)!important;
+  line-height:1.42!important;
+}
+
+/* CINEMA: creator chooses light/dark treatment.
+   Image opacity remains restrained so text stays primary. */
+.theme-cinema.cinema-tone-dark{
+  --p-bg:#171a1d;
+  --p-text:#f8f7f2;
+  --p-sub:rgba(248,247,242,.60);
+  --p-line:rgba(248,247,242,.17);
+}
+.theme-cinema.cinema-tone-dark .player-background.has-image{
+  opacity:.42!important;
+}
+.theme-cinema.cinema-tone-dark .player-background-veil{
+  opacity:1!important;
+  background:rgba(10,12,14,.66)!important;
+}
+
+.theme-cinema.cinema-tone-light{
+  --p-bg:#f5f1e9;
+  --p-text:#25211d;
+  --p-sub:rgba(37,33,29,.55);
+  --p-line:rgba(37,33,29,.14);
+}
+.theme-cinema.cinema-tone-light .player-background.has-image{
+  opacity:.24!important;
+}
+.theme-cinema.cinema-tone-light .player-background-veil{
+  opacity:1!important;
+  background:rgba(250,247,240,.70)!important;
+}
+
+.cinema-tone{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin:2px 0 14px;
+}
+.cinema-tone-button{
+  min-height:42px;
+  border:1px solid #dfe2e8;
+  border-radius:12px;
+  background:#fff;
+  color:#444a52;
+  font-size:13px;
+  font-weight:800;
+}
+.cinema-tone-button.is-selected{
+  border-color:#aeb5ff;
+  box-shadow:0 0 0 3px rgba(95,109,247,.08);
+  color:#17191d;
+}
+
+@media(max-height:700px){
+  .player-stage{
+    padding:18px 24px!important;
+  }
+  .scene-stack{
+    gap:24px!important;
+    transform:translateY(5%)!important;
+  }
+}
+
+
+/* =========================================================
+   Easy Studio v0.1.2 — newest scene center anchor
+   ========================================================= */
+
+.player-stage{
+  position:absolute!important;
+  overflow:hidden!important;
+  display:block!important;
+}
+
+.scene-stack{
+  --latest-half:0px;
+  position:absolute!important;
+  left:28px!important;
+  right:28px!important;
+  bottom:50%!important;
+  width:auto!important;
+  min-height:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:flex-start!important;
+  gap:clamp(30px,4.6vh,50px)!important;
+
+  /* bottom:50% places the bottom edge at center.
+     Shift down by half of the newest line so newest line CENTER sits at center. */
+  transform:translateY(var(--latest-half))!important;
+  transition:transform .28s ease!important;
+}
+
+.scene-line{
+  flex:0 0 auto!important;
+}
+
+/* Older scenes naturally extend upward from the center anchor. */
+@media(max-height:700px){
+  .scene-stack{
+    left:24px!important;
+    right:24px!important;
+    gap:24px!important;
+  }
+}
+
+/* =========================================================
+   Easy Studio v0.2 — Scene Player Core connection
+   Old Easy Player CSS remains above only for editor compatibility;
+   this block is the active player shell.
+   ========================================================= */
+.easy-core-screen{
+  position:fixed;
+  inset:0;
+  z-index:100;
+  width:100%;
+  height:100dvh;
+  overflow:hidden;
+  background:#fbfaf5;
+}
+#scenePlayer{width:100%;height:100%;}
+html.easy-player-open,
+body.easy-player-open{
+  width:100%;
+  height:100%;
+  overflow:hidden!important;
+  overscroll-behavior:none;
+}
+body.easy-player-open{position:fixed;inset:0;}
+
+.easy-edit-return{
+  position:absolute;
+  z-index:30;
+  left:14px;
+  top:calc(70px + env(safe-area-inset-top));
+  min-height:28px;
+  padding:0 10px;
+  border:1px solid var(--sp-line,rgba(55,50,45,.12));
+  border-radius:999px;
+  background:color-mix(in srgb,var(--sp-bg,#fbfaf5) 74%,transparent);
+  color:var(--sp-sub,#8d877f);
+  backdrop-filter:blur(10px);
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.035em;
+  opacity:.82;
+}
+
+/* Keep the Easy Studio v0.1.2 reading rhythm while Core owns rendering. */
+.easy-core-screen .sp-stage{
+  overflow:hidden;
+  overscroll-behavior:none;
+  touch-action:none;
+}
+.easy-core-screen .sp-scenes{
+  gap:clamp(30px,4.6vh,50px);
+}
+.easy-core-screen .sp-scene[data-age="3"],
+.easy-core-screen .sp-scene[data-age="4"],
+.easy-core-screen .sp-scene[data-age="5"],
+.easy-core-screen .sp-scene[data-age="6"],
+.easy-core-screen .sp-scene[data-age="7"]{opacity:.22;}
+
+/* Legacy Easy CINEMA tone shim disabled in v0.2.7; Core v1.7.0 owns theme rendering. */
+.legacy-easy-cinema-light-disabled .sp-core[data-theme="cinema"]{
+  --sp-bg:#f5f1e9;
+  --sp-text:#25211d;
+  --sp-sub:rgba(37,33,29,.56);
+  --sp-line:rgba(37,33,29,.14);
+  --sp-panel:rgba(250,247,240,.76);
+}
+.legacy-easy-cinema-light-disabled .sp-core[data-theme="cinema"] .sp-background{
+  background:#f5f1e9;
+}
+.legacy-easy-cinema-light-disabled .sp-core[data-theme="cinema"] .sp-veil{
+  background:rgba(250,247,240,.28);
+}
+
+@media(max-width:520px){
+  .easy-edit-return{left:12px;top:calc(68px + env(safe-area-inset-top));}
+}
+
+
+/* =========================================================
+   Easy Studio v0.2.4 — Advanced Scene Editor
+   ========================================================= */
+.secondary-button{width:100%;min-height:52px;border:1px solid #d9dce2;border-radius:16px;background:#fff;color:#24262a;font-weight:800;font-size:14px}
+.advanced-open-button{margin-top:10px}
+.advanced-screen{min-height:100dvh;background:#f5f5f2;color:#222;padding:0 16px 28px}
+.advanced-topbar{position:sticky;top:0;z-index:20;margin:0 -16px;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;display:grid;grid-template-columns:72px 1fr 72px;align-items:center;background:rgba(245,245,242,.94);backdrop-filter:blur(16px);border-bottom:1px solid #deded9}
+.advanced-topbar>div{text-align:center}.advanced-topbar h1{margin:2px 0 0;font-family:"Yu Mincho","Hiragino Mincho ProN",serif;font-size:18px}.advanced-topbar .brand-kicker{margin:0;font-size:8px}
+.advanced-nav-button,.advanced-preview-button{min-height:38px;border:0;background:transparent;font-weight:800;color:#555}.advanced-preview-button{justify-self:end;color:#111}
+.advanced-policy{margin:16px auto;max-width:980px;padding:14px 16px;border:1px solid #deded9;border-radius:18px;background:#fff;display:flex;gap:18px;align-items:center;justify-content:space-between}.advanced-policy div{display:flex;flex-direction:column;gap:4px}.advanced-policy strong{font-size:14px}.advanced-policy small{color:#85857f;font-size:11px;line-height:1.5}
+.switch{position:relative;flex:none}.switch input{position:absolute;opacity:0}.switch span{display:block;width:48px;height:28px;border-radius:999px;background:#c8c8c4;position:relative;transition:.2s}.switch span::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:white;box-shadow:0 1px 4px #0003;transition:.2s}.switch input:checked+span{background:#20211f}.switch input:checked+span::after{transform:translateX(20px)}
+.advanced-layout{max-width:980px;margin:0 auto;display:grid;grid-template-columns:290px minmax(0,1fr);gap:16px;align-items:start}
+.scene-rail,.scene-inspector{background:#fff;border:1px solid #deded9;border-radius:20px;overflow:hidden}.scene-rail{position:sticky;top:96px;max-height:calc(100dvh - 120px);display:flex;flex-direction:column}.scene-rail-head{padding:13px 14px;border-bottom:1px solid #ecece8;display:flex;align-items:center;justify-content:space-between}.scene-rail-head strong{font-size:12px}.scene-rail-head button{width:34px;height:34px;border:0;border-radius:10px;background:#222;color:#fff;font-size:19px}.scene-list{overflow:auto;padding:8px}.scene-list-item{width:100%;border:0;background:transparent;border-radius:13px;padding:10px;display:grid;grid-template-columns:30px 1fr;gap:8px;text-align:left;color:#252525}.scene-list-item>span{color:#aaa;font-size:10px;padding-top:2px}.scene-list-item strong{display:block;font-size:12px;line-height:1.45;font-weight:700}.scene-list-item small{display:block;margin-top:4px;color:#999;font-size:9px}.scene-list-item.is-selected{background:#eeeeea}.scene-list-item.is-selected>span{color:#333}
+.scene-inspector{padding:18px}.scene-inspector-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.scene-inspector-head>div:first-child{display:flex;align-items:baseline;gap:9px}.scene-number{font-weight:900;font-size:16px}.scene-inspector-head code{color:#999;font-size:10px}.scene-move-actions{display:flex;gap:6px}.scene-move-actions button{width:38px;height:38px;border:1px solid #ddd;border-radius:11px;background:#fff}.scene-move-actions button:disabled{opacity:.3}
+.adv-field{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}.adv-field>span{font-size:10px;font-weight:800;color:#777;letter-spacing:.04em}.adv-field textarea,.adv-field select{width:100%;box-sizing:border-box;border:1px solid #d9d9d4;border-radius:13px;background:#fbfbf9;color:#222;padding:11px 12px;font:inherit}.adv-field textarea{resize:vertical;line-height:1.7;font-family:"Yu Mincho","Hiragino Mincho ProN",serif}.adv-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.scene-edit-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:5px}.scene-edit-actions button{min-height:44px;border:1px solid #dadad6;border-radius:12px;background:#fff;font-weight:800;font-size:11px}.scene-edit-actions button.danger{color:#a33;background:#fff9f8}.scene-edit-actions button:disabled{opacity:.3}.advanced-hint{margin:14px 2px 0;color:#999;font-size:10px;line-height:1.6}
+@media(max-width:760px){.advanced-screen{padding-left:10px;padding-right:10px}.advanced-topbar{margin-left:-10px;margin-right:-10px;padding-left:10px;padding-right:10px}.advanced-layout{display:block}.scene-rail{position:static;max-height:none;margin-bottom:12px}.scene-list{display:flex;overflow-x:auto;gap:6px;padding:8px}.scene-list-item{flex:0 0 150px;min-height:70px}.scene-inspector{padding:15px}.adv-grid{grid-template-columns:1fr 1fr}.scene-edit-actions{grid-template-columns:1fr 1fr}.scene-edit-actions .danger{grid-column:1/-1}.advanced-policy{margin-top:12px}.advanced-policy small{max-width:240px}}
+
+
+/* =========================================================
+   Easy Studio v0.2.5 — Advanced media editor
+   ========================================================= */
+.adv-section{margin-top:16px;border:1px solid #deded9;border-radius:16px;background:#fbfbf9;overflow:hidden}
+.adv-section>summary{padding:14px 15px;font-size:12px;font-weight:900;cursor:pointer;list-style:none}
+.adv-section>summary::-webkit-details-marker{display:none}
+.adv-section>summary::after{content:"＋";float:right;color:#999}.adv-section[open]>summary::after{content:"−"}
+.adv-section-body{padding:0 14px 14px;border-top:1px solid #e9e9e4}
+.asset-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0}
+.asset-button,.asset-clear{min-height:38px;padding:0 12px;border-radius:11px;font-size:10px;font-weight:850;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.asset-button{border:0;background:#202124;color:#fff}.asset-clear{border:1px solid #d7d7d2;background:#fff;color:#555}
+.asset-name{min-width:0;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#888;font-size:10px}
+.adv-asset-preview{height:130px;border-radius:13px;background-position:center;background-size:cover;border:1px solid #deded9;margin:8px 0 14px;position:relative;overflow:hidden}
+.adv-asset-preview::after{content:"このSceneから背景変更";position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.32);color:#fff;font-size:10px;font-weight:800}
+.range-field>span{display:flex;justify-content:space-between;align-items:center}.range-field output{font-weight:700;color:#555}.range-field input[type=range]{width:100%;accent-color:#222}
+.audio-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:12px}
+.audio-card{border:1px solid #e1e1dc;border-radius:14px;padding:12px;background:#fff}.audio-card-se{grid-column:1/-1}
+.audio-card-title{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}.audio-card-title strong{font-size:13px}.audio-card-title small{color:#999;font-size:9px}
+.audio-action-fields{padding-top:2px}.check-row{display:flex;align-items:center;gap:8px;min-height:38px;margin:4px 0 10px;font-size:11px;font-weight:700}.check-row input{width:18px;height:18px;accent-color:#222}
+.adv-field input[type=number]{width:100%;box-sizing:border-box;border:1px solid #d9d9d4;border-radius:13px;background:#fbfbf9;color:#222;padding:11px 12px;font:inherit}
+@media(max-width:760px){.audio-editor-grid{grid-template-columns:1fr}.audio-card-se{grid-column:auto}.adv-section-body{padding-left:11px;padding-right:11px}.asset-name{max-width:150px}}
+
+
+/* v0.2.8 — work typography */
+.work-font-section{display:grid;gap:12px}
+.work-font-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.work-font-card{
+  min-height:78px;padding:13px 12px;border:1px solid var(--line,#d9d9d9);border-radius:18px;
+  background:#fff;text-align:left;display:flex;flex-direction:column;gap:5px;color:inherit
+}
+.work-font-card strong{font-size:15px}
+.work-font-card small{font-size:11px;color:#8b8d92;line-height:1.35}
+.work-font-card.is-selected{
+  border-color:#9aa7ff;
+  box-shadow:0 0 0 3px rgba(91,109,247,.10);
+}
+.work-font-card[data-font="serif"] strong{font-family:"Yu Mincho","Hiragino Mincho ProN",serif}
+.work-font-card[data-font="sans"] strong{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}
+.work-font-card[data-font="mono"] strong{font-family:"SFMono-Regular","SF Mono",Menlo,monospace}
+
+/* Subtext is optional; don't reserve another full body editor for it. */
+.subtext-field textarea{
+  min-height:72px!important;
+  height:72px;
+  max-height:150px;
+  resize:none;
+  overflow-y:hidden;
+}
+.subtext-field span small{font-weight:500;color:#9b9da2;margin-left:4px}
+
+@media (max-width:560px){
+  .work-font-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .work-font-card{min-height:72px;padding:11px 9px;border-radius:15px}
+  .work-font-card strong{font-size:14px}
+  .work-font-card small{font-size:9.5px}
+}
+
+/* v0.2.9 — UI language switch */
+.topbar-actions{display:flex;align-items:center;gap:10px}
+.ui-language-switch{
+  display:inline-flex;align-items:center;padding:2px;
+  border:1px solid var(--line);border-radius:999px;background:var(--panel);
+}
+.ui-language-switch button{
+  min-width:34px;height:28px;padding:0 8px;border:0;border-radius:999px;
+  background:transparent;color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.06em;
+}
+.ui-language-switch button.is-selected{background:#17191d;color:#fff}
+.advanced-right-actions{display:flex;justify-content:flex-end;align-items:center;gap:7px}
+.ui-language-switch-advanced button{min-width:27px;height:25px;padding:0 5px;font-size:8px}
+@media(max-width:520px){
+  .topbar-actions{gap:7px}
+  .version{display:none}
+  .ui-language-switch button{min-width:32px}
+  .advanced-topbar{grid-template-columns:68px 1fr minmax(105px,auto)}
+  .advanced-right-actions{gap:4px}
+  .advanced-preview-button{padding-left:5px;padding-right:5px}
+}
+
+/* v0.2.9.1 — i18n final: keep Preview/確認 on one line */
+.advanced-preview-button{
+  white-space:nowrap;
+  word-break:keep-all;
+  flex:0 0 auto;
+}
+.advanced-right-actions{
+  white-space:nowrap;
+}
+
+/* v0.2.11 multilingual Scene authoring */
+.scene-language-custom[hidden]{display:none !important;}
+
+
+/* =========================================================
+   Scene Studio v0.2.12 — Scene Format Export / Import
+   ========================================================= */
+.project-io-section{display:grid;gap:10px;margin-top:14px;padding:14px;border:1px solid var(--line,#d9d9d9);border-radius:18px;background:var(--panel,#fff)}
+.project-io-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.project-io-button{min-height:58px;padding:11px 12px;border:1px solid var(--line,#d9d9d9);border-radius:14px;background:#fff;color:inherit;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;text-align:left;cursor:pointer;box-sizing:border-box}
+.project-io-button strong{font-size:13px}.project-io-button small{font-size:9.5px;color:#92949a;font-weight:650}
+.project-io-button:active{transform:translateY(1px)}
+.project-io-import{font:inherit}
+.project-io-status{min-height:1.25em;margin:0;color:#80838a;font-size:10px;line-height:1.45}
+.project-io-status.is-error{color:#a33}
+@media(max-width:520px){.project-io-section{padding:12px}.project-io-grid{grid-template-columns:1fr 1fr}.project-io-button{min-height:54px;padding:10px}}
+
+
+/* v0.2.12.12 — external asset URL fields */
+.asset-url-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:10px;
+  align-items:center;
+  margin-top:10px;
+}
+.asset-url-row input{
+  min-width:0;
+  width:100%;
+  min-height:44px;
+  border:1px solid var(--line,#d8d8d4);
+  border-radius:12px;
+  padding:0 12px;
+  background:var(--panel,#fff);
+  color:inherit;
+  font:inherit;
+}
+.asset-url-row button{
+  min-height:44px;
+  border:1px solid var(--line,#d8d8d4);
+  border-radius:12px;
+  padding:0 14px;
+  background:var(--panel,#fff);
+  color:inherit;
+  font-weight:700;
+  white-space:nowrap;
+}
+@media (max-width:520px){
+  .asset-url-row{grid-template-columns:1fr}
+  .asset-url-row button{width:100%}
+}
